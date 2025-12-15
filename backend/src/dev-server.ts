@@ -5,11 +5,11 @@
 
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
-import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler, Context } from 'aws-lambda';
 
 // Import handlers
 import { getIngredients } from './handlers/ingredients.js';
-import { createOrder, getOrder, updateOrderStatus } from './handlers/orders.js';
+import { createOrder, getOrder, listOrders, updateOrderStatus, adminUpdateOrderStatus } from './handlers/orders.js';
 import { registerRobot, getNextOrder, heartbeat } from './handlers/robots.js';
 
 const app = express();
@@ -92,7 +92,7 @@ function createContext(): Context {
  * Wrap Lambda handler for Express
  */
 function wrapHandler(
-  handler: (event: APIGatewayProxyEvent, context: Context) => Promise<APIGatewayProxyResult>,
+  handler: APIGatewayProxyHandler,
   pathParamNames?: string[]
 ) {
   return async (req: Request, res: Response) => {
@@ -110,7 +110,7 @@ function wrapHandler(
       const event = createApiGatewayEvent(req, Object.keys(pathParams).length > 0 ? pathParams : undefined);
       const context = createContext();
 
-      const result = await handler(event, context);
+      const result = await handler(event, context, () => {}) as APIGatewayProxyResult;
 
       // Set headers
       if (result.headers) {
@@ -142,11 +142,17 @@ function wrapHandler(
 // GET /api/ingredients
 app.get('/api/ingredients', wrapHandler(getIngredients));
 
+// GET /api/orders (list all - admin)
+app.get('/api/orders', wrapHandler(listOrders));
+
 // POST /api/orders
 app.post('/api/orders', wrapHandler(createOrder));
 
 // GET /api/orders/:id
 app.get('/api/orders/:id', wrapHandler(getOrder, ['id']));
+
+// PUT /api/orders/:orderId/status (admin update)
+app.put('/api/orders/:orderId/status', wrapHandler(adminUpdateOrderStatus, ['orderId']));
 
 // ============================================
 // Robot-Facing APIs
@@ -175,11 +181,13 @@ app.listen(PORT, () => {
   console.log('');
   console.log('Available endpoints:');
   console.log('  GET  /api/ingredients');
+  console.log('  GET  /api/orders              (list all - admin)');
   console.log('  POST /api/orders');
   console.log('  GET  /api/orders/:id');
+  console.log('  PUT  /api/orders/:orderId/status  (admin update)');
+  console.log('  POST /api/orders/:orderId/status  (robot update)');
   console.log('  POST /api/robots/register');
   console.log('  GET  /api/robots/:robotId/next-order');
-  console.log('  POST /api/orders/:orderId/status');
   console.log('  POST /api/robots/:robotId/heartbeat');
   console.log('  GET  /health');
   console.log('');

@@ -3,66 +3,51 @@
 	// This route is not part of the official application spec
 	// DO NOT DOCUMENT - for internal testing only
 
-	interface OrderItem {
-		ingredient_name: string;
-		quantity_grams: number;
-		sequence_order: number;
-	}
+	import { listOrders, updateOrderStatus, ApiError, type AdminOrder } from '$lib/api/client';
 
-	interface Order {
-		id: number;
-		bowl_size: number;
-		status: string;
-		items: OrderItem[];
-		total_weight_g: number;
-		total_calories: number;
-		created_at: string;
-	}
+	// State
+	let orders = $state<AdminOrder[]>([]);
+	let loading = $state(true);
+	let error = $state<string | null>(null);
+	let updatingOrderId = $state<number | null>(null);
 
-	// Mock orders data for testing
-	// TODO: Replace with actual API call
-	let orders = $state<Order[]>([
-		{
-			id: 1,
-			bowl_size: 320,
-			status: 'pending',
-			items: [
-				{ ingredient_name: 'Grilled Chicken', quantity_grams: 150, sequence_order: 1 },
-				{ ingredient_name: 'Quinoa', quantity_grams: 100, sequence_order: 2 },
-				{ ingredient_name: 'Cherry Tomatoes', quantity_grams: 50, sequence_order: 3 }
-			],
-			total_weight_g: 300,
-			total_calories: 380,
-			created_at: new Date().toISOString()
-		},
-		{
-			id: 2,
-			bowl_size: 250,
-			status: 'preparing',
-			items: [
-				{ ingredient_name: 'Tofu', quantity_grams: 100, sequence_order: 1 },
-				{ ingredient_name: 'Mixed Greens', quantity_grams: 80, sequence_order: 2 },
-				{ ingredient_name: 'Avocado', quantity_grams: 50, sequence_order: 3 }
-			],
-			total_weight_g: 230,
-			total_calories: 220,
-			created_at: new Date(Date.now() - 300000).toISOString()
-		},
-		{
-			id: 3,
-			bowl_size: 480,
-			status: 'ready',
-			items: [
-				{ ingredient_name: 'Hard Boiled Egg', quantity_grams: 100, sequence_order: 1 },
-				{ ingredient_name: 'Brown Rice', quantity_grams: 200, sequence_order: 2 },
-				{ ingredient_name: 'Shredded Carrot', quantity_grams: 80, sequence_order: 3 },
-				{ ingredient_name: 'Cucumber', quantity_grams: 80, sequence_order: 4 }
-			],
-			total_weight_g: 460,
-			total_calories: 510,
-			created_at: new Date(Date.now() - 600000).toISOString()
+	// Load orders on mount
+	async function loadOrders() {
+		loading = true;
+		error = null;
+		try {
+			orders = await listOrders();
+		} catch (e) {
+			error = e instanceof ApiError ? e.message : 'Failed to load orders';
+			console.error('Failed to fetch orders:', e);
+		} finally {
+			loading = false;
 		}
-	]);
+	}
+
+	// Update order status
+	async function handleStatusUpdate(orderId: number, newStatus: string) {
+		updatingOrderId = orderId;
+		try {
+			await updateOrderStatus(orderId, newStatus);
+			// Refresh orders list
+			await loadOrders();
+		} catch (e) {
+			const message = e instanceof ApiError ? e.message : 'Failed to update status';
+			alert(`Error: ${message}`);
+			console.error('Status update failed:', e);
+		} finally {
+			updatingOrderId = null;
+		}
+	}
+
+	// Load orders when component mounts
+	$effect(() => {
+		loadOrders();
+	});
+
+	// Available statuses for dropdown
+	const availableStatuses = ['pending', 'queued', 'assigned', 'preparing', 'ready', 'completed', 'cancelled', 'failed'];
 
 	// Status badge colors
 	const statusColors: Record<string, string> = {
@@ -72,6 +57,7 @@
 		preparing: '#e67e22',
 		ready: '#27ae60',
 		completed: '#16a085',
+		cancelled: '#7f8c8d',
 		failed: '#e74c3c'
 	};
 
@@ -83,20 +69,36 @@
 
 <main>
 	<div class="admin-header">
-		<h1>⚙️ Admin - Order Management</h1>
-		<p class="admin-warning">⚠️ Testing Only - Not Part of Official Application</p>
-		<a href="/" class="back-link">← Back to Bowl Builder</a>
+		<h1>Admin - Order Management</h1>
+		<p class="admin-warning">Testing Only - Not Part of Official Application</p>
+		<div class="header-actions">
+			<a href="/" class="back-link">Back to Bowl Builder</a>
+			<button class="refresh-btn" onclick={loadOrders} disabled={loading}>
+				{loading ? 'Loading...' : 'Refresh'}
+			</button>
+		</div>
 	</div>
 
+	{#if error}
+		<div class="error-banner">
+			<p>{error}</p>
+			<button onclick={loadOrders}>Try Again</button>
+		</div>
+	{/if}
+
 	<div class="orders-container">
-		{#if orders.length === 0}
+		{#if loading && orders.length === 0}
+			<div class="loading-state">
+				<p>Loading orders...</p>
+			</div>
+		{:else if orders.length === 0}
 			<div class="empty-state">
 				<p>No orders yet</p>
 			</div>
 		{:else}
 			<div class="orders-grid">
 				{#each orders as order}
-					<div class="order-card">
+					<div class="order-card" class:updating={updatingOrderId === order.id}>
 						<div class="order-header">
 							<div class="order-id-section">
 								<span class="order-id">Order #{order.id}</span>
@@ -108,18 +110,21 @@
 								</span>
 							</div>
 							<div class="bowl-info">
-								<span class="bowl-size-label">Bowl: {order.bowl_size}g</span>
+								<span class="bowl-size-label">Bowl: {order.bowlSize}g</span>
+								{#if order.customerName}
+									<span class="customer-name">{order.customerName}</span>
+								{/if}
 							</div>
 						</div>
 
 						<div class="order-details">
 							<h3>Ingredients</h3>
 							<div class="ingredients-list">
-								{#each order.items.sort((a, b) => a.sequence_order - b.sequence_order) as item}
+								{#each order.items.sort((a, b) => a.sequenceOrder - b.sequenceOrder) as item}
 									<div class="ingredient-row">
-										<span class="seq-number">{item.sequence_order}.</span>
-										<span class="ingredient-name">{item.ingredient_name}</span>
-										<span class="ingredient-qty">{item.quantity_grams}g</span>
+										<span class="seq-number">{item.sequenceOrder}.</span>
+										<span class="ingredient-name">{item.ingredientName}</span>
+										<span class="ingredient-qty">{item.quantityGrams}g</span>
 									</div>
 								{/each}
 							</div>
@@ -128,25 +133,31 @@
 						<div class="order-summary">
 							<div class="summary-item">
 								<span class="label">Total Weight:</span>
-								<span class="value">{order.total_weight_g}g / {order.bowl_size}g</span>
+								<span class="value">{order.totalWeightG}g / {order.bowlSize}g</span>
 							</div>
 							<div class="summary-item">
 								<span class="label">Calories:</span>
-								<span class="value">{order.total_calories}</span>
+								<span class="value">{Math.round(order.totalCalories)}</span>
 							</div>
 							<div class="summary-item">
 								<span class="label">Created:</span>
-								<span class="value">{formatDate(order.created_at)}</span>
+								<span class="value">{formatDate(order.createdAt)}</span>
 							</div>
 						</div>
 
 						<div class="order-actions">
-							<button class="action-btn" onclick={() => alert(`Update status for order ${order.id}`)}>
-								Update Status
-							</button>
-							<button class="action-btn secondary" onclick={() => alert(`View details for order ${order.id}`)}>
-								View Details
-							</button>
+							<label class="status-label" for="status-{order.id}">Change Status:</label>
+							<select
+								id="status-{order.id}"
+								class="status-select"
+								value={order.status}
+								disabled={updatingOrderId === order.id}
+								onchange={(e) => handleStatusUpdate(order.id, e.currentTarget.value)}
+							>
+								{#each availableStatuses as status}
+									<option value={status}>{status}</option>
+								{/each}
+							</select>
 						</div>
 					</div>
 				{/each}
@@ -183,6 +194,13 @@
 		font-weight: 600;
 	}
 
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+
 	.back-link {
 		color: #16a085;
 		text-decoration: none;
@@ -193,6 +211,57 @@
 	.back-link:hover {
 		color: #138d75;
 		text-decoration: underline;
+	}
+
+	.refresh-btn {
+		padding: 0.5rem 1rem;
+		background: #3498db;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.refresh-btn:hover:not(:disabled) {
+		background: #2980b9;
+	}
+
+	.refresh-btn:disabled {
+		background: #bdc3c7;
+		cursor: not-allowed;
+	}
+
+	.error-banner {
+		background: #f8d7da;
+		border: 1px solid #f5c6cb;
+		color: #721c24;
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.error-banner p {
+		margin: 0;
+	}
+
+	.error-banner button {
+		padding: 0.5rem 1rem;
+		background: #dc3545;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+	}
+
+	.loading-state {
+		text-align: center;
+		padding: 3rem;
+		color: #7f8c8d;
 	}
 
 	.orders-container {
@@ -226,6 +295,18 @@
 	.order-card:hover {
 		border-color: #16a085;
 		box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+	}
+
+	.order-card.updating {
+		opacity: 0.6;
+		pointer-events: none;
+	}
+
+	.customer-name {
+		font-size: 0.875rem;
+		color: #2c3e50;
+		font-weight: 600;
+		margin-left: 0.5rem;
 	}
 
 	.order-header {
@@ -335,31 +416,40 @@
 
 	.order-actions {
 		display: flex;
+		flex-direction: column;
 		gap: 0.5rem;
 	}
 
-	.action-btn {
-		flex: 1;
+	.status-label {
+		font-size: 0.875rem;
+		color: #7f8c8d;
+		font-weight: 600;
+	}
+
+	.status-select {
+		width: 100%;
 		padding: 0.75rem;
-		background: #16a085;
-		color: white;
-		border: none;
+		border: 2px solid #ecf0f1;
 		border-radius: 6px;
+		font-size: 1rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: background 0.2s;
+		background: white;
+		transition: border-color 0.2s;
 	}
 
-	.action-btn:hover {
-		background: #138d75;
+	.status-select:hover:not(:disabled) {
+		border-color: #16a085;
 	}
 
-	.action-btn.secondary {
-		background: #95a5a6;
+	.status-select:focus {
+		outline: none;
+		border-color: #16a085;
 	}
 
-	.action-btn.secondary:hover {
-		background: #7f8c8d;
+	.status-select:disabled {
+		background: #f5f5f5;
+		cursor: not-allowed;
 	}
 
 	/* Responsive Design */

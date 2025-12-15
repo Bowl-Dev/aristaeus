@@ -87,9 +87,50 @@ export async function getOrderStatus(orderId: number): Promise<OrderStatusRespon
   return apiFetch<OrderStatusResponse>(`/api/orders/${orderId}`);
 }
 
+/**
+ * List all orders (admin)
+ */
+export async function listOrders(): Promise<AdminOrder[]> {
+  const response = await apiFetch<{ orders: AdminOrder[] }>('/api/orders');
+  return response.orders;
+}
+
+/**
+ * Update order status (admin)
+ */
+export async function updateOrderStatus(orderId: number, status: string): Promise<{ success: boolean; currentStatus: string }> {
+  return apiFetch<{ success: boolean; currentStatus: string }>(`/api/orders/${orderId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  });
+}
+
 // ============================================
 // Utility Types
 // ============================================
+
+export interface AdminOrder {
+  id: number;
+  bowlSize: number;
+  customerName: string | null;
+  status: string;
+  items: Array<{
+    ingredientName: string;
+    quantityGrams: number;
+    sequenceOrder: number;
+  }>;
+  totalWeightG: number;
+  totalCalories: number;
+  totalProteinG: number;
+  totalCarbsG: number;
+  totalFatG: number;
+  totalFiberG: number;
+  assignedRobotId: number | null;
+  createdAt: string;
+  assignedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
 
 export interface ApiIngredientsResponse {
   ingredients: Ingredient[];

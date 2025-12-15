@@ -4,38 +4,36 @@
 	import IngredientCard from '$lib/components/IngredientCard.svelte';
 	import BowlSizeSelector from '$lib/components/BowlSizeSelector.svelte';
 	import NutritionalSummary from '$lib/components/NutritionalSummary.svelte';
-	import { _, } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
+	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
 
+	// Ingredients fetched from API
+	let ingredients = $state<Ingredient[]>([]);
 
-	// Mock ingredient data (will be replaced with API call)
-	// Data sourced from Bowls Request Form.xlsx - "Precios en bowl" sheet
-	const ingredients: Ingredient[] = [
-		// Proteins
-		{ id: 1, name: 'Chicken', category: 'protein', caloriesPer100g: 165, proteinGPer100g: 31, carbsGPer100g: 0, fatGPer100g: 3.7, fiberGPer100g: 0, available: true, displayOrder: 1 },
-		{ id: 2, name: 'Salmon', category: 'protein', caloriesPer100g: 208, proteinGPer100g: 20, carbsGPer100g: 0, fatGPer100g: 13, fiberGPer100g: 0, available: true, displayOrder: 2 },
+	// Loading and error states
+	let loading = $state(true);
+	let error = $state<string | null>(null);
+	let submitting = $state(false);
+	let orderSuccess = $state<{ orderId: number; status: string } | null>(null);
 
-		// Bases
-		{ id: 3, name: 'Rice', category: 'base', caloriesPer100g: 130, proteinGPer100g: 2.6, carbsGPer100g: 28, fatGPer100g: 0.2, fiberGPer100g: 0.3, available: true, displayOrder: 1 },
-		{ id: 4, name: 'Quinoa', category: 'base', caloriesPer100g: 120, proteinGPer100g: 4.3, carbsGPer100g: 21, fatGPer100g: 1.8, fiberGPer100g: 1.3, available: true, displayOrder: 2 },
+	// Fetch ingredients on mount
+	async function loadIngredients() {
+		loading = true;
+		error = null;
+		try {
+			ingredients = await getIngredients();
+		} catch (e) {
+			error = e instanceof ApiError ? e.message : 'Failed to load ingredients';
+			console.error('Failed to fetch ingredients:', e);
+		} finally {
+			loading = false;
+		}
+	}
 
-		// Vegetables
-		{ id: 5, name: 'Cherry Tomatoes', category: 'vegetable', caloriesPer100g: 18, proteinGPer100g: 0.9, carbsGPer100g: 3.9, fatGPer100g: 0.2, fiberGPer100g: 1.2, available: true, displayOrder: 1 },
-		{ id: 6, name: 'Mango', category: 'vegetable', caloriesPer100g: 60, proteinGPer100g: 0.5, carbsGPer100g: 15, fatGPer100g: 0.2, fiberGPer100g: 1.7, available: true, displayOrder: 2 },
-		{ id: 7, name: 'Carrot', category: 'vegetable', caloriesPer100g: 41, proteinGPer100g: 0.9, carbsGPer100g: 9.5, fatGPer100g: 0.2, fiberGPer100g: 2.8, available: true, displayOrder: 3 },
-		{ id: 8, name: 'Onion', category: 'vegetable', caloriesPer100g: 40, proteinGPer100g: 1.1, carbsGPer100g: 9.3, fatGPer100g: 0.1, fiberGPer100g: 1.0, available: true, displayOrder: 4 },
-		{ id: 9, name: 'Avocado', category: 'vegetable', caloriesPer100g: 160, proteinGPer100g: 2.0, carbsGPer100g: 0.9, fatGPer100g: 15, fiberGPer100g: 6.7, available: true, displayOrder: 5 },
-		{ id: 10, name: 'Corn', category: 'vegetable', caloriesPer100g: 96, proteinGPer100g: 3.2, carbsGPer100g: 21, fatGPer100g: 1.5, fiberGPer100g: 2.6, available: true, displayOrder: 6 },
-		{ id: 11, name: 'Cucumber', category: 'vegetable', caloriesPer100g: 16, proteinGPer100g: 0.7, carbsGPer100g: 3.6, fatGPer100g: 0.1, fiberGPer100g: 0.5, available: true, displayOrder: 7 },
-
-		// Toppings
-		{ id: 12, name: 'Mozzarella', category: 'topping', caloriesPer100g: 300, proteinGPer100g: 20, carbsGPer100g: 1.0, fatGPer100g: 18, fiberGPer100g: 0, available: true, displayOrder: 1 },
-		{ id: 13, name: 'Green Onion', category: 'topping', caloriesPer100g: 32, proteinGPer100g: 0.9, carbsGPer100g: 7.4, fatGPer100g: 0.05, fiberGPer100g: 0.8, available: true, displayOrder: 2 },
-		{ id: 14, name: 'Peanuts', category: 'topping', caloriesPer100g: 600, proteinGPer100g: 25, carbsGPer100g: 16, fatGPer100g: 52, fiberGPer100g: 10, available: true, displayOrder: 3 },
-
-		// Dressings
-		{ id: 15, name: 'Teriyaki', category: 'dressing', caloriesPer100g: 89, proteinGPer100g: 6, carbsGPer100g: 16, fatGPer100g: 0, fiberGPer100g: 0, available: true, displayOrder: 1 },
-		{ id: 16, name: 'Olive Oil Balsamic', category: 'dressing', caloriesPer100g: 415, proteinGPer100g: 0, carbsGPer100g: 8.5, fatGPer100g: 45.5, fiberGPer100g: 0, available: true, displayOrder: 2 }
-	];
+	// Load ingredients when component mounts
+	$effect(() => {
+		loadIngredients();
+	});
 
 	// Group ingredients by category
 	const ingredientsByCategory = $derived.by(() => {
@@ -115,31 +113,33 @@
 	async function submitOrder() {
 		if (!isFormValid || !selectedBowlSize) return;
 
-		const items: Array<{ ingredientId: number; quantityGrams: number }> = [];
+		submitting = true;
+		orderSuccess = null;
 
-		selectedItems.forEach((quantityGrams, ingredientId) => {
-			items.push({
+		try {
+			const items = Array.from(selectedItems.entries()).map(([ingredientId, quantityGrams]) => ({
 				ingredientId,
 				quantityGrams
+			}));
+
+			const response = await createOrder({
+				customerName,
+				bowlSize: selectedBowlSize,
+				items
 			});
-		});
 
-		const orderData: import('@aristaeus/shared').CreateOrderRequest = {
-			customerName: customerName,
-			bowlSize: selectedBowlSize,
-			items: items
-		};
-
-		console.log('Submitting order:', orderData);
-		// TODO: Replace with actual API call
-		alert($_('order.submitted', {
-			values: {
-				name: customerName,
-				size: selectedBowlSize,
-				weight: nutritionalSummary.totalWeightG.toFixed(0),
-				calories: nutritionalSummary.calories.toFixed(0)
-			}
-		}));
+			// Success - show confirmation and reset form
+			orderSuccess = { orderId: response.orderId, status: response.status };
+			customerName = '';
+			selectedBowlSize = null;
+			selectedItems = new Map();
+		} catch (e) {
+			const message = e instanceof ApiError ? e.message : 'Failed to submit order';
+			alert(`Error: ${message}`);
+			console.error('Order submission failed:', e);
+		} finally {
+			submitting = false;
+		}
 	}
 
 	// Category display names (now using i18n)
@@ -156,6 +156,21 @@
 <main>
 	<h1>{$_('app.title')}</h1>
 	<p class="subtitle">{$_('app.subtitle')}</p>
+
+	{#if orderSuccess}
+		<div class="success-banner">
+			<p>Order #{orderSuccess.orderId} created successfully!</p>
+			<p>Status: {orderSuccess.status}</p>
+			<button onclick={() => orderSuccess = null}>Create Another Order</button>
+		</div>
+	{/if}
+
+	{#if error}
+		<div class="error-banner">
+			<p>{error}</p>
+			<button onclick={loadIngredients}>Try Again</button>
+		</div>
+	{/if}
 
 	<div class="form-container">
 		<!-- Customer Name Section -->
@@ -183,24 +198,34 @@
 		<section class="ingredient-selection">
 			<h2>{$_('ingredients.title')}</h2>
 
-			{#each Object.entries(ingredientsByCategory) as [category, items]}
-				<div class="category-group">
-					<h3>{getCategoryName(category)}</h3>
-					<div class="ingredient-grid">
-						{#each items as ingredient}
-							<IngredientCard
-								{ingredient}
-								ingredientName={getIngredientName(ingredient.name)}
-								isSelected={selectedItems.has(ingredient.id)}
-								quantity={selectedItems.get(ingredient.id) || 0}
-								onSelect={() => updateQuantity(ingredient.id, 50)}
-								onRemove={() => updateQuantity(ingredient.id, 0)}
-								onQuantityChange={(qty) => updateQuantity(ingredient.id, qty)}
-							/>
-						{/each}
-					</div>
+			{#if loading}
+				<div class="loading-state">
+					<p>Loading ingredients...</p>
 				</div>
-			{/each}
+			{:else if ingredients.length === 0}
+				<div class="empty-state">
+					<p>No ingredients available at this time.</p>
+				</div>
+			{:else}
+				{#each Object.entries(ingredientsByCategory) as [category, items]}
+					<div class="category-group">
+						<h3>{getCategoryName(category)}</h3>
+						<div class="ingredient-grid">
+							{#each items as ingredient}
+								<IngredientCard
+									{ingredient}
+									ingredientName={getIngredientName(ingredient.name)}
+									isSelected={selectedItems.has(ingredient.id)}
+									quantity={selectedItems.get(ingredient.id) || 0}
+									onSelect={() => updateQuantity(ingredient.id, 50)}
+									onRemove={() => updateQuantity(ingredient.id, 0)}
+									onQuantityChange={(qty) => updateQuantity(ingredient.id, qty)}
+								/>
+							{/each}
+						</div>
+					</div>
+				{/each}
+			{/if}
 		</section>
 
 		<!-- Nutritional Summary -->
@@ -210,10 +235,14 @@
 		<div class="submit-section">
 			<button
 				class="submit-button"
-				disabled={!isFormValid}
+				disabled={!isFormValid || submitting}
 				onclick={submitOrder}
 			>
-				{$_('order.submit')}
+				{#if submitting}
+					Submitting...
+				{:else}
+					{$_('order.submit')}
+				{/if}
 			</button>
 		</div>
 	</div>
@@ -336,6 +365,80 @@
 	.submit-button:disabled {
 		background: #bdc3c7;
 		cursor: not-allowed;
+	}
+
+	/* Success Banner */
+	.success-banner {
+		background: #d4edda;
+		border: 1px solid #c3e6cb;
+		color: #155724;
+		padding: 1.5rem;
+		border-radius: 8px;
+		margin-bottom: 2rem;
+		text-align: center;
+	}
+
+	.success-banner p {
+		margin: 0.5rem 0;
+	}
+
+	.success-banner button {
+		margin-top: 1rem;
+		padding: 0.5rem 1.5rem;
+		background: #28a745;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-weight: 600;
+	}
+
+	.success-banner button:hover {
+		background: #218838;
+	}
+
+	/* Error Banner */
+	.error-banner {
+		background: #f8d7da;
+		border: 1px solid #f5c6cb;
+		color: #721c24;
+		padding: 1.5rem;
+		border-radius: 8px;
+		margin-bottom: 2rem;
+		text-align: center;
+	}
+
+	.error-banner p {
+		margin: 0.5rem 0;
+	}
+
+	.error-banner button {
+		margin-top: 1rem;
+		padding: 0.5rem 1.5rem;
+		background: #dc3545;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-weight: 600;
+	}
+
+	.error-banner button:hover {
+		background: #c82333;
+	}
+
+	/* Loading State */
+	.loading-state {
+		text-align: center;
+		padding: 3rem;
+		color: #7f8c8d;
+	}
+
+	/* Empty State */
+	.empty-state {
+		text-align: center;
+		padding: 3rem;
+		color: #7f8c8d;
 	}
 
 	/* Responsive Design */
