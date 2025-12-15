@@ -628,32 +628,79 @@ class MockRobotService implements RobotService {
 
 ## Deployment Architecture (AWS)
 
-### MVP Deployment Options
+### Current Architecture: GitHub Pages + AWS Serverless
 
-**Option 1: AWS Amplify (Recommended for MVP)**
-- Automatic build/deploy from Git
-- Built-in CDN
-- Serverless scaling
-- Managed SSL certificates
-- Easiest setup
+The project uses a split architecture optimized for early development:
 
-**Option 2: AWS ECS Fargate**
-- Containerized deployment
-- More control
-- Higher complexity
-- Better for production scale
+```
+┌─────────────────────┐         ┌──────────────────────────────────┐
+│   GitHub Pages      │         │           AWS                    │
+│   (Static Frontend) │  HTTPS  │                                  │
+│                     │ ──────► │  API Gateway → Lambda → Aurora   │
+│   SvelteKit         │         │              (Prisma)  Serverless│
+│   adapter-static    │         │                                  │
+└─────────────────────┘         └──────────────────────────────────┘
+```
 
-**Option 3: Traditional EC2**
-- Full control
-- Manual management
-- Requires DevOps expertise
+### Frontend: GitHub Pages
+- **Adapter:** `@sveltejs/adapter-static` for static site generation
+- **Deployment:** GitHub Actions workflow on push to main
+- **Cost:** Free
+- **Benefits:** No domain commitment, automatic HTTPS, CDN via GitHub
+
+### Backend: AWS Serverless
+
+**API Layer:**
+- **AWS API Gateway** (HTTP API) - Routes requests to Lambda functions
+- **AWS Lambda** - Serverless functions for API handlers
+- **Serverless Framework** - Infrastructure as code deployment
 
 **Database:**
-- AWS RDS PostgreSQL (managed)
-- Start with smallest instance (db.t3.micro or db.t4g.micro)
-- Enable automated backups
+- **Aurora Serverless v2** (recommended) - PostgreSQL-compatible, scales to near-zero
+- **Alternative:** RDS PostgreSQL for predictable workloads
+- **ORM:** Prisma for type-safe database access
 
-**Recommendation:** Start with Amplify + RDS for simplest MVP deployment.
+**Estimated Monthly Cost (Low Traffic):**
+| Service | Cost |
+|---------|------|
+| Lambda | Free tier (1M requests/month) |
+| API Gateway | ~$1 per million requests |
+| Aurora Serverless v2 | ~$0.12/ACU-hour (scales down when idle) |
+| **Total** | ~$10-30/month for MVP traffic |
+
+### Deployment Commands
+
+```bash
+# Frontend - deploys to GitHub Pages
+npm run build
+# Or: Push to main branch (triggers GitHub Actions)
+
+# Backend - deploys to AWS
+npm run deploy:backend        # dev stage
+npm run deploy:backend:prod   # production stage
+```
+
+### Environment Configuration
+
+**Frontend** (`.env` or GitHub repo variables):
+```
+VITE_API_URL=https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
+BASE_PATH=/aristaeus  # For GitHub Pages subdirectory
+```
+
+**Backend** (`.env` or AWS Parameter Store):
+```
+DATABASE_URL=postgresql://user:pass@aurora-cluster.us-east-1.rds.amazonaws.com:5432/aristaeus
+```
+
+### Future Migration Path
+
+When ready for production with custom domain:
+1. Keep AWS backend unchanged
+2. Either:
+   - Add custom domain to GitHub Pages, OR
+   - Migrate frontend to AWS Amplify Hosting for SSR support
+3. Update CORS settings in `serverless.yml`
 
 ---
 

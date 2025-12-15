@@ -1,0 +1,149 @@
+# Aristaeus Backend - Serverless Configuration
+# AWS Lambda + API Gateway for Bowl Kitchen API
+
+service: aristaeus-api
+
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+
+  # Environment variables for all functions
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+    NODE_ENV: ${self:provider.stage}
+
+  # IAM permissions
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+
+  # API Gateway configuration
+  httpApi:
+    cors:
+      allowedOrigins:
+        - http://localhost:5173
+        - https://*.github.io
+        # Add your production domain here
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowCredentials: false
+
+# Plugins
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+
+# Custom configuration
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude:
+      - "@aws-sdk/*"
+    target: node20
+    platform: node
+    concurrency: 10
+
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+
+# Lambda Functions
+functions:
+  # ============================================
+  # User-Facing APIs
+  # ============================================
+
+  # GET /api/ingredients - Get available ingredients
+  getIngredients:
+    handler: src/handlers/ingredients.getIngredients
+    events:
+      - httpApi:
+          path: /api/ingredients
+          method: GET
+    description: Get all available ingredients with nutritional data
+
+  # POST /api/orders - Create a new order
+  createOrder:
+    handler: src/handlers/orders.createOrder
+    events:
+      - httpApi:
+          path: /api/orders
+          method: POST
+    description: Create a new bowl order
+
+  # GET /api/orders/{id} - Get order status
+  getOrder:
+    handler: src/handlers/orders.getOrder
+    events:
+      - httpApi:
+          path: /api/orders/{id}
+          method: GET
+    description: Get order details and status
+
+  # ============================================
+  # Robot-Facing APIs (Device Abstraction Layer)
+  # ============================================
+
+  # POST /api/robots/register - Register a robot
+  registerRobot:
+    handler: src/handlers/robots.registerRobot
+    events:
+      - httpApi:
+          path: /api/robots/register
+          method: POST
+    description: Register a new kitchen robot
+
+  # GET /api/robots/{robotId}/next-order - Get next order for robot
+  getNextOrder:
+    handler: src/handlers/robots.getNextOrder
+    events:
+      - httpApi:
+          path: /api/robots/{robotId}/next-order
+          method: GET
+    description: Robot polls for next assigned order
+
+  # POST /api/orders/{orderId}/status - Update order status
+  updateOrderStatus:
+    handler: src/handlers/orders.updateOrderStatus
+    events:
+      - httpApi:
+          path: /api/orders/{orderId}/status
+          method: POST
+    description: Robot updates order status
+
+  # POST /api/robots/{robotId}/heartbeat - Robot heartbeat
+  robotHeartbeat:
+    handler: src/handlers/robots.heartbeat
+    events:
+      - httpApi:
+          path: /api/robots/{robotId}/heartbeat
+          method: POST
+    description: Robot sends periodic heartbeat
+
+# Package configuration
+package:
+  individually: true
+  patterns:
+    - "!node_modules/.prisma/client/libquery_engine-*"
+    - "node_modules/.prisma/client/libquery_engine-rhel-*"
+    - "!node_modules/prisma/libquery_engine-*"
+    - "!node_modules/@prisma/engines/**"

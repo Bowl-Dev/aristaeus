@@ -12,14 +12,34 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 
 ---
 
+## Architecture
+
+```
+┌─────────────────────┐         ┌──────────────────────────────────┐
+│   GitHub Pages      │         │           AWS                    │
+│   (Static Frontend) │  HTTPS  │                                  │
+│                     │ ──────► │  API Gateway → Lambda → Aurora   │
+│   SvelteKit         │         │              (Prisma)  Serverless│
+│   adapter-static    │         │                                  │
+└─────────────────────┘         └──────────────────────────────────┘
+```
+
+### Why This Architecture?
+- **GitHub Pages**: Free hosting, no domain commitment needed for early development
+- **AWS Lambda + API Gateway**: Serverless, pay-per-use, scales automatically
+- **Aurora Serverless**: PostgreSQL-compatible, scales to near-zero, Prisma support
+
+---
+
 ## Technology Stack
 
 - **Monorepo:** npm workspaces
-- **Frontend:** SvelteKit 2.0 + TypeScript
-- **Backend:** SvelteKit API routes (Node.js)
-- **Database:** PostgreSQL (currently mocked for development)
-- **Deployment:** AWS (TBD)
-- **Device Communication:** Abstracted for future ESP32 integration
+- **Frontend:** SvelteKit 2.0 + TypeScript + Svelte 5 runes
+- **Frontend Deployment:** GitHub Pages (static adapter)
+- **Backend:** AWS Lambda + API Gateway (Serverless Framework)
+- **ORM:** Prisma
+- **Database:** PostgreSQL (Aurora Serverless v2 recommended)
+- **Validation:** Zod
 - **Shared Types:** `@aristaeus/shared` package
 
 ---
@@ -41,19 +61,38 @@ aristaeus/
 │   ├── FRONTEND_IMPLEMENTATION.md     # Frontend architecture & implementation guide
 │   ├── README.md                      # SvelteKit project readme
 │   ├── package.json                   # Frontend-specific dependencies
+│   ├── svelte.config.js               # SvelteKit config (adapter-static)
 │   ├── src/
 │   │   ├── routes/
-│   │   │   ├── +page.svelte          # Main bowl builder interface
-│   │   │   ├── +layout.svelte        # Layout wrapper
-│   │   │   └── (future: api/, order/ routes)
+│   │   │   ├── +page.svelte           # Main bowl builder interface
+│   │   │   ├── +layout.svelte         # Layout wrapper
+│   │   │   ├── +layout.ts             # Static rendering config
+│   │   │   └── admin/orders/          # Testing interface
 │   │   ├── lib/
-│   │   │   ├── assets/               # Static assets
-│   │   │   └── index.ts
+│   │   │   ├── api/
+│   │   │   │   └── client.ts          # API client for AWS backend
+│   │   │   ├── components/            # Svelte components
+│   │   │   ├── types/                 # Frontend-specific types
+│   │   │   └── i18n/                  # Internationalization
 │   │   └── app.d.ts
-│   ├── static/
-│   ├── svelte.config.js
-│   ├── tsconfig.json
-│   └── vite.config.ts
+│   └── static/
+│
+├── backend/                           # @aristaeus/backend workspace
+│   ├── package.json                   # Backend dependencies
+│   ├── serverless.yml                 # Serverless Framework config
+│   ├── tsconfig.json                  # Backend TypeScript config
+│   ├── prisma/
+│   │   ├── schema.prisma              # Database schema
+│   │   └── seed.ts                    # Database seed script
+│   └── src/
+│       ├── handlers/
+│       │   ├── ingredients.ts         # GET /api/ingredients
+│       │   ├── orders.ts              # Order CRUD handlers
+│       │   └── robots.ts              # Robot API handlers
+│       └── lib/
+│           ├── db.ts                  # Prisma client singleton
+│           ├── response.ts            # API response helpers
+│           └── nutrition.ts           # Server-side nutrition calc
 │
 ├── packages/
 │   └── shared/                        # @aristaeus/shared workspace
@@ -64,7 +103,9 @@ aristaeus/
 │           └── types/
 │               └── index.ts           # Shared TypeScript types
 │
-└── (future: backend/, database/, robots/)
+└── .github/
+    └── workflows/
+        └── deploy-frontend.yml        # GitHub Pages deployment
 ```
 
 ---
@@ -80,7 +121,6 @@ aristaeus/
 - Nutritional calculation requirements
 - Security considerations
 - Deployment architecture
-- Sample data and seed scripts
 
 **When to consult:** System architecture, database design, API contracts, business rules
 
@@ -90,11 +130,9 @@ aristaeus/
 **Detailed frontend implementation guide.**
 
 - TypeScript type definitions
-- Component specifications (IngredientSelector, NutritionalDisplay, OrderSummary)
-- State management patterns (Svelte stores)
+- Component specifications
+- State management patterns (Svelte 5 runes)
 - Nutritional calculation logic (client-side)
-- Page implementations
-- API route implementations
 - Styling guidelines
 - Validation rules
 
@@ -102,41 +140,31 @@ aristaeus/
 
 ---
 
-### 3. [frontend/README.md](./frontend/README.md)
-**SvelteKit project documentation.**
-
-- Development server setup
-- Build commands
-- Deployment information
-
-**When to consult:** Running the project, build processes
-
----
-
 ## Current Implementation Status
 
 ### ✅ Completed
-- Basic project structure (SvelteKit)
-- Main bowl builder page with ingredient selection
-- Ingredient mock data (17 ingredients across 5 categories)
+- Monorepo structure with npm workspaces
+- Frontend bowl builder page with ingredient selection
+- Ingredient mock data (16 ingredients across 5 categories)
 - Basic nutritional calculation logic
 - Customer name input
 - UI styling (responsive design)
+- **Backend Lambda handlers** (ingredients, orders, robots)
+- **Prisma database schema**
+- **Serverless Framework configuration**
+- **GitHub Pages deployment workflow**
+- **Static adapter configuration**
 
 ### 🚧 In Progress / Needs Work
-- **Bowl size selection** (250g, 320g, 480g) with capacity enforcement
-- **Real-time nutritional summary updates** (currently has bugs)
-- **Card-based ingredient UI** (currently list-based)
+- Bowl size selection (250g, 320g, 480g) with capacity enforcement
+- Real-time nutritional summary updates
 - Component architecture (needs refactoring per FRONTEND_IMPLEMENTATION.md)
-- State management (needs Svelte stores implementation)
-- API routes (currently mocked)
-- Order status page
-- Admin orders view (`/admin/orders`)
+- Connect frontend to backend API
 
 ### 📋 Not Started
-- Database integration (PostgreSQL)
-- Backend API implementation
-- Robot abstraction layer
+- AWS deployment (Lambda, API Gateway, Aurora)
+- Database provisioning
+- Robot abstraction layer testing
 - Authentication (out of scope for MVP)
 - Payment processing (out of scope for MVP)
 
@@ -157,7 +185,7 @@ aristaeus/
 - **UI feedback:** Show remaining capacity, prevent exceeding limit
 
 ### Ingredient Selection
-- **Minimum quantity:** 10g per ingredient (from PROJECT_SPEC.md:789)
+- **Minimum quantity:** 10g per ingredient
 - **Categories:** protein, base, vegetable, topping, dressing
 - **Availability:** Only show ingredients where `available = true`
 - **Sequence order:** Ingredients have assembly order for robot execution
@@ -171,109 +199,97 @@ pending → queued → assigned → preparing → ready → completed
 
 ---
 
-## Important Notes for AI Assistants
-
-### Nutritional Data Source
-- **Current:** Mocked data in `+page.svelte` (lines 33-60)
-- **Future:** Will be fetched from database via `/api/ingredients`
-- **Important:** Nutritional values tied to ingredient availability (same DB source)
-
-### What NOT to Implement (Out of Scope)
-- User authentication/accounts
-- Payment processing
-- Inventory/stock management
-- Order modifications/cancellations
-- Allergen tracking
-- Multi-bowl orders
-- Pricing logic (for now - will be based on bowl size later)
-
-### Temporary/Testing Features
-- `/admin/orders` route - temporary testing interface, DO NOT document in specs
-- Mock data - will be replaced with database queries
-- Console logs for order submission - will be replaced with API calls
-
-### Code Style & Patterns
-- **TypeScript:** Strict typing, use interfaces from FRONTEND_IMPLEMENTATION.md
-- **Svelte 5:** Use runes (`$state`, `$derived`, `$effect`) - already in use
-- **State Management:** Implement Svelte stores per FRONTEND_IMPLEMENTATION.md
-- **Reactivity:** Leverage Svelte's reactive system, avoid manual DOM manipulation
-- **Component Structure:** Follow single-responsibility principle
-
----
-
 ## Quick Reference: File Locations
 
-### Specifications
-- Overall system spec: `PROJECT_SPEC.md`
-- Frontend implementation guide: `frontend/FRONTEND_IMPLEMENTATION.md`
-- Frontend readme: `frontend/README.md`
+### Backend Code (`@aristaeus/backend`)
+- Lambda handlers: `backend/src/handlers/`
+- Prisma schema: `backend/prisma/schema.prisma`
+- Database seed: `backend/prisma/seed.ts`
+- Serverless config: `backend/serverless.yml`
+- Utilities: `backend/src/lib/`
+
+### Frontend Code (`@aristaeus/frontend`)
+- Main bowl builder: `frontend/src/routes/+page.svelte`
+- API client: `frontend/src/lib/api/client.ts`
+- Components: `frontend/src/lib/components/`
+- Static config: `frontend/src/routes/+layout.ts`
 
 ### Shared Package (`@aristaeus/shared`)
 - Types: `packages/shared/src/types/index.ts`
 - Main exports: `packages/shared/src/index.ts`
 
-### Frontend Code (`@aristaeus/frontend`)
-- Main bowl builder: `frontend/src/routes/+page.svelte`
-- Layout: `frontend/src/routes/+layout.svelte`
-- Stores: Will be at `frontend/src/lib/stores/bowl.ts` (not yet created)
-- Utils: Will be at `frontend/src/lib/utils/nutrition.ts` (not yet created)
-- Components: Will be at `frontend/src/lib/components/` (not yet created)
-
 ### Configuration
 - Root package.json: `package.json` (workspaces config)
-- Root TypeScript: `tsconfig.base.json` (shared TS config)
-- Frontend package: `frontend/package.json`
-- Frontend TypeScript: `frontend/tsconfig.json`
-- Svelte config: `frontend/svelte.config.js`
-- Vite config: `frontend/vite.config.ts`
+- Svelte config: `frontend/svelte.config.js` (adapter-static)
+- Serverless config: `backend/serverless.yml`
 
 ---
 
 ## Common Development Tasks
 
-### Initial Setup (from root directory)
+### Initial Setup
 ```bash
-npm install    # Installs all workspace dependencies
+npm install                    # Install all workspace dependencies
 ```
 
-### Running the Development Server
+### Running Development Servers
 ```bash
-npm run dev    # Runs frontend dev server
-```
-Access at: `http://localhost:5173`
+# Frontend (http://localhost:5173)
+npm run dev
 
-### Building for Production
+# Backend API (http://localhost:3000)
+npm run dev:backend
+```
+
+### Database Operations
 ```bash
-npm run build      # Build frontend
-npm run preview    # Preview production build
+npm run db:generate            # Generate Prisma client
+npm run db:push                # Push schema to database
+npm run db:migrate             # Create migration
+npm run db:seed                # Seed database with sample data
+npm run db:studio              # Open Prisma Studio GUI
 ```
 
-### Running TypeScript Checks
+### Building & Deployment
 ```bash
-npm run check      # Run svelte-check on frontend
+# Frontend build (for GitHub Pages)
+npm run build
+
+# Deploy backend to AWS
+npm run deploy:backend         # Deploy to dev stage
+npm run deploy:backend:prod    # Deploy to production
 ```
 
-### Working with Specific Workspaces
+### Environment Setup
+
+**Backend** (`backend/.env`):
 ```bash
-# Run any script in a specific workspace
-npm run <script> --workspace=frontend
-npm run <script> --workspace=@aristaeus/shared
-
-# Install a dependency to a specific workspace
-npm install <package> --workspace=frontend
+DATABASE_URL="postgresql://user:pass@host:5432/aristaeus"
 ```
 
-### Adding New Ingredients (Mock Data)
-Edit `frontend/src/routes/+page.svelte` lines 33-60
-
-### Modifying Nutritional Calculation
-Current location: `frontend/src/routes/+page.svelte` lines 79-103
-Future location: `frontend/src/lib/utils/nutrition.ts`
-
-### Using Shared Types in Frontend
-```typescript
-import type { Ingredient, BowlSize, NutritionalSummary } from '@aristaeus/shared';
+**Frontend** (`frontend/.env`):
+```bash
+VITE_API_URL=http://localhost:3000   # Local development
+# VITE_API_URL=https://xxx.execute-api.us-east-1.amazonaws.com  # Production
+BASE_PATH=/aristaeus                  # For GitHub Pages (repo name)
 ```
+
+---
+
+## API Endpoints Quick Reference
+
+### User-Facing
+- `GET /api/ingredients` - Get available ingredients
+- `POST /api/orders` - Create new order
+- `GET /api/orders/{id}` - Get order status
+
+### Robot-Facing
+- `POST /api/robots/register` - Register new robot
+- `GET /api/robots/{robotId}/next-order` - Poll for next order
+- `POST /api/orders/{orderId}/status` - Update order status
+- `POST /api/robots/{robotId}/heartbeat` - Send heartbeat
+
+Full API spec: See PROJECT_SPEC.md
 
 ---
 
@@ -289,7 +305,7 @@ available, display_order
 
 ### Orders Table
 ```sql
-id, status,
+id, bowl_size, customer_name, status,
 total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, total_weight_g,
 assigned_robot_id,
 created_at, assigned_at, started_at, completed_at
@@ -307,59 +323,77 @@ id, name, identifier, status,
 current_order_id, last_heartbeat
 ```
 
-Full schema: See PROJECT_SPEC.md lines 94-176
+Full schema: See `backend/prisma/schema.prisma`
 
 ---
 
-## API Endpoints Quick Reference
+## Deployment Guide
 
-### User-Facing
-- `GET /api/ingredients` - Get available ingredients
-- `POST /api/orders` - Create new order
-- `GET /api/orders/{id}` - Get order status
+### GitHub Pages (Frontend)
 
-### Robot-Facing (Future)
-- `POST /api/robots/register` - Register new robot
-- `GET /api/robots/{id}/next-order` - Poll for next order
-- `POST /api/orders/{id}/status` - Update order status
-- `POST /api/robots/{id}/heartbeat` - Send heartbeat
+1. **Automatic:** Push to `main` branch triggers GitHub Actions workflow
+2. **Manual:**
+   ```bash
+   cd frontend
+   npm run deploy:gh-pages
+   ```
 
-Full API spec: See PROJECT_SPEC.md lines 223-430
+3. **GitHub Settings:**
+   - Go to repo Settings → Pages
+   - Source: GitHub Actions
+   - Set `VITE_API_URL` in repo variables
+
+### AWS (Backend)
+
+1. **Prerequisites:**
+   - AWS CLI configured
+   - Serverless Framework installed (`npm i -g serverless`)
+   - Aurora Serverless database provisioned
+
+2. **Deploy:**
+   ```bash
+   # Set DATABASE_URL environment variable
+   export DATABASE_URL="postgresql://..."
+
+   # Generate Prisma client
+   npm run db:generate
+
+   # Deploy to AWS
+   npm run deploy:backend
+   ```
+
+3. **Update frontend:**
+   - Set `VITE_API_URL` to API Gateway URL
+   - Rebuild and deploy frontend
 
 ---
 
-## Known Issues & TODOs
+## Important Notes for AI Assistants
 
-### Critical Bugs
-1. **Nutritional summary not updating in real-time** - Reactivity issue in `+page.svelte`
+### What NOT to Implement (Out of Scope)
+- User authentication/accounts
+- Payment processing
+- Inventory/stock management
+- Order modifications/cancellations
+- Allergen tracking
+- Multi-bowl orders
+- Pricing logic (for now)
 
-### High Priority Features
-1. **Bowl size selection** - Add 250g/320g/480g size picker
-2. **Capacity enforcement** - Prevent exceeding selected bowl size
-3. **Card-based ingredient UI** - Replace list with card-based selection
-4. **Component refactoring** - Extract components per FRONTEND_IMPLEMENTATION.md
-5. **Admin orders view** - Create `/admin/orders` route for testing
+### Code Style & Patterns
+- **TypeScript:** Strict typing everywhere
+- **Svelte 5:** Use runes (`$state`, `$derived`, `$effect`)
+- **Backend:** Zod for validation, Prisma for database
+- **API:** Return JSON, use standard HTTP status codes
 
-### Medium Priority
-1. **API routes implementation** - Create SvelteKit API routes
-2. **Order status page** - Create `/order/[id]` route
-3. **State management** - Implement Svelte stores
-4. **Form validation** - Add client-side validation with error messages
+### Testing the Backend Locally
+```bash
+# Terminal 1: Start backend
+npm run dev:backend
 
-### Low Priority / Future
-1. **Database integration** - Connect to PostgreSQL
-2. **Robot API implementation** - Implement robot-facing endpoints
-3. **Order assignment algorithm** - Implement robot assignment logic
-
----
-
-## Contact & Questions
-
-For implementation questions:
-1. First consult the relevant specification document
-2. Check this CLAUDE.md for quick references
-3. Review existing code in `frontend/src/`
-4. Refer to [SvelteKit documentation](https://kit.svelte.dev/docs) for framework questions
+# Terminal 2: Test endpoints
+curl http://localhost:3000/api/ingredients
+curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json" -d '{"bowlSize":320,"items":[{"ingredientId":1,"quantityGrams":100}]}'
+```
 
 ---
 
@@ -369,9 +403,10 @@ For implementation questions:
 |------|---------|---------|
 | 2025-12-02 | 1.0 | Initial CLAUDE.md creation |
 | 2025-12-14 | 1.1 | Converted to npm workspaces monorepo, added `@aristaeus/shared` package |
+| 2025-12-14 | 2.0 | Added serverless backend (Lambda + Prisma), GitHub Pages deployment |
 
 ---
 
 **Last Updated:** 2025-12-14
-**Project Status:** Early MVP Development
-**Current Phase:** Frontend Implementation with Mock Data
+**Project Status:** MVP Development
+**Current Phase:** Backend Implementation + Frontend Static Deployment

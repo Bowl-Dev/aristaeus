@@ -1,8 +1,25 @@
 # Aristaeus Frontend - Implementation Guide
 
 **Project:** Automated Bowl Kitchen - Frontend
-**Framework:** SvelteKit 2.0 + TypeScript
-**Last Updated:** 2025-11-14
+**Framework:** SvelteKit 2.0 + TypeScript + Svelte 5
+**Deployment:** GitHub Pages (Static)
+**Last Updated:** 2025-12-14
+
+---
+
+## Architecture Overview
+
+The frontend is deployed as a **static site** to GitHub Pages and communicates with the AWS Lambda backend via HTTP API calls.
+
+```
+GitHub Pages (Static)  ──HTTP──►  AWS API Gateway  ──►  Lambda  ──►  Aurora
+```
+
+**Key Points:**
+- No server-side rendering (SSR) - fully client-side rendered (SPA)
+- API routes are NOT in the frontend - they're in the backend workspace
+- Uses `@sveltejs/adapter-static` for GitHub Pages deployment
+- API client handles all communication with AWS backend
 
 ---
 
@@ -14,35 +31,35 @@ frontend/
 ├── src/
 │   ├── routes/
 │   │   ├── +page.svelte              # Bowl builder (main page)
-│   │   ├── +page.ts                  # Load ingredients data
+│   │   ├── +layout.svelte            # Layout wrapper
+│   │   ├── +layout.ts                # Static rendering config (prerender, ssr=false)
 │   │   ├── order/
 │   │   │   └── [id]/
-│   │   │       ├── +page.svelte      # Order status page
-│   │   │       └── +page.ts          # Load order data
-│   │   └── api/
-│   │       ├── ingredients/
-│   │       │   └── +server.ts        # GET /api/ingredients
+│   │   │       └── +page.svelte      # Order status page
+│   │   └── admin/
 │   │       └── orders/
-│   │           ├── +server.ts        # POST /api/orders
-│   │           └── [id]/
-│   │               └── +server.ts    # GET /api/orders/{id}
+│   │           └── +page.svelte      # Admin testing interface
 │   ├── lib/
+│   │   ├── api/
+│   │   │   └── client.ts             # API client for AWS backend
 │   │   ├── components/
-│   │   │   ├── IngredientSelector.svelte
-│   │   │   ├── NutritionalDisplay.svelte
-│   │   │   └── OrderSummary.svelte
+│   │   │   ├── IngredientCard.svelte
+│   │   │   ├── BowlSizeSelector.svelte
+│   │   │   ├── NutritionalSummary.svelte
+│   │   │   └── CapacityBar.svelte
 │   │   ├── types/
 │   │   │   └── index.ts              # TypeScript interfaces
-│   │   ├── utils/
-│   │   │   └── nutrition.ts          # Nutrition calculation
-│   │   └── stores/
-│   │       └── bowl.ts               # Bowl state management (Svelte store)
+│   │   ├── i18n/
+│   │   │   └── index.ts              # Internationalization
+│   │   └── stores/                   # (optional) Svelte stores
 │   ├── app.html
 │   └── app.d.ts
 ├── static/
-│   └── favicon.png
+│   ├── .nojekyll                     # Prevents Jekyll processing on GitHub Pages
+│   └── robots.txt
+├── .env.example                      # Environment variable template
 ├── package.json
-├── svelte.config.js
+├── svelte.config.js                  # adapter-static configuration
 ├── tsconfig.json
 └── vite.config.ts
 ```
@@ -577,98 +594,104 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
 ---
 
-## API Route Implementations
+## API Client Implementation
 
-### GET /api/ingredients (src/routes/api/ingredients/+server.ts)
+The frontend communicates with the AWS Lambda backend via an API client. **There are no local API routes** - all API logic is in the `backend/` workspace.
+
+### API Client (src/lib/api/client.ts)
 
 ```typescript
-import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-// TODO: Import database client (e.g., pg, prisma, etc.)
+import type {
+  Ingredient,
+  CreateOrderRequest,
+  CreateOrderResponse,
+  OrderStatusResponse,
+} from '@aristaeus/shared';
 
-export const GET: RequestHandler = async () => {
-	// TODO: Replace with actual database query
-	// const ingredients = await db.query('SELECT * FROM ingredients WHERE available = true ORDER BY display_order, category, name');
-	
-	// Mock data for now
-	const ingredients = [
-		{
-			id: 1,
-			name: 'Grilled Chicken',
-			category: 'protein',
-			calories_per_100g: 165,
-			protein_g_per_100g: 31,
-			carbs_g_per_100g: 0,
-			fat_g_per_100g: 3.6,
-			fiber_g_per_100g: 0,
-			available: true
-		}
-		// ... more ingredients
-	];
-	
-	return json({ ingredients });
-};
+// API base URL - configured via environment variable
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+/**
+ * Custom API Error class
+ */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly details?: unknown
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+/**
+ * Fetch all available ingredients
+ */
+export async function getIngredients(): Promise<Ingredient[]> {
+  const response = await fetch(`${API_BASE_URL}/api/ingredients`);
+  if (!response.ok) throw new ApiError(response.status, 'Failed to fetch ingredients');
+  const data = await response.json();
+  return data.ingredients;
+}
+
+/**
+ * Create a new order
+ */
+export async function createOrder(order: CreateOrderRequest): Promise<CreateOrderResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new ApiError(response.status, error.message || 'Failed to create order');
+  }
+  return response.json();
+}
+
+/**
+ * Get order status by ID
+ */
+export async function getOrderStatus(orderId: number): Promise<OrderStatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`);
+  if (!response.ok) throw new ApiError(response.status, 'Order not found');
+  return response.json();
+}
 ```
 
-### POST /api/orders (src/routes/api/orders/+server.ts)
+### Environment Configuration
 
-```typescript
-import { json, error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import type { CreateOrderRequest, CreateOrderResponse } from '$lib/types';
-// TODO: Import database client
+Create `.env` file for local development:
+```bash
+# Local backend (serverless-offline)
+VITE_API_URL=http://localhost:3000
 
-export const POST: RequestHandler = async ({ request }) => {
-	const payload: CreateOrderRequest = await request.json();
-	
-	// Validate payload
-	if (!payload.items || payload.items.length === 0) {
-		throw error(400, 'Order must contain at least one item');
-	}
-	
-	// TODO: Server-side nutritional recalculation and validation
-	// TODO: Check ingredient availability
-	// TODO: Insert order into database
-	// TODO: Attempt robot assignment
-	
-	// Mock response
-	const orderResponse: CreateOrderResponse = {
-		order_id: 42,
-		status: 'pending',
-		created_at: new Date().toISOString()
-	};
-	
-	return json(orderResponse, { status: 201 });
-};
+# Production (AWS API Gateway) - set in GitHub repo variables
+# VITE_API_URL=https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
 ```
 
-### GET /api/orders/[id] (src/routes/api/orders/[id]/+server.ts)
+### Usage in Components
 
-```typescript
-import { json, error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import type { Order } from '$lib/types';
-// TODO: Import database client
+```svelte
+<script lang="ts">
+  import { getIngredients, createOrder, ApiError } from '$lib/api/client';
+  import { onMount } from 'svelte';
 
-export const GET: RequestHandler = async ({ params }) => {
-	const orderId = parseInt(params.id);
-	
-	if (isNaN(orderId)) {
-		throw error(400, 'Invalid order ID');
-	}
-	
-	// TODO: Fetch order from database with joins for items
-	// const order = await db.getOrderById(orderId);
-	
-	// Mock response
-	const order: Order = {
-		id: orderId,
-		status: 'preparing',
-		created_at: new Date().toISOString()
-	};
-	
-	return json(order);
-};
+  let ingredients = $state<Ingredient[]>([]);
+  let error = $state<string | null>(null);
+
+  onMount(async () => {
+    try {
+      ingredients = await getIngredients();
+    } catch (e) {
+      if (e instanceof ApiError) {
+        error = e.message;
+      }
+    }
+  });
+</script>
 ```
 
 ---
@@ -765,15 +788,73 @@ const validationErrors = {
 
 ## Environment Variables
 
-Create `.env` file (not committed):
+Create `.env` file (not committed) - see `.env.example` for template:
 
 ```bash
-# API Configuration (if backend is separate)
-PUBLIC_API_URL=http://localhost:5173
+# API URL for the AWS Lambda backend
+# Development (local serverless-offline):
+VITE_API_URL=http://localhost:3000
 
-# Database (for API routes)
-DATABASE_URL=postgresql://user:password@localhost:5432/aristaeus
+# Production (AWS API Gateway):
+# VITE_API_URL=https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
+
+# Base path for GitHub Pages deployment (if not using custom domain)
+# For https://username.github.io/aristaeus/, set:
+# BASE_PATH=/aristaeus
 ```
+
+**Note:** The `VITE_` prefix is required for Vite to expose the variable to client-side code.
+
+---
+
+## Deployment
+
+### GitHub Pages Configuration
+
+The frontend uses `@sveltejs/adapter-static` for static site generation.
+
+**svelte.config.js:**
+```javascript
+import adapter from '@sveltejs/adapter-static';
+
+const config = {
+  kit: {
+    adapter: adapter({
+      pages: 'build',
+      assets: 'build',
+      fallback: 'index.html', // SPA fallback
+      precompress: false,
+      strict: true
+    }),
+    paths: {
+      base: process.env.BASE_PATH || ''
+    }
+  }
+};
+```
+
+**+layout.ts (required for static adapter):**
+```typescript
+export const prerender = true;
+export const ssr = false;
+```
+
+### Deployment Methods
+
+**1. Automatic (GitHub Actions):**
+Push to `main` branch triggers `.github/workflows/deploy-frontend.yml`
+
+**2. Manual:**
+```bash
+cd frontend
+npm run deploy:gh-pages
+```
+
+### GitHub Repository Settings
+
+1. Go to Settings → Pages
+2. Source: "GitHub Actions"
+3. Add repository variable: `VITE_API_URL` with your API Gateway URL
 
 ---
 
