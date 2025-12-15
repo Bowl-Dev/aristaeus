@@ -25,19 +25,9 @@ resource "aws_apigatewayv2_stage" "default" {
   name        = "$default"
   auto_deploy = true
 
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway.arn
-    format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      routeKey       = "$context.routeKey"
-      status         = "$context.status"
-      responseLength = "$context.responseLength"
-      errorMessage   = "$context.error.message"
-    })
-  }
+  # Note: Access logging disabled - requires additional IAM permissions:
+  # logs:CreateLogDelivery, logs:DeleteLogDelivery, logs:GetLogDelivery, etc.
+  # Add these to the GitHub Actions role to re-enable logging
 
   tags = {
     Project     = var.project_name
