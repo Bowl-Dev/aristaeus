@@ -18,6 +18,15 @@ const config = {
 		// For custom domain or root deployment, use ''
 		paths: {
 			base: process.env.BASE_PATH || ''
+		},
+		prerender: {
+			handleHttpError: ({ path, message }) => {
+				// Ignore missing favicon errors
+				if (path === '/favicon.png') {
+					return;
+				}
+				throw new Error(message);
+			}
 		}
 	}
 };
