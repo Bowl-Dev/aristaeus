@@ -1,0 +1,20 @@
+{
+  "name": "aristaeus",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "preview": "npm run preview --workspace=frontend",
+    "check": "npm run check --workspace=frontend",
+    "check:watch": "npm run check:watch --workspace=frontend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

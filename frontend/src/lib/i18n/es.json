@@ -1,0 +1,72 @@
+{
+  "app": {
+    "title": "Constructor de Bowls Aristaeus",
+    "subtitle": "Crea tu bowl personalizado"
+  },
+  "customerInfo": {
+    "title": "Tu Información",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Ingresa tu nombre"
+  },
+  "bowlSize": {
+    "title": "Selecciona el Tamaño del Bowl",
+    "small": "Pequeño",
+    "medium": "Mediano",
+    "large": "Grande"
+  },
+  "ingredients": {
+    "title": "Construye Tu Bowl",
+    "categories": {
+      "protein": "Proteínas",
+      "base": "Bases",
+      "vegetable": "Vegetales",
+      "topping": "Toppings",
+      "dressing": "Aderezos"
+    },
+    "names": {
+      "Chicken": "Pollo",
+      "Salmon": "Salmón",
+      "Rice": "Arroz",
+      "Quinoa": "Quinoa",
+      "Cherry Tomatoes": "Tomate Cherry",
+      "Mango": "Mango",
+      "Carrot": "Zanahoria",
+      "Onion": "Cebolla",
+      "Avocado": "Aguacate",
+      "Corn": "Maíz",
+      "Cucumber": "Pepino",
+      "Mozzarella": "Queso Mozzarella",
+      "Green Onion": "Cebolla Larga",
+      "Peanuts": "Maní",
+      "Teriyaki": "Teriyaki",
+      "Olive Oil Balsamic": "Aceite de Oliva y Balsámico"
+    }
+  },
+  "ingredientCard": {
+    "cal": "cal",
+    "protein": "proteína",
+    "quantity": "Cantidad:",
+    "grams": "gramos",
+    "clickToAdd": "Clic para agregar",
+    "remove": "Quitar {name}"
+  },
+  "nutrition": {
+    "title": "Resumen Nutricional",
+    "totalWeight": "Peso Total",
+    "calories": "Calorías",
+    "protein": "Proteína",
+    "carbs": "Carbohidratos",
+    "fat": "Grasa",
+    "fiber": "Fibra"
+  },
+  "capacity": {
+    "title": "Capacidad del Bowl",
+    "exceeded": "¡Capacidad del bowl excedida por {amount}g!",
+    "remaining": "{amount}g restantes",
+    "onlyRemaining": "Solo {amount}g restantes"
+  },
+  "order": {
+    "submit": "Enviar Pedido",
+    "submitted": "¡Pedido enviado para {name}!\n\nTamaño del Bowl: {size}g\nTotal: {weight}g\nCalorías: {calories}"
+  }
+}
