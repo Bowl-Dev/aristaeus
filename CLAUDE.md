@@ -19,14 +19,15 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 │   GitHub Pages      │         │           AWS                    │
 │   (Static Frontend) │  HTTPS  │                                  │
 │                     │ ──────► │  API Gateway → Lambda → Aurora   │
-│   SvelteKit         │         │              (Prisma)  Serverless│
-│   adapter-static    │         │                                  │
+│   SvelteKit         │         │              (Prisma)            │
+│   adapter-static    │         │         (Terraform)              │
 └─────────────────────┘         └──────────────────────────────────┘
 ```
 
 ### Why This Architecture?
 - **GitHub Pages**: Free hosting, no domain commitment needed for early development
 - **AWS Lambda + API Gateway**: Serverless, pay-per-use, scales automatically
+- **Terraform**: Infrastructure as code for AWS deployments
 - **Aurora Serverless**: PostgreSQL-compatible, scales to near-zero, Prisma support
 
 ---
@@ -36,7 +37,9 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 - **Monorepo:** npm workspaces
 - **Frontend:** SvelteKit 2.0 + TypeScript + Svelte 5 runes
 - **Frontend Deployment:** GitHub Pages (static adapter)
-- **Backend:** AWS Lambda + API Gateway (Serverless Framework)
+- **Backend:** AWS Lambda + API Gateway (deployed via Terraform)
+- **Infrastructure:** Terraform
+- **Local Development:** Express dev server wrapping Lambda handlers
 - **ORM:** Prisma
 - **Database:** PostgreSQL (Aurora Serverless v2 recommended)
 - **Validation:** Zod
@@ -79,12 +82,22 @@ aristaeus/
 │
 ├── backend/                           # @aristaeus/backend workspace
 │   ├── package.json                   # Backend dependencies
-│   ├── serverless.yml                 # Serverless Framework config
 │   ├── tsconfig.json                  # Backend TypeScript config
 │   ├── prisma/
 │   │   ├── schema.prisma              # Database schema
 │   │   └── seed.ts                    # Database seed script
+│   ├── infra/                         # Terraform infrastructure
+│   │   ├── main.tf                    # Main Terraform config
+│   │   ├── lambda.tf                  # Lambda function definitions
+│   │   ├── api_gateway.tf             # API Gateway configuration
+│   │   ├── iam.tf                     # IAM roles and policies
+│   │   ├── variables.tf               # Terraform variables
+│   │   ├── outputs.tf                 # Terraform outputs
+│   │   └── backend.tf                 # Terraform backend config
+│   ├── scripts/
+│   │   └── build-lambda.js            # Lambda build script
 │   └── src/
+│       ├── dev-server.ts              # Express dev server for local development
 │       ├── handlers/
 │       │   ├── ingredients.ts         # GET /api/ingredients
 │       │   ├── orders.ts              # Order CRUD handlers
@@ -151,7 +164,8 @@ aristaeus/
 - UI styling (responsive design)
 - **Backend Lambda handlers** (ingredients, orders, robots)
 - **Prisma database schema**
-- **Serverless Framework configuration**
+- **Terraform infrastructure configuration**
+- **Express dev server for local development**
 - **GitHub Pages deployment workflow**
 - **Static adapter configuration**
 
@@ -203,9 +217,10 @@ pending → queued → assigned → preparing → ready → completed
 
 ### Backend Code (`@aristaeus/backend`)
 - Lambda handlers: `backend/src/handlers/`
+- Dev server: `backend/src/dev-server.ts`
 - Prisma schema: `backend/prisma/schema.prisma`
 - Database seed: `backend/prisma/seed.ts`
-- Serverless config: `backend/serverless.yml`
+- Terraform infra: `backend/infra/`
 - Utilities: `backend/src/lib/`
 
 ### Frontend Code (`@aristaeus/frontend`)
@@ -221,7 +236,7 @@ pending → queued → assigned → preparing → ready → completed
 ### Configuration
 - Root package.json: `package.json` (workspaces config)
 - Svelte config: `frontend/svelte.config.js` (adapter-static)
-- Serverless config: `backend/serverless.yml`
+- Terraform config: `backend/infra/*.tf`
 
 ---
 
@@ -255,9 +270,13 @@ npm run db:studio              # Open Prisma Studio GUI
 # Frontend build (for GitHub Pages)
 npm run build
 
-# Deploy backend to AWS
-npm run deploy:backend         # Deploy to dev stage
-npm run deploy:backend:prod    # Deploy to production
+# Build Lambda package for AWS deployment
+npm run build:backend          # Creates dist/lambda.zip
+
+# Deploy backend to AWS (via Terraform)
+cd backend/infra
+terraform init
+terraform apply
 ```
 
 ### Environment Setup
@@ -343,27 +362,42 @@ Full schema: See `backend/prisma/schema.prisma`
    - Source: GitHub Actions
    - Set `VITE_API_URL` in repo variables
 
-### AWS (Backend)
+### AWS (Backend via Terraform)
 
 1. **Prerequisites:**
-   - AWS CLI configured
-   - Serverless Framework installed (`npm i -g serverless`)
+   - AWS CLI configured with appropriate credentials
+   - Terraform installed (`brew install terraform` or download from terraform.io)
    - Aurora Serverless database provisioned
 
-2. **Deploy:**
+2. **Build Lambda package:**
    ```bash
-   # Set DATABASE_URL environment variable
-   export DATABASE_URL="postgresql://..."
-
    # Generate Prisma client
    npm run db:generate
 
-   # Deploy to AWS
-   npm run deploy:backend
+   # Build Lambda zip
+   npm run build:backend
    ```
 
-3. **Update frontend:**
-   - Set `VITE_API_URL` to API Gateway URL
+3. **Deploy with Terraform:**
+   ```bash
+   cd backend/infra
+
+   # Initialize Terraform
+   terraform init
+
+   # Create terraform.tfvars with your values
+   echo 'database_url = "postgresql://user:pass@host:5432/aristaeus"' > terraform.tfvars
+
+   # Plan and review changes
+   terraform plan
+
+   # Apply infrastructure
+   terraform apply
+   ```
+
+4. **Update frontend:**
+   - Get API Gateway URL from Terraform output: `terraform output api_gateway_url`
+   - Set `VITE_API_URL` to the API Gateway URL
    - Rebuild and deploy frontend
 
 ---
@@ -404,9 +438,10 @@ curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json
 | 2025-12-02 | 1.0 | Initial CLAUDE.md creation |
 | 2025-12-14 | 1.1 | Converted to npm workspaces monorepo, added `@aristaeus/shared` package |
 | 2025-12-14 | 2.0 | Added serverless backend (Lambda + Prisma), GitHub Pages deployment |
+| 2025-12-15 | 2.1 | Migrated from Serverless Framework to Terraform, added Express dev server |
 
 ---
 
-**Last Updated:** 2025-12-14
+**Last Updated:** 2025-12-15
 **Project Status:** MVP Development
 **Current Phase:** Backend Implementation + Frontend Static Deployment

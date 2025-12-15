@@ -16,8 +16,6 @@
     "preview": "npm run preview --workspace=frontend",
     "check": "npm run check --workspace=frontend",
     "check:watch": "npm run check:watch --workspace=frontend",
-    "deploy:backend": "npm run deploy --workspace=@aristaeus/backend",
-    "deploy:backend:prod": "npm run deploy:prod --workspace=@aristaeus/backend",
     "db:generate": "npm run db:generate --workspace=@aristaeus/backend",
     "db:push": "npm run db:push --workspace=@aristaeus/backend",
     "db:migrate": "npm run db:migrate --workspace=@aristaeus/backend",
@@ -26,8 +24,5 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "devDependencies": {
-    "serverless": "^3.40.0"
   }
 }

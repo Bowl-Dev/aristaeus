@@ -4,10 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "serverless offline start",
-    "build": "tsc",
-    "deploy": "serverless deploy",
-    "deploy:prod": "serverless deploy --stage prod",
+    "dev": "tsx watch src/dev-server.ts",
+    "build": "tsc && node scripts/build-lambda.js",
+    "build:lambda": "node scripts/build-lambda.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -24,12 +23,13 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
+    "cors": "^2.8.5",
     "esbuild": "^0.24.0",
+    "express": "^4.21.0",
     "prisma": "^5.22.0",
-    "serverless": "^4.4.9",
-    "serverless-esbuild": "^1.54.3",
-    "serverless-offline": "^14.3.3",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
