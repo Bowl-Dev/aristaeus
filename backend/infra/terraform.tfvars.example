@@ -1,0 +1,15 @@
+# Example Terraform variables
+# Copy this to terraform.tfvars and fill in your values
+
+aws_region   = "us-east-1"
+environment  = "dev"
+project_name = "aristaeus"
+
+# Your database URL (use single quotes in shell, escape special characters)
+database_url = "postgresql://user:password@host:5432/aristaeus?schema=public"
+
+# CORS allowed origins
+cors_allowed_origins = [
+  "http://localhost:5173",
+  "https://yourusername.github.io"
+]

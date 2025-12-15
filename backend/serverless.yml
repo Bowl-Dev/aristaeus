@@ -3,7 +3,7 @@
 
 service: aristaeus-api
 
-frameworkVersion: "4"
+# frameworkVersion: "^3"
 
 provider:
   name: aws

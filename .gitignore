@@ -44,3 +44,14 @@ coverage
 
 # TypeScript
 *.tsbuildinfo
+
+# Serverless Framework
+.serverless
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+tfplan
+*.tfplan
