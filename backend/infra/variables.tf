@@ -29,6 +29,6 @@ variable "cors_allowed_origins" {
   type        = list(string)
   default = [
     "http://localhost:5173",
-    "https://*.github.io"
+    "https://bowl-dev.github.io"
   ]
 }
