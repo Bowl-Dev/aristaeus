@@ -104,6 +104,25 @@ jobs:
             -backend-config="encrypt=true" \
             -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}"
 
+      - name: Force unlock stale state lock
+        working-directory: backend/infra
+        continue-on-error: true
+        run: |
+          # Get lock info if any exists
+          LOCK_ID=$(aws dynamodb scan \
+            --table-name ${{ vars.TF_LOCK_TABLE }} \
+            --filter-expression "contains(LockID, :path)" \
+            --expression-attribute-values '{":path":{"S":"backend/${{ github.event.inputs.environment || 'dev' }}/terraform.tfstate"}}' \
+            --query 'Items[0].LockID.S' \
+            --output text 2>/dev/null || echo "")
+
+          if [ -n "$LOCK_ID" ] && [ "$LOCK_ID" != "None" ]; then
+            echo "Found stale lock, attempting to force unlock..."
+            terraform force-unlock -force "$LOCK_ID" || true
+          else
+            echo "No stale lock found"
+          fi
+
       - name: Terraform Format Check
         working-directory: backend/infra
         run: terraform fmt -check
@@ -189,6 +208,25 @@ jobs:
             -backend-config="region=${{ env.AWS_REGION }}" \
             -backend-config="encrypt=true" \
             -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}"
+
+      - name: Force unlock stale state lock
+        working-directory: backend/infra
+        continue-on-error: true
+        run: |
+          # Get lock info if any exists
+          LOCK_ID=$(aws dynamodb scan \
+            --table-name ${{ vars.TF_LOCK_TABLE }} \
+            --filter-expression "contains(LockID, :path)" \
+            --expression-attribute-values '{":path":{"S":"backend/${{ github.event.inputs.environment || 'dev' }}/terraform.tfstate"}}' \
+            --query 'Items[0].LockID.S' \
+            --output text 2>/dev/null || echo "")
+
+          if [ -n "$LOCK_ID" ] && [ "$LOCK_ID" != "None" ]; then
+            echo "Found stale lock, attempting to force unlock..."
+            terraform force-unlock -force "$LOCK_ID" || true
+          else
+            echo "No stale lock found"
+          fi
 
       - name: Terraform Apply
         working-directory: backend/infra
