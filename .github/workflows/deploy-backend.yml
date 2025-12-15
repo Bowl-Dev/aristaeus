@@ -1,0 +1,215 @@
+# GitHub Actions workflow for deploying backend infrastructure
+# Uses Terraform to manage AWS Lambda + API Gateway
+
+name: Deploy Backend Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'packages/shared/**'
+      - '.github/workflows/deploy-backend.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'packages/shared/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write  # Required for OIDC authentication with AWS
+
+env:
+  TF_VERSION: '1.6.0'
+  NODE_VERSION: '20'
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  build:
+    name: Build Lambda Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Lambda package
+        run: |
+          chmod +x backend/scripts/build-lambda.sh
+          ./backend/scripts/build-lambda.sh
+
+      - name: Upload Lambda artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-package
+          path: backend/dist/lambda.zip
+          retention-days: 1
+
+  terraform-plan:
+    name: Terraform Plan
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Lambda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-package
+          path: backend/dist
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: backend/infra
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=backend/${{ github.event.inputs.environment || 'dev' }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="encrypt=true" \
+            -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}"
+
+      - name: Terraform Format Check
+        working-directory: backend/infra
+        run: terraform fmt -check
+        continue-on-error: true
+
+      - name: Terraform Validate
+        working-directory: backend/infra
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: backend/infra
+        run: |
+          terraform plan -no-color -out=tfplan \
+            -var="database_url=${{ secrets.DATABASE_URL }}" \
+            -var="environment=${{ github.event.inputs.environment || 'dev' }}" \
+            -var="aws_region=${{ env.AWS_REGION }}"
+        continue-on-error: true
+
+      - name: Post Plan to PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "${{ steps.plan.outputs.stdout }}"
+        with:
+          script: |
+            const output = `#### Terraform Plan 📖
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  terraform-apply:
+    name: Terraform Apply
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Lambda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-package
+          path: backend/dist
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: backend/infra
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=backend/${{ github.event.inputs.environment || 'dev' }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="encrypt=true" \
+            -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}"
+
+      - name: Terraform Apply
+        working-directory: backend/infra
+        run: |
+          terraform apply -auto-approve \
+            -var="database_url=${{ secrets.DATABASE_URL }}" \
+            -var="environment=${{ github.event.inputs.environment || 'dev' }}" \
+            -var="aws_region=${{ env.AWS_REGION }}"
+
+      - name: Get API Gateway URL
+        id: outputs
+        working-directory: backend/infra
+        run: |
+          API_URL=$(terraform output -raw api_gateway_url)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "API Gateway URL: $API_URL"
+
+      - name: Summary
+        run: |
+          echo "## Deployment Complete! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**API Gateway URL:** ${{ steps.outputs.outputs.api_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
