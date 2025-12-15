@@ -120,7 +120,7 @@
 						<div class="order-details">
 							<h3>Ingredients</h3>
 							<div class="ingredients-list">
-								{#each order.items.sort((a, b) => a.sequenceOrder - b.sequenceOrder) as item}
+								{#each order.items.toSorted((a, b) => a.sequenceOrder - b.sequenceOrder) as item}
 									<div class="ingredient-row">
 										<span class="seq-number">{item.sequenceOrder}.</span>
 										<span class="ingredient-name">{item.ingredientName}</span>
