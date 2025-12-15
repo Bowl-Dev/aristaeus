@@ -4,8 +4,10 @@
 resource "aws_cloudwatch_log_group" "lambda_logs" {
   for_each = toset([
     "getIngredients",
+    "listOrders",
     "createOrder",
     "getOrder",
+    "adminUpdateOrderStatus",
     "registerRobot",
     "getNextOrder",
     "updateOrderStatus",
@@ -78,6 +80,58 @@ resource "aws_lambda_function" "get_order" {
   function_name = "${var.project_name}-getOrder-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
   handler       = "handlers/orders.getOrder"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "list_orders" {
+  function_name = "${var.project_name}-listOrders-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/orders.listOrders"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "admin_update_order_status" {
+  function_name = "${var.project_name}-adminUpdateOrderStatus-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/orders.adminUpdateOrderStatus"
   runtime       = "nodejs20.x"
   timeout       = 30
   memory_size   = 256

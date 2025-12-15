@@ -71,6 +71,20 @@ resource "aws_apigatewayv2_integration" "get_order" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "list_orders" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.list_orders.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "admin_update_order_status" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.admin_update_order_status.invoke_arn
+  payload_format_version = "2.0"
+}
+
 resource "aws_apigatewayv2_integration" "register_robot" {
   api_id                 = aws_apigatewayv2_api.main.id
   integration_type       = "AWS_PROXY"
@@ -117,11 +131,25 @@ resource "aws_apigatewayv2_route" "create_order" {
   target    = "integrations/${aws_apigatewayv2_integration.create_order.id}"
 }
 
+# GET /api/orders (list all - admin)
+resource "aws_apigatewayv2_route" "list_orders" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/orders"
+  target    = "integrations/${aws_apigatewayv2_integration.list_orders.id}"
+}
+
 # GET /api/orders/{id}
 resource "aws_apigatewayv2_route" "get_order" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /api/orders/{id}"
   target    = "integrations/${aws_apigatewayv2_integration.get_order.id}"
+}
+
+# PUT /api/orders/{orderId}/status (admin update)
+resource "aws_apigatewayv2_route" "admin_update_order_status" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /api/orders/{orderId}/status"
+  target    = "integrations/${aws_apigatewayv2_integration.admin_update_order_status.id}"
 }
 
 # POST /api/robots/register
@@ -176,6 +204,22 @@ resource "aws_lambda_permission" "get_order" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_order.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "list_orders" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.list_orders.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "admin_update_order_status" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.admin_update_order_status.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
