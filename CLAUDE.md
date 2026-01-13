@@ -155,32 +155,44 @@ aristaeus/
 
 ## Current Implementation Status
 
-### ✅ Completed
+### ✅ Completed (MVP Functional)
 - Monorepo structure with npm workspaces
-- Frontend bowl builder page with ingredient selection
-- Ingredient mock data (16 ingredients across 5 categories)
-- Basic nutritional calculation logic
-- Customer name input
-- UI styling (responsive design)
-- **Backend Lambda handlers** (ingredients, orders, robots)
-- **Prisma database schema**
-- **Terraform infrastructure configuration**
-- **Express dev server for local development**
-- **GitHub Pages deployment workflow**
-- **Static adapter configuration**
+- **Frontend bowl builder** - fully functional with API integration
+  - Ingredient selection from database
+  - Bowl size selection (250g, 320g, 600g) with capacity enforcement
+  - Real-time nutritional summary calculation
+  - Customer name input
+  - Order submission to backend API
+  - Loading, error, and success states
+  - Internationalization (English/Spanish)
+- **Admin orders page** (`/admin/orders`)
+  - View all orders from database
+  - Update order status via dropdown
+  - Real-time refresh functionality
+- **Backend Lambda handlers** (fully deployed to AWS)
+  - `GET /api/ingredients` - fetch available ingredients
+  - `GET /api/orders` - list all orders (admin)
+  - `POST /api/orders` - create new order
+  - `GET /api/orders/{id}` - get order details
+  - `PUT /api/orders/{orderId}/status` - admin status update
+  - `POST /api/orders/{orderId}/status` - robot status update
+  - Robot registration, heartbeat, and next-order endpoints
+- **Prisma database schema** with PostgreSQL
+- **Terraform infrastructure** for AWS deployment
+- **CI/CD Pipelines**
+  - GitHub Actions for frontend deployment to GitHub Pages
+  - GitHub Actions for backend deployment via Terraform
+- **Express dev server** for local development
 
-### 🚧 In Progress / Needs Work
-- Bowl size selection (250g, 320g, 480g) with capacity enforcement
-- Real-time nutritional summary updates
-- Component architecture (needs refactoring per FRONTEND_IMPLEMENTATION.md)
-- Connect frontend to backend API
-
-### 📋 Not Started
-- AWS deployment (Lambda, API Gateway, Aurora)
-- Database provisioning
-- Robot abstraction layer testing
-- Authentication (out of scope for MVP)
-- Payment processing (out of scope for MVP)
+### 📋 Not Started (Out of Scope for MVP)
+- Robot abstraction layer testing with actual ESP32 devices
+- User authentication/accounts
+- Payment processing
+- Inventory/stock management
+- Order modifications/cancellations
+- Allergen tracking
+- Multi-bowl orders
+- Pricing logic
 
 ---
 
@@ -302,10 +314,14 @@ BASE_PATH=/aristaeus                  # For GitHub Pages (repo name)
 - `POST /api/orders` - Create new order
 - `GET /api/orders/{id}` - Get order status
 
+### Admin
+- `GET /api/orders` - List all orders (admin view)
+- `PUT /api/orders/{orderId}/status` - Update order status (admin)
+
 ### Robot-Facing
 - `POST /api/robots/register` - Register new robot
 - `GET /api/robots/{robotId}/next-order` - Poll for next order
-- `POST /api/orders/{orderId}/status` - Update order status
+- `POST /api/orders/{orderId}/status` - Update order status (robot)
 - `POST /api/robots/{robotId}/heartbeat` - Send heartbeat
 
 Full API spec: See PROJECT_SPEC.md
@@ -439,9 +455,10 @@ curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json
 | 2025-12-14 | 1.1 | Converted to npm workspaces monorepo, added `@aristaeus/shared` package |
 | 2025-12-14 | 2.0 | Added serverless backend (Lambda + Prisma), GitHub Pages deployment |
 | 2025-12-15 | 2.1 | Migrated from Serverless Framework to Terraform, added Express dev server |
+| 2026-01-09 | 3.0 | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed |
 
 ---
 
-**Last Updated:** 2025-12-15
-**Project Status:** MVP Development
-**Current Phase:** Backend Implementation + Frontend Static Deployment
+**Last Updated:** 2026-01-09
+**Project Status:** MVP Complete
+**Current Phase:** Production Ready (Robot integration pending)

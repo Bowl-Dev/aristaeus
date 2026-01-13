@@ -1,8 +1,8 @@
 # Automated Bowl Kitchen - MVP Technical Specification
 
-**Version:** 1.0
-**Date:** 2025-11-13
-**Status:** Draft - Ready for Implementation
+**Version:** 2.0
+**Date:** 2026-01-09
+**Status:** MVP Complete - Production Ready
 
 ---
 
@@ -17,30 +17,32 @@ An automated bowl ordering system where users customize bowls through a web inte
 ### Architecture Diagram
 
 ```
-┌─────────────┐
-│   User      │
-│  (Browser)  │
-└──────┬──────┘
-       │
-       ├─> SvelteKit Frontend (Nutritional Calculation)
-       │
-       ├─> SvelteKit API Routes
-       │
-       ├─> PostgreSQL Database
-       │
-       └─> Device Abstraction Layer
-                   │
-                   └─> [Future: ESP32 Kitchen Robots]
-                   └─> [MVP: Mock API for Testing]
+┌─────────────────────┐         ┌──────────────────────────────────┐
+│   GitHub Pages      │         │           AWS                    │
+│   (Static Frontend) │  HTTPS  │                                  │
+│                     │ ──────► │  API Gateway → Lambda → Aurora   │
+│   SvelteKit         │         │              (Prisma)            │
+│   adapter-static    │         │         (Terraform)              │
+└─────────────────────┘         └──────────────────────────────────┘
+                                            │
+                                            ▼
+                                ┌─────────────────────┐
+                                │   Device Layer      │
+                                │ (HTTP Polling API)  │
+                                │                     │
+                                │ [ESP32 Robots]      │
+                                └─────────────────────┘
 ```
 
 ### Technology Stack
 
-- **Frontend:** SvelteKit (reactive UI, SSR capable)
-- **Backend:** SvelteKit API routes (Node.js)
-- **Database:** PostgreSQL
-- **Deployment:** AWS (specific service TBD)
-- **Device Communication:** Abstracted (HTTP polling recommended for ESP32 future implementation)
+- **Frontend:** SvelteKit 2.0 + TypeScript + Svelte 5 runes (static site)
+- **Backend:** AWS Lambda + API Gateway (serverless)
+- **Database:** PostgreSQL (Aurora Serverless v2)
+- **ORM:** Prisma
+- **Infrastructure:** Terraform
+- **Deployment:** GitHub Pages (frontend), AWS (backend)
+- **Device Communication:** HTTP polling API for ESP32 robots
 
 ---
 
@@ -323,9 +325,56 @@ Retrieves order details and current status.
 
 ---
 
+### Admin APIs
+
+#### GET `/api/orders`
+Returns all orders (admin view).
+
+**Response:**
+```json
+{
+  "orders": [
+    {
+      "id": 42,
+      "bowlSize": 480,
+      "customerName": "John",
+      "status": "preparing",
+      "items": [...],
+      "totalWeightG": 300,
+      "totalCalories": 450,
+      "assignedRobotId": 1,
+      "createdAt": "2025-11-13T10:30:00Z"
+    }
+  ]
+}
+```
+
+#### PUT `/api/orders/{orderId}/status`
+Admin updates order status (no robot validation).
+
+**Request:**
+```json
+{
+  "status": "completed"
+}
+```
+
+**Valid statuses:** `pending`, `queued`, `assigned`, `preparing`, `ready`, `completed`, `cancelled`, `failed`
+
+**Response:**
+```json
+{
+  "success": true,
+  "orderId": 42,
+  "currentStatus": "completed"
+}
+```
+
+---
+
 ### Robot-Facing APIs (Device Abstraction Layer)
 
-These APIs define the contract for future ESP32 integration. For MVP, implement as callable endpoints for manual testing.
+These APIs define the contract for ESP32 integration.
 
 #### POST `/api/robots/register`
 Robot registration (one-time setup).
@@ -965,6 +1014,7 @@ For implementation questions or clarifications:
 |---------|------|---------|--------|
 | 1.0 | 2025-11-13 | Initial specification | System Architect |
 | 1.1 | 2025-12-02 | Added bowl size constraints (250g/320g/480g), updated database schema, API specs, and validation rules | Claude Code |
+| 2.0 | 2026-01-09 | Updated architecture (GitHub Pages + AWS Lambda), added admin APIs, MVP complete | Claude Code |
 
 ---
 

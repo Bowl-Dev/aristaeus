@@ -3,7 +3,8 @@
 **Project:** Automated Bowl Kitchen - Frontend
 **Framework:** SvelteKit 2.0 + TypeScript + Svelte 5
 **Deployment:** GitHub Pages (Static)
-**Last Updated:** 2025-12-14
+**Status:** MVP Complete
+**Last Updated:** 2026-01-09
 
 ---
 
@@ -659,6 +660,24 @@ export async function getOrderStatus(orderId: number): Promise<OrderStatusRespon
   if (!response.ok) throw new ApiError(response.status, 'Order not found');
   return response.json();
 }
+
+/**
+ * List all orders (admin)
+ */
+export async function listOrders(): Promise<AdminOrder[]> {
+  const response = await apiFetch<{ orders: AdminOrder[] }>('/api/orders');
+  return response.orders;
+}
+
+/**
+ * Update order status (admin)
+ */
+export async function updateOrderStatus(orderId: number, status: string): Promise<{ success: boolean }> {
+  return apiFetch(`/api/orders/${orderId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  });
+}
 ```
 
 ### Environment Configuration
@@ -885,42 +904,44 @@ npm run deploy:gh-pages
 
 ---
 
-## Next Steps for Implementation
+## Implementation Status
 
-1. **Phase 1: Setup**
-   - ✅ Create project structure
-   - ✅ Install dependencies
-   - Create type definitions file
-   - Create utility functions
+All MVP phases have been completed:
 
-2. **Phase 2: State Management**
-   - Implement bowl store
-   - Implement nutritional calculation
-   - Test calculation accuracy
+1. **Phase 1: Setup** ✅
+   - Project structure created
+   - Dependencies installed
+   - Type definitions implemented
+   - Utility functions created
 
-3. **Phase 3: Components**
-   - Build IngredientSelector component
-   - Build NutritionalDisplay component
-   - Build OrderSummary component
-   - Integrate components on main page
+2. **Phase 2: State Management** ✅
+   - Bowl state using Svelte 5 runes (`$state`, `$derived`)
+   - Real-time nutritional calculation
+   - Capacity tracking and validation
 
-4. **Phase 4: API Integration**
-   - Implement /api/ingredients endpoint (mock initially)
-   - Implement /api/orders endpoint (mock initially)
-   - Implement order status page
-   - Connect frontend to API routes
+3. **Phase 3: Components** ✅
+   - Bowl builder on main page (`+page.svelte`)
+   - Ingredient selection by category
+   - Nutritional summary display
+   - Order submission flow
 
-5. **Phase 5: Styling**
-   - Apply CSS framework or custom styles
-   - Ensure responsive design
-   - Add loading/error states
-   - Polish UX
+4. **Phase 4: API Integration** ✅
+   - API client connects to AWS Lambda backend
+   - Ingredients fetched from database
+   - Orders created and tracked
+   - Admin page for order management
 
-6. **Phase 6: Backend Integration**
-   - Set up PostgreSQL connection
-   - Replace mock data with real database queries
-   - Implement server-side validation
-   - Test end-to-end flow
+5. **Phase 5: Styling** ✅
+   - Responsive design (mobile + desktop)
+   - Loading and error states
+   - Success feedback on order submission
+   - Internationalization (English/Spanish)
+
+6. **Phase 6: Backend Integration** ✅
+   - Connected to Aurora PostgreSQL via Prisma
+   - Server-side validation
+   - End-to-end order flow tested
+   - Deployed to production
 
 ---
 
