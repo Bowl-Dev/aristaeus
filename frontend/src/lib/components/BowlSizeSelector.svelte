@@ -12,7 +12,7 @@
 
 	const bowlSizes: { size: BowlSize; nameKey: string }[] = [
 		{ size: 250, nameKey: 'bowlSize.small' },
-		{ size: 320, nameKey: 'bowlSize.medium' },
+		{ size: 450, nameKey: 'bowlSize.medium' },
 		{ size: 600, nameKey: 'bowlSize.large' }
 	];
 </script>

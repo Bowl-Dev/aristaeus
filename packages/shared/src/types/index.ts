@@ -15,9 +15,9 @@ export interface Ingredient {
 }
 
 // Bowl size options (in grams)
-export type BowlSize = 250 | 320 | 600;
+export type BowlSize = 250 | 450 | 600;
 
-export const BOWL_SIZES: readonly BowlSize[] = [250, 320, 600] as const;
+export const BOWL_SIZES: readonly BowlSize[] = [250, 450, 600] as const;
 
 // Order types
 export type OrderStatus =

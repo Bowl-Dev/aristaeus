@@ -14,12 +14,12 @@ import { success, created, badRequest, notFound, serverError, conflict } from '.
 import { calculateNutrition } from '../lib/nutrition.js';
 
 // Validation schemas
-const VALID_BOWL_SIZES = [250, 320, 600] as const;
+const VALID_BOWL_SIZES = [250, 450, 600] as const;
 const MIN_QUANTITY_GRAMS = 10;
 
 const createOrderSchema = z.object({
-  bowlSize: z.number().refine((val) => VALID_BOWL_SIZES.includes(val as 250 | 320 | 600), {
-    message: 'Bowl size must be 250, 320, or 600 grams',
+  bowlSize: z.number().refine((val) => VALID_BOWL_SIZES.includes(val as 250 | 450 | 600), {
+    message: 'Bowl size must be 250, 450, or 600 grams',
   }),
   customerName: z.string().min(1).max(100).optional(),
   items: z
