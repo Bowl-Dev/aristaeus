@@ -244,10 +244,27 @@ jobs:
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
           echo "API Gateway URL: $API_URL"
 
+      - name: Setup Node.js for Migrations
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies for Migrations
+        run: npm ci
+
+      - name: Apply Database Migrations
+        run: npx prisma migrate deploy
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Summary
         run: |
-          echo "## Deployment Complete! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**API Gateway URL:** ${{ steps.outputs.outputs.api_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Database Migrations:** Applied successfully" >> $GITHUB_STEP_SUMMARY
