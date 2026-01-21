@@ -38,6 +38,9 @@ model Ingredient {
   // Relations
   orderItems       OrderItem[]
 
+  //Price
+  pricePerG        Decimal  @default(0.0) @map("price_per_g") @db.Decimal(5, 2)
+
   @@map("ingredients")
 }
 

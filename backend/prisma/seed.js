@@ -26,6 +26,7 @@ async function main() {
                 fiberGPer100g: 0,
                 available: true,
                 displayOrder: 1,
+                pricePerG: 18.5,
             },
             {
                 name: 'Salmon',
