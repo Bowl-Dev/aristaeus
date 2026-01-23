@@ -12,6 +12,7 @@ export interface Ingredient {
   fiberGPer100g: number | null;
   available: boolean;
   displayOrder: number | null;
+  pricePerG: number;
 }
 
 // Bowl size options (in grams)
@@ -53,6 +54,7 @@ export interface Order {
   assignedAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  totalPrice: number;
 }
 
 // Robot types
@@ -75,6 +77,7 @@ export interface NutritionalSummary {
   fatG: number;
   fiberG: number;
   totalWeightG: number;
+  totalPrice: number;
 }
 
 // Bowl builder types (client-side)

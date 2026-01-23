@@ -68,6 +68,9 @@ model Order {
   totalFiberG     Decimal?  @map("total_fiber_g") @db.Decimal(6, 2)
   totalWeightG    Decimal?  @map("total_weight_g") @db.Decimal(7, 2)
 
+  // Price to charge to the customer
+  totalPrice      Decimal?  @map("total_price") @db.Decimal(7, 2)
+
   // Robot assignment
   assignedRobotId Int?      @map("assigned_robot_id")
   assignedRobot   Robot?    @relation("AssignedOrders", fields: [assignedRobotId], references: [id])

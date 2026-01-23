@@ -7,9 +7,10 @@
 	interface Props {
 		nutrition: NutritionalSummary;
 		bowlSize: BowlSize | null;
+		//totalPrice: number;
 	}
 
-	let { nutrition, bowlSize }: Props = $props();
+	let { nutrition, bowlSize}: Props = $props();	
 </script>
 
 <section class="nutritional-summary">
@@ -45,6 +46,11 @@
 			<span class="label">{$_('nutrition.fiber')}</span>
 			<span class="value">{nutrition.fiberG.toFixed(1)}g</span>
 		</div>
+	</div>
+
+	<div class="nutrition-item">
+			<span class="label">Precio</span>
+			<span class="value">{Math.round(nutrition.totalPrice/100)*100}$COP</span>
 	</div>
 </section>
 

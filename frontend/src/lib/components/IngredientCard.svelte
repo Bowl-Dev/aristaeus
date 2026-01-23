@@ -6,6 +6,7 @@
 	interface Props {
 		ingredient: Ingredient;
 		ingredientName: string;
+		ingredientCategory: string;
 		isSelected: boolean;
 		quantity: number;
 		onSelect: () => void;
@@ -13,7 +14,10 @@
 		onQuantityChange: (quantity: number) => void;
 	}
 
-	let { ingredient, ingredientName, isSelected, quantity, onSelect, onRemove, onQuantityChange }: Props = $props();
+	let { ingredient, ingredientName, ingredientCategory, isSelected, quantity, onSelect, onRemove, onQuantityChange }: Props = $props();
+	let blockCat = true;
+	const priceMult = 3.2; //Multiplier for charging customer	
+
 </script>
 
 <div
@@ -22,6 +26,9 @@
 	onclick={() => {
 		if (!isSelected) {
 			onSelect();
+		}
+		if (ingredientCategory === $_('ingredients.categories.dressing')) {
+			blockCat = false;
 		}
 	}}
 	role="button"
@@ -32,7 +39,7 @@
 			onSelect();
 		}
 	}}
->
+	>
 	<div class="card-header">
 		<h4 class="ingredient-name">{ingredientName}</h4>
 		{#if isSelected}
@@ -53,46 +60,85 @@
 	<div class="card-nutrition">
 		<div class="nutrition-badge">
 			<span class="badge-value">{ingredient.caloriesPer100g}</span>
-			<span class="badge-label">{$_('ingredientCard.cal')}</span>
+			<span class="badge-label">{$_('ingredientCard.cal')} {'/100g'}</span>
 		</div>
 		<div class="nutrition-badge">
 			<span class="badge-value">{ingredient.proteinGPer100g}g</span>
-			<span class="badge-label">{$_('ingredientCard.protein')}</span>
+			<span class="badge-label">{$_('ingredientCard.protein')} {'/100g'}</span>
 		</div>
-	</div>
+		<div class="nutrition-badge">
+			<span class="badge-value">{Math.round(ingredient.pricePerG*priceMult)}</span>
+			<span class="badge-label">{'$COP/g'}</span>
+		</div>		
+	</div>	
 
 	{#if isSelected}
-		<div class="card-quantity" onclick={(e) => e.stopPropagation()}>
-			<label for="qty-{ingredient.id}" class="quantity-label">{$_('ingredientCard.quantity')}</label>
-			<div class="quantity-controls">
-				<button
-					class="qty-btn"
-					onclick={() => onQuantityChange(Math.max(0, quantity - 10))}
-					type="button"
-					aria-label="Decrease quantity"
-				>
-					−
-				</button>
-				<input
-					id="qty-{ingredient.id}"
-					type="number"
-					min="10"
-					step="10"
-					value={quantity}
-					oninput={(e) => onQuantityChange(Number(e.currentTarget.value))}
-					class="qty-input"
-				/>
-				<button
-					class="qty-btn"
-					onclick={() => onQuantityChange(quantity + 10)}
-					type="button"
-					aria-label="Increase quantity"
-				>
-					+
-				</button>
+		{#if blockCat}
+			<div class="card-quantity" onclick={(e) => e.stopPropagation()}>			
+				<label for="qty-{ingredient.id}" class="quantity-label">{$_('ingredientCard.quantity')}</label>
+				<div class="quantity-controls">
+					<button
+						class="qty-btn"
+						onclick={() => onQuantityChange(Math.max(0, quantity - 10))}
+						type="button"
+						aria-label="Decrease quantity"
+					>
+						−
+					</button>
+					<input
+						id="qty-{ingredient.id}"
+						type="number"
+						min="10"
+						step="10"
+						value={quantity}
+						oninput={(e) => onQuantityChange(Number(e.currentTarget.value))}
+						class="qty-input"
+					/>
+					<button
+						class="qty-btn"
+						onclick={() => onQuantityChange(quantity + 10)}
+						type="button"
+						aria-label="Increase quantity"
+					>
+						+
+					</button>
+				</div>
+				<span class="unit">{$_('ingredientCard.grams')}</span>			
 			</div>
-			<span class="unit">{$_('ingredientCard.grams')}</span>
-		</div>
+			{:else}
+				<div class="card-quantity" onclick={(e) => e.stopPropagation()}>			
+				<label for="qty-{ingredient.id}" class="quantity-label">{$_('ingredientCard.quantity')}</label>
+				<div class="quantity-controls">
+					<button
+						class="qty-btn"
+						onclick={() => onQuantityChange(Math.max(0, quantity - 25))}
+						type="button"
+						aria-label="Decrease quantity"
+					>
+						−
+					</button>
+					<input
+						id="qty-{ingredient.id}"
+						type="number"
+						min="1"
+						step="1"
+						value={quantity/25}
+						oninput={(e) => onQuantityChange(Number(e.currentTarget.value))}
+						class="qty-input"
+					/>
+					<button
+						class="qty-btn"
+						onclick={() => onQuantityChange(quantity + 25)}
+						type="button"
+						aria-label="Increase quantity"
+					>
+						+
+					</button>
+				</div>
+				<span class="unit">{$_('ingredientCard.units')} {'(1u = 25ml)'}</span>			
+			</div>	
+
+		{/if}			
 	{:else}
 		<p class="select-hint">{$_('ingredientCard.clickToAdd')}</p>
 	{/if}

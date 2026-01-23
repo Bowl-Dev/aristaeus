@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Constructor de Bowls Aristaeus",
+    "title": "Honest Bowl",
     "subtitle": "Crea tu bowl personalizado"
   },
   "customerInfo": {
@@ -24,23 +24,23 @@
       "dressing": "Aderezos"
     },
     "names": {
-      "Chicken": "Pollo",
-      "Salmon": "Salmón",
-      "Rice": "Arroz",
-      "Quinoa": "Quinoa",
-      "Cherry Tomatoes": "Tomate Cherry",
-      "Mango": "Mango",
-      "Carrot": "Zanahoria",
-      "Onion": "Cebolla",
-      "Avocado": "Aguacate",
+      "Chicken": "Pollo 🍗",
+      "Salmon": "Salmón 🐟",
+      "Rice": "Arroz 🍚",
+      "Quinoa": "Quinoa 🌾",
+      "Cherry Tomatoes": "Tomate Cherry 🍒",
+      "Mango": "Mango 🥭",
+      "Carrot": "Zanahoria 🥕",
+      "Onion": "Cebolla 🧅",
+      "Avocado": "Aguacate 🥑",
       "Beef": "Carne de Res",
-      "Corn": "Maíz",
-      "Cucumber": "Pepino",
-      "Mozzarella": "Queso Mozzarella",
-      "Green Onion": "Cebolla Larga",
-      "Peanuts": "Maní",
-      "Teriyaki": "Teriyaki",
-      "Olive Oil Balsamic": "Aceite de Oliva y Balsámico"
+      "Corn": "Maíz 🌽",
+      "Cucumber": "Pepino 🥒",
+      "Mozzarella": "Queso Mozzarella 🧀",
+      "Green Onion": "Cebolla Larga 🌿",
+      "Peanuts": "Maní 🥜",
+      "Teriyaki": "Teriyaki 🍶",
+      "Olive Oil Balsamic": "Aceite de Oliva y Balsámico 🫒"
     }
   },
   "ingredientCard": {
@@ -48,6 +48,7 @@
     "protein": "proteína",
     "quantity": "Cantidad:",
     "grams": "gramos",
+    "units": "unidades",
     "clickToAdd": "Clic para agregar",
     "remove": "Quitar {name}"
   },

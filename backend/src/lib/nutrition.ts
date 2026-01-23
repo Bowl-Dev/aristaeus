@@ -13,12 +13,15 @@ export interface NutritionalSummary {
   totalFatG: number;
   totalFiberG: number;
   totalWeightG: number;
+  totalPrice: number;
 }
 
 export interface OrderItemInput {
   ingredientId: number;
   quantityGrams: number;
 }
+
+const priceMult = 3.2; //Define multiplier for charging the customer
 
 /**
  * Calculate nutritional summary for a list of order items
@@ -35,6 +38,7 @@ export function calculateNutrition(
     totalFatG: 0,
     totalFiberG: 0,
     totalWeightG: 0,
+    totalPrice: 0,
   };
 
   for (const item of items) {
@@ -49,6 +53,7 @@ export function calculateNutrition(
     totals.totalFatG += toNumber(ingredient.fatGPer100g) * multiplier;
     totals.totalFiberG += toNumber(ingredient.fiberGPer100g ?? 0) * multiplier;
     totals.totalWeightG += item.quantityGrams;
+    totals.totalPrice += toNumber(ingredient.pricePerG) * (multiplier*100)*priceMult;
   }
 
   // Round to 2 decimal places
@@ -59,6 +64,7 @@ export function calculateNutrition(
     totalFatG: round(totals.totalFatG),
     totalFiberG: round(totals.totalFiberG),
     totalWeightG: round(totals.totalWeightG),
+    totalPrice: round(totals.totalPrice/10000)*10000,
   };
 }
 

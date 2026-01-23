@@ -110,6 +110,7 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
           totalFatG: nutrition.totalFatG,
           totalFiberG: nutrition.totalFiberG,
           totalWeightG: nutrition.totalWeightG,
+          totalPrice: nutrition.totalPrice,
         },
       });
 
@@ -187,6 +188,7 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
         totalFatG: order.totalFatG?.toNumber() ?? 0,
         totalFiberG: order.totalFiberG?.toNumber() ?? 0,
         totalWeightG: order.totalWeightG?.toNumber() ?? 0,
+        totalPrice: order.totalPrice?.toNumber() ?? 0,
       },
       assignedRobotId: order.assignedRobotId,
       createdAt: order.createdAt.toISOString(),
@@ -237,6 +239,7 @@ export const listOrders: APIGatewayProxyHandler = async () => {
         totalCarbsG: order.totalCarbsG?.toNumber() ?? 0,
         totalFatG: order.totalFatG?.toNumber() ?? 0,
         totalFiberG: order.totalFiberG?.toNumber() ?? 0,
+        totalPrice: order.totalPrice?.toNumber() ?? 0,
         assignedRobotId: order.assignedRobotId,
         createdAt: order.createdAt.toISOString(),
         assignedAt: order.assignedAt?.toISOString() ?? null,

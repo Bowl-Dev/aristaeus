@@ -159,6 +159,11 @@
 								{/each}
 							</select>
 						</div>
+						<br>
+						<div class="order-id">
+								<span class="label">Price:</span>
+								<span class="value">{order.totalPrice}</span>
+						</div>
 					</div>
 				{/each}
 			</div>

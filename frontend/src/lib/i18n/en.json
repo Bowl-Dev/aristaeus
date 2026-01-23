@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Aristaeus Bowl Builder",
+    "title": "Honest Bowl",
     "subtitle": "Create your custom bowl"
   },
   "customerInfo": {
@@ -24,23 +24,23 @@
       "dressing": "Dressings"
     },
     "names": {
-      "Chicken": "Chicken",
-      "Salmon": "Salmon",
-      "Rice": "Rice",
-      "Quinoa": "Quinoa",
-      "Cherry Tomatoes": "Cherry Tomatoes",
-      "Mango": "Mango",
-      "Carrot": "Carrot",
-      "Onion": "Onion",
-      "Avocado": "Avocado",
+      "Chicken": "Chicken 🍗",
+      "Salmon": "Salmon 🐟",
+      "Rice": "Rice 🍚",
+      "Quinoa": "Quinoa 🌾",
+      "Cherry Tomatoes": "Cherry Tomatoes 🍒",
+      "Mango": "Mango 🥭",
+      "Carrot": "Carrot 🥕",
+      "Onion": "Onion 🧅",
+      "Avocado": "Avocado 🥑",
       "Beef": "Beef",
-      "Corn": "Corn",
-      "Cucumber": "Cucumber",
-      "Mozzarella": "Mozzarella",
-      "Green Onion": "Green Onion",
-      "Peanuts": "Peanuts",
-      "Teriyaki": "Teriyaki",
-      "Olive Oil Balsamic": "Olive Oil & Balsamic"
+      "Corn": "Corn 🌽",
+      "Cucumber": "Cucumber 🥒",
+      "Mozzarella": "Mozzarella 🧀",
+      "Green Onion": "Green Onion 🌿",
+      "Peanuts": "Peanuts 🥜",
+      "Teriyaki": "Teriyaki 🍶",
+      "Olive Oil Balsamic": "Olive Oil & Balsamic 🫒"
     }
   },
   "ingredientCard": {
@@ -48,6 +48,7 @@
     "protein": "protein",
     "quantity": "Quantity:",
     "grams": "grams",
+    "units": "units",
     "clickToAdd": "Click to add",
     "remove": "Remove {name}"
   },

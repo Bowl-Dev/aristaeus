@@ -125,6 +125,7 @@ export interface AdminOrder {
   totalCarbsG: number;
   totalFatG: number;
   totalFiberG: number;
+  totalPrice: number;
   assignedRobotId: number | null;
   createdAt: string;
   assignedAt: string | null;

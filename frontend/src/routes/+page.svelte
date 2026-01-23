@@ -9,7 +9,7 @@
 
 	// Ingredients fetched from API
 	let ingredients = $state<Ingredient[]>([]);
-
+	
 	// Loading and error states
 	let loading = $state(true);
 	let error = $state<string | null>(null);
@@ -47,12 +47,30 @@
 		return grouped;
 	});
 
+	//Set priority to category, sets the order in which categories are shown
+	const priority: Record<string, number> = {
+		    base: 0, vegetable: 1,  protein: 2, topping: 3, dressing: 4
+  	};
+	//let cat:string[] = $derived(Object.keys(ingredientsByCategory));
+	//let cat2 = $derived(Object.keys(ingredientsByCategory).sort((a,b) => priority[a]-priority[b]));
+	let orderedCategories = $derived(Object.fromEntries(Object.entries(ingredientsByCategory).sort(([a],[b]) => {		
+		const orderA = priority[a] ?? 999;
+      	const orderB = priority[b] ?? 999;
+      	return orderA - orderB;
+		}		
+	)))
+	
+	$inspect(ingredients);
+	//let cat:string[] = $derived(Object.keys(orderedCategories));	
+	//let cat2 = $derived(Object.keys(orderedCategories).sort((a,b) => priority[a]-priority[b]));	
+
 	// State
 	let customerName = $state('');
 	let selectedBowlSize = $state<BowlSize | null>(null);
 	let selectedItems = $state<Map<number, number>>(new Map()); // ingredientId -> quantityGrams
 
 	// Calculate nutritional summary
+	const priceMult = 3.2; //Define multiplier for charging the customer
 	const nutritionalSummary = $derived.by((): NutritionalSummaryType => {
 		let totals: NutritionalSummaryType = {
 			calories: 0,
@@ -60,7 +78,8 @@
 			carbsG: 0,
 			fatG: 0,
 			fiberG: 0,
-			totalWeightG: 0
+			totalWeightG: 0,
+			totalPrice: 0,
 		};
 
 		selectedItems.forEach((quantityGrams, ingredientId) => {
@@ -73,6 +92,7 @@
 				totals.fatG += ingredient.fatGPer100g * multiplier;
 				totals.fiberG += (ingredient.fiberGPer100g || 0) * multiplier;
 				totals.totalWeightG += quantityGrams;
+				totals.totalPrice += ingredient.pricePerG * (multiplier*100)*priceMult;
 			}
 		});
 
@@ -207,29 +227,32 @@
 					<p>No ingredients available at this time.</p>
 				</div>
 			{:else}
-				{#each Object.entries(ingredientsByCategory) as [category, items]}
+				{#each Object.entries(orderedCategories) as [category, items]}
 					<div class="category-group">
-						<h3>{getCategoryName(category)}</h3>
-						<div class="ingredient-grid">
-							{#each items as ingredient}
-								<IngredientCard
-									{ingredient}
-									ingredientName={getIngredientName(ingredient.name)}
-									isSelected={selectedItems.has(ingredient.id)}
-									quantity={selectedItems.get(ingredient.id) || 0}
-									onSelect={() => updateQuantity(ingredient.id, 50)}
-									onRemove={() => updateQuantity(ingredient.id, 0)}
-									onQuantityChange={(qty) => updateQuantity(ingredient.id, qty)}
-								/>
-							{/each}
-						</div>
+						<!--{#if getCategoryName(category) != $_('ingredients.categories.dressing')}-->						 
+							<h3>{getCategoryName(category)}</h3>
+							<div class="ingredient-grid">
+								{#each items as ingredient}
+									<IngredientCard
+										{ingredient}
+										ingredientName={getIngredientName(ingredient.name)}
+										ingredientCategory={getCategoryName(category)}
+										isSelected={selectedItems.has(ingredient.id)}
+										quantity={selectedItems.get(ingredient.id) || 0}
+										onSelect={() => updateQuantity(ingredient.id, 50)}
+										onRemove={() => updateQuantity(ingredient.id, 0)}
+										onQuantityChange={(qty) => updateQuantity(ingredient.id, qty)}
+									/>
+								{/each}
+							</div>
+						<!--{/if}-->
 					</div>
 				{/each}
 			{/if}
 		</section>
 
 		<!-- Nutritional Summary -->
-		<NutritionalSummary nutrition={nutritionalSummary} bowlSize={selectedBowlSize} />
+		<NutritionalSummary nutrition={nutritionalSummary} bowlSize={selectedBowlSize}/>
 
 		<!-- Submit Button -->
 		<div class="submit-section">
@@ -326,12 +349,14 @@
 	/* Ingredient Selection */
 	.category-group {
 		margin-bottom: 2rem;
+		justify-content: center;
 	}
 
 	.ingredient-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-		gap: 1rem;
+		gap: 1rem;		
+		justify-content: center;
 	}
 
 	/* Submit Section */
