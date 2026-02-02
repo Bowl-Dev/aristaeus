@@ -1,12 +1,16 @@
 {
   "app": {
-    "title": "Honest Bowl",
-    "subtitle": "Create your custom bowl"
+    "title": "Al Gramo",
+    "subtitle": "Create your custom bowl",
+    "defaultBowl": "I DON'T KNOW HOW MANY GRAMS I WANT. I WANT AN AVERGAE BOWL",
+    "cutlery": "I want cutlery +300 COP"
   },
   "customerInfo": {
     "title": "Your Information",
     "nameLabel": "Name",
-    "namePlaceholder": "Enter your name"
+    "namePlaceholder": "Enter your name",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "Enter your phone number"
   },
   "bowlSize": {
     "title": "Select Bowl Size",
@@ -21,11 +25,11 @@
       "base": "Bases",
       "vegetable": "Vegetables",
       "topping": "Toppings",
-      "dressing": "Dressings"
+      "dressing": "Dressings. SENT PER 25g BOTTLE"
     },
     "names": {
-      "Chicken": "Chicken 🍗",
-      "Salmon": "Salmon 🐟",
+      "Chicken": "Grilled Chicken 🍗",
+      "Salmon": "Grilled Salmon 🐟",
       "Rice": "Rice 🍚",
       "Quinoa": "Quinoa 🌾",
       "Cherry Tomatoes": "Cherry Tomatoes 🍒",
@@ -48,7 +52,7 @@
     "protein": "protein",
     "quantity": "Quantity:",
     "grams": "grams",
-    "units": "units",
+    "units": "bottle(s)",
     "clickToAdd": "Click to add",
     "remove": "Remove {name}"
   },

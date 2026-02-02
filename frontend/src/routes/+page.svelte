@@ -1,11 +1,14 @@
 <script lang="ts">
 	// Aristaeus - Automated Bowl Kitchen
-	import type { Ingredient, BowlSize, NutritionalSummary as NutritionalSummaryType } from '$lib/types';
+	import { type Ingredient, type BowlSize, type BowlSizePrice, type NutritionalSummary as NutritionalSummaryType, BOWL_SIZES, BOWL_SIZE_PRICES} from '$lib/types';
 	import IngredientCard from '$lib/components/IngredientCard.svelte';
 	import BowlSizeSelector from '$lib/components/BowlSizeSelector.svelte';
 	import NutritionalSummary from '$lib/components/NutritionalSummary.svelte';
 	import { _ } from 'svelte-i18n';
 	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
+
+	let yes = $state(false); //Variable for the default bowl checkbox
+	let isCutlery = $state(false); //Variable for checking if customer wants cutlery	
 
 	// Ingredients fetched from API
 	let ingredients = $state<Ingredient[]>([]);
@@ -51,8 +54,7 @@
 	const priority: Record<string, number> = {
 		    base: 0, vegetable: 1,  protein: 2, topping: 3, dressing: 4
   	};
-	//let cat:string[] = $derived(Object.keys(ingredientsByCategory));
-	//let cat2 = $derived(Object.keys(ingredientsByCategory).sort((a,b) => priority[a]-priority[b]));
+	//let cat:string[] = $derived(Object.keys(ingredientsByCategory));	
 	let orderedCategories = $derived(Object.fromEntries(Object.entries(ingredientsByCategory).sort(([a],[b]) => {		
 		const orderA = priority[a] ?? 999;
       	const orderB = priority[b] ?? 999;
@@ -60,17 +62,27 @@
 		}		
 	)))
 	
-	$inspect(ingredients);
-	//let cat:string[] = $derived(Object.keys(orderedCategories));	
-	//let cat2 = $derived(Object.keys(orderedCategories).sort((a,b) => priority[a]-priority[b]));	
+	//$inspect(ingredients);
+	//let cat:string[] = $derived(Object.keys(orderedCategories));			
 
 	// State
 	let customerName = $state('');
+	let customerPhone = $state('');
 	let selectedBowlSize = $state<BowlSize | null>(null);
 	let selectedItems = $state<Map<number, number>>(new Map()); // ingredientId -> quantityGrams
 
+	$inspect(selectedItems);
+
+	// Functions for selecting a predefined bowl
+	function setDefaultBowlSize(){		
+		return selectedBowlSize = BOWL_SIZES[1];		
+	}
+	function setDefaultBowlIng(){				
+		return selectedItems = 	new Map([[107,40],[102,140],[104,40],[106,40],[108,40],[100,120],[115,25]]);		
+	}	
+
 	// Calculate nutritional summary
-	const priceMult = 3.2; //Define multiplier for charging the customer
+	//const priceMult = (1/0.33); //Define multiplier for charging the customer
 	const nutritionalSummary = $derived.by((): NutritionalSummaryType => {
 		let totals: NutritionalSummaryType = {
 			calories: 0,
@@ -81,6 +93,18 @@
 			totalWeightG: 0,
 			totalPrice: 0,
 		};
+		if(selectedBowlSize == BOWL_SIZES[0]){   //Where the prices of the packaging are shown
+			totals.totalPrice = BOWL_SIZE_PRICES[0];
+		}
+		if(selectedBowlSize == BOWL_SIZES[1]){   
+			totals.totalPrice = BOWL_SIZE_PRICES[1];
+		} 
+		if(selectedBowlSize == BOWL_SIZES[2]){
+			totals.totalPrice = BOWL_SIZE_PRICES[2]
+		}
+		if(isCutlery == true){
+			totals.totalPrice += 300;
+		}	
 
 		selectedItems.forEach((quantityGrams, ingredientId) => {
 			const ingredient = ingredients.find(i => i.id === ingredientId);
@@ -92,7 +116,7 @@
 				totals.fatG += ingredient.fatGPer100g * multiplier;
 				totals.fiberG += (ingredient.fiberGPer100g || 0) * multiplier;
 				totals.totalWeightG += quantityGrams;
-				totals.totalPrice += ingredient.pricePerG * (multiplier*100)*priceMult;
+				totals.totalPrice += ingredient.pricePerG * (multiplier*100);
 			}
 		});
 
@@ -193,7 +217,7 @@
 	{/if}
 
 	<div class="form-container">
-		<!-- Customer Name Section -->
+		<!-- Customer Name and Phone Section-->
 		<section class="customer-info">
 			<h2>{$_('customerInfo.title')}</h2>
 			<div class="input-group">
@@ -206,9 +230,27 @@
 					required
 				/>
 			</div>
+			<br>			
+			<div class="input-group">
+				<label for="customer-phone">{$_('customerInfo.phoneLabel')}</label>
+				<input
+					id="customer-phone"
+					type="text"
+					bind:value={customerPhone}
+					placeholder={$_('customerInfo.phonePlaceholder')}
+					required
+				/>
+			</div>
 		</section>
-
-		<!-- Bowl Size Selection -->
+		<div class="default-bowl"> 
+			<label>			
+			<input type="checkbox" bind:checked={yes} onchange={() => {setDefaultBowlSize(); setDefaultBowlIng()}} />
+			{$_('app.defaultBowl')}
+			</label>
+		</div>
+		<br>
+		
+		<!-- Bowl Size Selection -->		 
 		<BowlSizeSelector
 			selectedSize={selectedBowlSize}
 			onSizeChange={(size) => selectedBowlSize = size}
@@ -250,6 +292,15 @@
 				{/each}
 			{/if}
 		</section>
+
+		<!-- Cutelry check -->
+		<div class="default-bowl"> 
+			<label>			
+			<input type="checkbox" bind:checked={isCutlery} />
+			{$_('app.cutlery')}
+			</label>
+		</div>
+		<br>
 
 		<!-- Nutritional Summary -->
 		<NutritionalSummary nutrition={nutritionalSummary} bowlSize={selectedBowlSize}/>
@@ -344,6 +395,20 @@
 	.input-group input[type="text"]:focus {
 		outline: none;
 		border-color: #16a085;
+	}
+
+	.default-bowl label {
+		font-size: 1.6rem;
+		outline: none;
+		font-weight: bold;
+		color: #34495e;
+		margin-bottom: 1rem;
+	}
+	.default-bowl input[type="checkbox"] {
+		transform: 2;
+		vertical-align: middle;
+		width: 3em;
+		height: 3em;
 	}
 
 	/* Ingredient Selection */

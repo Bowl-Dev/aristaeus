@@ -16,8 +16,7 @@
 
 	let { ingredient, ingredientName, ingredientCategory, isSelected, quantity, onSelect, onRemove, onQuantityChange }: Props = $props();
 	let blockCat = true;
-	const priceMult = 3.2; //Multiplier for charging customer	
-
+	
 </script>
 
 <div
@@ -67,7 +66,7 @@
 			<span class="badge-label">{$_('ingredientCard.protein')} {'/100g'}</span>
 		</div>
 		<div class="nutrition-badge">
-			<span class="badge-value">{Math.round(ingredient.pricePerG*priceMult)}</span>
+			<span class="badge-value">{Math.round(ingredient.pricePerG)}</span>
 			<span class="badge-label">{'$COP/g'}</span>
 		</div>		
 	</div>	
@@ -135,7 +134,7 @@
 						+
 					</button>
 				</div>
-				<span class="unit">{$_('ingredientCard.units')} {'(1u = 25ml)'}</span>			
+				<span class="unit">{$_('ingredientCard.units')} {'(1u = 25g)'}</span>			
 			</div>	
 
 		{/if}			

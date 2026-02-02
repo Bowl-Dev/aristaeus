@@ -3,6 +3,7 @@ export type {
 	Ingredient,
 	IngredientCategory,
 	BowlSize,
+	BowlSizePrice,
 	NutritionalSummary,
 	SelectedIngredient,
 	BowlConfiguration,
@@ -15,6 +16,7 @@ export type {
 } from '@aristaeus/shared';
 
 export { BOWL_SIZES } from '@aristaeus/shared';
+export { BOWL_SIZE_PRICES } from '@aristaeus/shared';
 
 // Frontend-specific constants
 export const BOWL_SIZE_LABELS: Record<import('@aristaeus/shared').BowlSize, string> = {

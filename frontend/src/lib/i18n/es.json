@@ -1,12 +1,16 @@
 {
   "app": {
-    "title": "Honest Bowl",
-    "subtitle": "Crea tu bowl personalizado"
+    "title": "Al Gramo",
+    "subtitle": "Crea tu bowl personalizado",
+    "defaultBowl": "NO SÉ CUANTOS SON MUCHOS O POCOS GRAMOS. QUIERO UN BOWL PROMEDIO",
+    "cutlery": "Quiero cubiertos +300 COP"
   },
   "customerInfo": {
     "title": "Tu Información",
     "nameLabel": "Nombre",
-    "namePlaceholder": "Ingresa tu nombre"
+    "namePlaceholder": "Ingresa tu nombre",
+    "phoneLabel": "Número de celular",
+    "phonePlaceholder": "Ingresa tu número de celular"
   },
   "bowlSize": {
     "title": "Selecciona el Tamaño del Bowl",
@@ -21,11 +25,11 @@
       "base": "Bases",
       "vegetable": "Vegetales",
       "topping": "Toppings",
-      "dressing": "Aderezos"
+      "dressing": "Aderezos. SE ENVÍA POR RECIPIENTES DE 25g"
     },
     "names": {
-      "Chicken": "Pollo 🍗",
-      "Salmon": "Salmón 🐟",
+      "Chicken": "Pechuga a la plancha 🍗",
+      "Salmon": "Salmón a la plancha 🐟",
       "Rice": "Arroz 🍚",
       "Quinoa": "Quinoa 🌾",
       "Cherry Tomatoes": "Tomate Cherry 🍒",
@@ -37,7 +41,7 @@
       "Corn": "Maíz 🌽",
       "Cucumber": "Pepino 🥒",
       "Mozzarella": "Queso Mozzarella 🧀",
-      "Green Onion": "Cebolla Larga 🌿",
+      "Green Onion": "Cebollín 🌿",
       "Peanuts": "Maní 🥜",
       "Teriyaki": "Teriyaki 🍶",
       "Olive Oil Balsamic": "Aceite de Oliva y Balsámico 🫒"
@@ -48,7 +52,7 @@
     "protein": "proteína",
     "quantity": "Cantidad:",
     "grams": "gramos",
-    "units": "unidades",
+    "units": "recipiente(s)",
     "clickToAdd": "Clic para agregar",
     "remove": "Quitar {name}"
   },

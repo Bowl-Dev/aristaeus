@@ -17,8 +17,10 @@ export interface Ingredient {
 
 // Bowl size options (in grams)
 export type BowlSize = 250 | 450 | 600;
+export type BowlSizePrice = 1200 | 1300 | 1400; //Bowl packaging prices in COP
 
 export const BOWL_SIZES: readonly BowlSize[] = [250, 450, 600] as const;
+export const BOWL_SIZE_PRICES: readonly BowlSizePrice[] = [1200, 1300, 1400] as const;
 
 // Order types
 export type OrderStatus =

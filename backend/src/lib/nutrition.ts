@@ -21,8 +21,6 @@ export interface OrderItemInput {
   quantityGrams: number;
 }
 
-const priceMult = 3.2; //Define multiplier for charging the customer
-
 /**
  * Calculate nutritional summary for a list of order items
  * This MUST match the frontend calculation exactly
@@ -53,7 +51,7 @@ export function calculateNutrition(
     totals.totalFatG += toNumber(ingredient.fatGPer100g) * multiplier;
     totals.totalFiberG += toNumber(ingredient.fiberGPer100g ?? 0) * multiplier;
     totals.totalWeightG += item.quantityGrams;
-    totals.totalPrice += toNumber(ingredient.pricePerG) * (multiplier*100)*priceMult;
+    totals.totalPrice += toNumber(ingredient.pricePerG) * (multiplier*100);
   }
 
   // Round to 2 decimal places
