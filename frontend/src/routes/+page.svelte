@@ -71,8 +71,6 @@
 	let selectedBowlSize = $state<BowlSize | null>(null);
 	let selectedItems = $state<Map<number, number>>(new Map()); // ingredientId -> quantityGrams
 
-	$inspect(selectedItems);
-
 	// Functions for selecting a predefined bowl
 	function setDefaultBowlSize(){		
 		return selectedBowlSize = BOWL_SIZES[1];		
@@ -405,10 +403,10 @@
 		margin-bottom: 1rem;
 	}
 	.default-bowl input[type="checkbox"] {
-		transform: 2;
+		transform: scale(1.5);
 		vertical-align: middle;
-		width: 3em;
-		height: 3em;
+		width: 1.5em;
+		height: 1.5em;
 	}
 
 	/* Ingredient Selection */

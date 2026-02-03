@@ -84,7 +84,6 @@ An automated bowl ordering system where users customize bowls through a web inte
 - Recommendation engine
 - Real ESP32 integration
 - Food safety compliance features
-- Pricing logic
 
 ---
 
@@ -106,6 +105,9 @@ CREATE TABLE ingredients (
     fat_g_per_100g DECIMAL(5,2) NOT NULL,
     fiber_g_per_100g DECIMAL(5,2),
 
+    -- Pricing
+    price_per_g DECIMAL(6,2) NOT NULL, -- Price per gram in COP
+
     -- Operational
     available BOOLEAN DEFAULT true,
     display_order INTEGER,
@@ -119,7 +121,7 @@ CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
 
     -- Bowl configuration
-    bowl_size INTEGER NOT NULL CHECK (bowl_size IN (250, 320, 480)), -- Bowl capacity in grams
+    bowl_size INTEGER NOT NULL CHECK (bowl_size IN (250, 450, 600)), -- Bowl capacity in grams
 
     -- Status lifecycle
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
@@ -133,6 +135,9 @@ CREATE TABLE orders (
     total_fat_g DECIMAL(6,2),
     total_fiber_g DECIMAL(6,2),
     total_weight_g DECIMAL(7,2),
+
+    -- Pricing (calculated: packaging + ingredients + optional cutlery)
+    total_price DECIMAL(7,2),
 
     -- Robot assignment
     assigned_robot_id INTEGER REFERENCES robots(id),
@@ -193,6 +198,7 @@ CREATE INDEX idx_robots_status ON robots(status);
   "carbs_g_per_100g": 0,
   "fat_g_per_100g": 3.6,
   "fiber_g_per_100g": 0,
+  "price_per_g": 25.2,
   "available": true
 }
 ```
@@ -201,13 +207,14 @@ CREATE INDEX idx_robots_status ON robots(status);
 ```json
 {
   "id": 42,
-  "bowl_size": 480,
+  "bowl_size": 450,
   "status": "queued",
   "total_calories": 450,
   "total_protein_g": 35,
   "total_carbs_g": 45,
   "total_fat_g": 12,
   "total_weight_g": 350,
+  "total_price": 15800,
   "assigned_robot_id": null,
   "created_at": "2025-11-13T10:30:00Z"
 }
@@ -292,7 +299,7 @@ Creates a new bowl order.
 ```
 
 **Business Logic:**
-1. Validate bowl_size is one of the allowed values (250, 320, 480)
+1. Validate bowl_size is one of the allowed values (250, 450, 600)
 2. Validate all ingredient IDs exist and are available
 3. Validate quantities are positive and meet minimum requirement (10g per ingredient)
 4. Validate total weight does not exceed selected bowl_size
@@ -892,11 +899,11 @@ Must be created for MVP functionality:
 
 #### Bowl Size Constraints
 1. **Fixed Bowl Sizes:** Orders must select one of three standardized bowl sizes:
-   - **Small:** 250g total capacity
-   - **Medium:** 320g total capacity
-   - **Large:** 480g total capacity
+   - **Small:** 250g total capacity (packaging: 1200 COP)
+   - **Medium:** 450g total capacity (packaging: 1300 COP)
+   - **Large:** 600g total capacity (packaging: 1400 COP)
 2. **Capacity Enforcement:** Total ingredient weight cannot exceed selected bowl capacity
-3. **Pricing Model:** Pricing is standardized per bowl size (not per ingredient)
+3. **Pricing Model:** Total price = bowl packaging price + sum of (ingredient price per gram × quantity in grams) + optional cutlery (300 COP)
 4. **User Experience:** System must prevent users from exceeding bowl capacity during bowl building
 5. **Validation:** Both client-side (real-time feedback) and server-side (order submission) validation required
 
@@ -1015,6 +1022,7 @@ For implementation questions or clarifications:
 | 1.0 | 2025-11-13 | Initial specification | System Architect |
 | 1.1 | 2025-12-02 | Added bowl size constraints (250g/320g/480g), updated database schema, API specs, and validation rules | Claude Code |
 | 2.0 | 2026-01-09 | Updated architecture (GitHub Pages + AWS Lambda), added admin APIs, MVP complete | Claude Code |
+| 2.1 | 2026-02-03 | Updated bowl sizes (250/450/600g), added pricing model (packaging + ingredients + cutlery) | Claude Code |
 
 ---
 
