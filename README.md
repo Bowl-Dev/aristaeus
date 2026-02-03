@@ -85,12 +85,14 @@ npm run dev:backend
 ### Environment Setup
 
 **Frontend** (`frontend/.env`):
+
 ```bash
 VITE_API_URL=http://localhost:3000   # Local development
 BASE_PATH=/aristaeus                  # For GitHub Pages
 ```
 
 **Backend** (`backend/.env`):
+
 ```bash
 DATABASE_URL="postgresql://user:pass@host:5432/aristaeus"
 ```
@@ -100,25 +102,28 @@ DATABASE_URL="postgresql://user:pass@host:5432/aristaeus"
 ## API Endpoints
 
 ### User-Facing
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/ingredients` | Get available ingredients |
-| POST | `/api/orders` | Create new order |
-| GET | `/api/orders/{id}` | Get order details |
+
+| Method | Endpoint           | Description               |
+| ------ | ------------------ | ------------------------- |
+| GET    | `/api/ingredients` | Get available ingredients |
+| POST   | `/api/orders`      | Create new order          |
+| GET    | `/api/orders/{id}` | Get order details         |
 
 ### Admin
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/orders` | List all orders |
-| PUT | `/api/orders/{orderId}/status` | Update order status |
+
+| Method | Endpoint                       | Description         |
+| ------ | ------------------------------ | ------------------- |
+| GET    | `/api/orders`                  | List all orders     |
+| PUT    | `/api/orders/{orderId}/status` | Update order status |
 
 ### Robot API
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/robots/register` | Register new robot |
-| GET | `/api/robots/{robotId}/next-order` | Poll for next order |
-| POST | `/api/orders/{orderId}/status` | Update order status |
-| POST | `/api/robots/{robotId}/heartbeat` | Send heartbeat |
+
+| Method | Endpoint                           | Description         |
+| ------ | ---------------------------------- | ------------------- |
+| POST   | `/api/robots/register`             | Register new robot  |
+| GET    | `/api/robots/{robotId}/next-order` | Poll for next order |
+| POST   | `/api/orders/{orderId}/status`     | Update order status |
+| POST   | `/api/robots/{robotId}/heartbeat`  | Send heartbeat      |
 
 ---
 
@@ -129,6 +134,7 @@ DATABASE_URL="postgresql://user:pass@host:5432/aristaeus"
 Automatic deployment on push to `main` branch via GitHub Actions.
 
 Manual deployment:
+
 ```bash
 npm run build
 # Push to main branch
@@ -161,14 +167,14 @@ terraform apply
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | SvelteKit 2.0, TypeScript, Svelte 5 |
-| Backend | AWS Lambda, API Gateway |
-| Database | PostgreSQL, Prisma ORM |
-| Infrastructure | Terraform |
-| CI/CD | GitHub Actions |
-| Hosting | GitHub Pages (frontend), AWS (backend) |
+| Layer          | Technology                             |
+| -------------- | -------------------------------------- |
+| Frontend       | SvelteKit 2.0, TypeScript, Svelte 5    |
+| Backend        | AWS Lambda, API Gateway                |
+| Database       | PostgreSQL, Prisma ORM                 |
+| Infrastructure | Terraform                              |
+| CI/CD          | GitHub Actions                         |
+| Hosting        | GitHub Pages (frontend), AWS (backend) |
 
 ---
 

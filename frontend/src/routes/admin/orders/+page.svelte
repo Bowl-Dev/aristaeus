@@ -4,6 +4,7 @@
 	// DO NOT DOCUMENT - for internal testing only
 
 	import { listOrders, updateOrderStatus, ApiError, type AdminOrder } from '$lib/api/client';
+	import { base } from '$app/paths';
 
 	// State
 	let orders = $state<AdminOrder[]>([]);
@@ -47,7 +48,16 @@
 	});
 
 	// Available statuses for dropdown
-	const availableStatuses = ['pending', 'queued', 'assigned', 'preparing', 'ready', 'completed', 'cancelled', 'failed'];
+	const availableStatuses = [
+		'pending',
+		'queued',
+		'assigned',
+		'preparing',
+		'ready',
+		'completed',
+		'cancelled',
+		'failed'
+	];
 
 	// Status badge colors
 	const statusColors: Record<string, string> = {
@@ -72,7 +82,8 @@
 		<h1>Admin - Order Management</h1>
 		<p class="admin-warning">Testing Only - Not Part of Official Application</p>
 		<div class="header-actions">
-			<a href="/" class="back-link">Back to Bowl Builder</a>
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+			<a href="{base}/" class="back-link">Back to Bowl Builder</a>
 			<button class="refresh-btn" onclick={loadOrders} disabled={loading}>
 				{loading ? 'Loading...' : 'Refresh'}
 			</button>
@@ -97,7 +108,7 @@
 			</div>
 		{:else}
 			<div class="orders-grid">
-				{#each orders as order}
+				{#each orders as order (order.id)}
 					<div class="order-card" class:updating={updatingOrderId === order.id}>
 						<div class="order-header">
 							<div class="order-id-section">
@@ -120,7 +131,7 @@
 						<div class="order-details">
 							<h3>Ingredients</h3>
 							<div class="ingredients-list">
-								{#each order.items.toSorted((a, b) => a.sequenceOrder - b.sequenceOrder) as item}
+								{#each order.items.toSorted((a, b) => a.sequenceOrder - b.sequenceOrder) as item (item.sequenceOrder)}
 									<div class="ingredient-row">
 										<span class="seq-number">{item.sequenceOrder}.</span>
 										<span class="ingredient-name">{item.ingredientName}</span>
@@ -154,15 +165,15 @@
 								disabled={updatingOrderId === order.id}
 								onchange={(e) => handleStatusUpdate(order.id, e.currentTarget.value)}
 							>
-								{#each availableStatuses as status}
+								{#each availableStatuses as status (status)}
 									<option value={status}>{status}</option>
 								{/each}
 							</select>
 						</div>
-						<br>
+						<br />
 						<div class="order-id">
-								<span class="label">Price:</span>
-								<span class="value">{order.totalPrice}</span>
+							<span class="label">Price:</span>
+							<span class="value">{order.totalPrice}</span>
 						</div>
 					</div>
 				{/each}
@@ -176,7 +187,8 @@
 		padding: 2rem;
 		max-width: 1400px;
 		margin: 0 auto;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 	}
 
 	.admin-header {
@@ -272,7 +284,7 @@
 	.orders-container {
 		background: #fff;
 		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		padding: 2rem;
 	}
 
@@ -299,7 +311,7 @@
 
 	.order-card:hover {
 		border-color: #16a085;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	}
 
 	.order-card.updating {

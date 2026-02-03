@@ -25,6 +25,7 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 ```
 
 ### Why This Architecture?
+
 - **GitHub Pages**: Free hosting, no domain commitment needed for early development
 - **AWS Lambda + API Gateway**: Serverless, pay-per-use, scales automatically
 - **Terraform**: Infrastructure as code for AWS deployments
@@ -44,6 +45,7 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 - **Database:** PostgreSQL (Aurora Serverless v2 recommended)
 - **Validation:** Zod
 - **Shared Types:** `@aristaeus/shared` package
+- **Linting:** ESLint + Prettier with Husky pre-commit hooks
 
 ---
 
@@ -56,6 +58,10 @@ aristaeus/
 ├── package.json                       # Root package.json with workspaces config
 ├── package-lock.json                  # Shared lockfile for all workspaces
 ├── tsconfig.base.json                 # Shared TypeScript configuration
+├── eslint.config.js                   # ESLint flat config
+├── .prettierrc                        # Prettier configuration
+├── .prettierignore                    # Prettier ignore patterns
+├── .husky/                            # Husky pre-commit hooks
 ├── .gitignore                         # Root gitignore
 ├── CLAUDE.md                          # This file - AI assistant reference
 ├── PROJECT_SPEC.md                    # Complete technical specification
@@ -118,7 +124,9 @@ aristaeus/
 │
 └── .github/
     └── workflows/
-        └── deploy-frontend.yml        # GitHub Pages deployment
+        ├── lint.yml                   # Linting & formatting checks
+        ├── deploy-frontend.yml        # GitHub Pages deployment
+        └── deploy-backend.yml         # Backend deployment via Terraform
 ```
 
 ---
@@ -126,6 +134,7 @@ aristaeus/
 ## Key Specification Documents
 
 ### 1. [PROJECT_SPEC.md](./PROJECT_SPEC.md)
+
 **The source of truth for the entire system.**
 
 - Complete database schema (ingredients, orders, order_items, robots)
@@ -140,6 +149,7 @@ aristaeus/
 ---
 
 ### 2. [frontend/FRONTEND_IMPLEMENTATION.md](./frontend/FRONTEND_IMPLEMENTATION.md)
+
 **Detailed frontend implementation guide.**
 
 - TypeScript type definitions
@@ -156,6 +166,7 @@ aristaeus/
 ## Current Implementation Status
 
 ### ✅ Completed (MVP Functional)
+
 - Monorepo structure with npm workspaces
 - **Frontend bowl builder** - fully functional with API integration
   - Ingredient selection from database
@@ -185,6 +196,7 @@ aristaeus/
 - **Express dev server** for local development
 
 ### 📋 Not Started (Out of Scope for MVP)
+
 - Robot abstraction layer testing with actual ESP32 devices
 - User authentication/accounts
 - Payment processing
@@ -199,24 +211,28 @@ aristaeus/
 ## Key Business Rules
 
 ### Nutritional Calculation
+
 - **Client-side:** Real-time calculation as user builds bowl
 - **Server-side:** Must recalculate and validate on order submission (prevent tampering)
 - **Formula:** `(ingredient_value_per_100g * quantity_grams) / 100`
 - **Critical:** Client and server calculations MUST match exactly
 
 ### Bowl Size Constraints
+
 - **Fixed bowl sizes:** 250g, 320g, 480g
 - **User selection:** Must choose a bowl size before/during bowl building
 - **Capacity enforcement:** Total ingredient weight cannot exceed selected bowl size
 - **UI feedback:** Show remaining capacity, prevent exceeding limit
 
 ### Ingredient Selection
+
 - **Minimum quantity:** 10g per ingredient
 - **Categories:** protein, base, vegetable, topping, dressing
 - **Availability:** Only show ingredients where `available = true`
 - **Sequence order:** Ingredients have assembly order for robot execution
 
 ### Order Status Lifecycle
+
 ```
 pending → queued → assigned → preparing → ready → completed
                         ↓
@@ -228,6 +244,7 @@ pending → queued → assigned → preparing → ready → completed
 ## Quick Reference: File Locations
 
 ### Backend Code (`@aristaeus/backend`)
+
 - Lambda handlers: `backend/src/handlers/`
 - Dev server: `backend/src/dev-server.ts`
 - Prisma schema: `backend/prisma/schema.prisma`
@@ -236,16 +253,19 @@ pending → queued → assigned → preparing → ready → completed
 - Utilities: `backend/src/lib/`
 
 ### Frontend Code (`@aristaeus/frontend`)
+
 - Main bowl builder: `frontend/src/routes/+page.svelte`
 - API client: `frontend/src/lib/api/client.ts`
 - Components: `frontend/src/lib/components/`
 - Static config: `frontend/src/routes/+layout.ts`
 
 ### Shared Package (`@aristaeus/shared`)
+
 - Types: `packages/shared/src/types/index.ts`
 - Main exports: `packages/shared/src/index.ts`
 
 ### Configuration
+
 - Root package.json: `package.json` (workspaces config)
 - Svelte config: `frontend/svelte.config.js` (adapter-static)
 - Terraform config: `backend/infra/*.tf`
@@ -255,11 +275,13 @@ pending → queued → assigned → preparing → ready → completed
 ## Common Development Tasks
 
 ### Initial Setup
+
 ```bash
 npm install                    # Install all workspace dependencies
 ```
 
 ### Running Development Servers
+
 ```bash
 # Frontend (http://localhost:5173)
 npm run dev
@@ -268,7 +290,22 @@ npm run dev
 npm run dev:backend
 ```
 
+### Linting & Formatting
+
+```bash
+npm run lint                   # Run ESLint on all files
+npm run lint:fix               # Run ESLint and auto-fix issues
+npm run format                 # Format all files with Prettier
+npm run format:check           # Check formatting without modifying
+```
+
+**Pre-commit hooks:** Husky automatically runs lint-staged on commit, which:
+
+- Runs ESLint with auto-fix on staged `.js`, `.ts`, `.svelte` files
+- Formats staged files with Prettier
+
 ### Database Operations
+
 ```bash
 npm run db:generate            # Generate Prisma client
 npm run db:push                # Push schema to database
@@ -278,6 +315,7 @@ npm run db:studio              # Open Prisma Studio GUI
 ```
 
 ### Building & Deployment
+
 ```bash
 # Frontend build (for GitHub Pages)
 npm run build
@@ -294,11 +332,13 @@ terraform apply
 ### Environment Setup
 
 **Backend** (`backend/.env`):
+
 ```bash
 DATABASE_URL="postgresql://user:pass@host:5432/aristaeus"
 ```
 
 **Frontend** (`frontend/.env`):
+
 ```bash
 VITE_API_URL=http://localhost:3000   # Local development
 # VITE_API_URL=https://xxx.execute-api.us-east-1.amazonaws.com  # Production
@@ -310,15 +350,18 @@ BASE_PATH=/aristaeus                  # For GitHub Pages (repo name)
 ## API Endpoints Quick Reference
 
 ### User-Facing
+
 - `GET /api/ingredients` - Get available ingredients
 - `POST /api/orders` - Create new order
 - `GET /api/orders/{id}` - Get order status
 
 ### Admin
+
 - `GET /api/orders` - List all orders (admin view)
 - `PUT /api/orders/{orderId}/status` - Update order status (admin)
 
 ### Robot-Facing
+
 - `POST /api/robots/register` - Register new robot
 - `GET /api/robots/{robotId}/next-order` - Poll for next order
 - `POST /api/orders/{orderId}/status` - Update order status (robot)
@@ -331,6 +374,7 @@ Full API spec: See PROJECT_SPEC.md
 ## Database Schema Quick Reference
 
 ### Ingredients Table
+
 ```sql
 id, name, category,
 calories_per_100g, protein_g_per_100g, carbs_g_per_100g,
@@ -339,6 +383,7 @@ available, display_order
 ```
 
 ### Orders Table
+
 ```sql
 id, bowl_size, customer_name, status,
 total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, total_weight_g,
@@ -347,12 +392,14 @@ created_at, assigned_at, started_at, completed_at
 ```
 
 ### Order Items Table
+
 ```sql
 id, order_id, ingredient_id,
 quantity_grams, sequence_order
 ```
 
 ### Robots Table
+
 ```sql
 id, name, identifier, status,
 current_order_id, last_heartbeat
@@ -368,6 +415,7 @@ Full schema: See `backend/prisma/schema.prisma`
 
 1. **Automatic:** Push to `main` branch triggers GitHub Actions workflow
 2. **Manual:**
+
    ```bash
    cd frontend
    npm run deploy:gh-pages
@@ -386,6 +434,7 @@ Full schema: See `backend/prisma/schema.prisma`
    - Aurora Serverless database provisioned
 
 2. **Build Lambda package:**
+
    ```bash
    # Generate Prisma client
    npm run db:generate
@@ -395,6 +444,7 @@ Full schema: See `backend/prisma/schema.prisma`
    ```
 
 3. **Deploy with Terraform:**
+
    ```bash
    cd backend/infra
 
@@ -421,6 +471,7 @@ Full schema: See `backend/prisma/schema.prisma`
 ## Important Notes for AI Assistants
 
 ### What NOT to Implement (Out of Scope)
+
 - User authentication/accounts
 - Payment processing
 - Inventory/stock management
@@ -430,12 +481,16 @@ Full schema: See `backend/prisma/schema.prisma`
 - Pricing logic (for now)
 
 ### Code Style & Patterns
+
 - **TypeScript:** Strict typing everywhere
 - **Svelte 5:** Use runes (`$state`, `$derived`, `$effect`)
 - **Backend:** Zod for validation, Prisma for database
 - **API:** Return JSON, use standard HTTP status codes
+- **Linting:** All code must pass ESLint and Prettier checks before commit
+- **Formatting:** Uses tabs, single quotes, no trailing commas (see `.prettierrc`)
 
 ### Testing the Backend Locally
+
 ```bash
 # Terminal 1: Start backend
 npm run dev:backend
@@ -449,16 +504,17 @@ curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json
 
 ## Version History
 
-| Date | Version | Changes |
-|------|---------|---------|
-| 2025-12-02 | 1.0 | Initial CLAUDE.md creation |
-| 2025-12-14 | 1.1 | Converted to npm workspaces monorepo, added `@aristaeus/shared` package |
-| 2025-12-14 | 2.0 | Added serverless backend (Lambda + Prisma), GitHub Pages deployment |
-| 2025-12-15 | 2.1 | Migrated from Serverless Framework to Terraform, added Express dev server |
-| 2026-01-09 | 3.0 | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed |
+| Date       | Version | Changes                                                                                     |
+| ---------- | ------- | ------------------------------------------------------------------------------------------- |
+| 2025-12-02 | 1.0     | Initial CLAUDE.md creation                                                                  |
+| 2025-12-14 | 1.1     | Converted to npm workspaces monorepo, added `@aristaeus/shared` package                     |
+| 2025-12-14 | 2.0     | Added serverless backend (Lambda + Prisma), GitHub Pages deployment                         |
+| 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                   |
+| 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed |
+| 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                     |
 
 ---
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-02-03
 **Project Status:** MVP Complete
 **Current Phase:** Production Ready (Robot integration pending)

@@ -8,7 +8,7 @@ register('en', () => import('./en.json'));
 // Initialize i18n with Spanish as the default locale
 init({
 	fallbackLocale: 'es',
-	initialLocale: browser ? (localStorage.getItem('locale') || 'es') : 'es'
+	initialLocale: browser ? localStorage.getItem('locale') || 'es' : 'es'
 });
 
 // Function to change locale

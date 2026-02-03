@@ -57,27 +57,27 @@ backend/
 
 ### User-Facing
 
-| Method | Endpoint | Handler | Description |
-|--------|----------|---------|-------------|
-| GET | `/api/ingredients` | `getIngredients` | List available ingredients |
-| POST | `/api/orders` | `createOrder` | Create a new order |
-| GET | `/api/orders/{id}` | `getOrder` | Get order details |
+| Method | Endpoint           | Handler          | Description                |
+| ------ | ------------------ | ---------------- | -------------------------- |
+| GET    | `/api/ingredients` | `getIngredients` | List available ingredients |
+| POST   | `/api/orders`      | `createOrder`    | Create a new order         |
+| GET    | `/api/orders/{id}` | `getOrder`       | Get order details          |
 
 ### Admin
 
-| Method | Endpoint | Handler | Description |
-|--------|----------|---------|-------------|
-| GET | `/api/orders` | `listOrders` | List all orders |
-| PUT | `/api/orders/{orderId}/status` | `adminUpdateOrderStatus` | Update order status |
+| Method | Endpoint                       | Handler                  | Description         |
+| ------ | ------------------------------ | ------------------------ | ------------------- |
+| GET    | `/api/orders`                  | `listOrders`             | List all orders     |
+| PUT    | `/api/orders/{orderId}/status` | `adminUpdateOrderStatus` | Update order status |
 
 ### Robot API
 
-| Method | Endpoint | Handler | Description |
-|--------|----------|---------|-------------|
-| POST | `/api/robots/register` | `registerRobot` | Register a new robot |
-| GET | `/api/robots/{robotId}/next-order` | `getNextOrder` | Poll for assigned order |
-| POST | `/api/orders/{orderId}/status` | `updateOrderStatus` | Robot updates order status |
-| POST | `/api/robots/{robotId}/heartbeat` | `robotHeartbeat` | Send heartbeat |
+| Method | Endpoint                           | Handler             | Description                |
+| ------ | ---------------------------------- | ------------------- | -------------------------- |
+| POST   | `/api/robots/register`             | `registerRobot`     | Register a new robot       |
+| GET    | `/api/robots/{robotId}/next-order` | `getNextOrder`      | Poll for assigned order    |
+| POST   | `/api/orders/{orderId}/status`     | `updateOrderStatus` | Robot updates order status |
+| POST   | `/api/robots/{robotId}/heartbeat`  | `robotHeartbeat`    | Send heartbeat             |
 
 ---
 
@@ -158,12 +158,12 @@ curl -X PUT http://localhost:3000/api/orders/1/status \
 
 ### Schema Overview
 
-| Table | Description |
-|-------|-------------|
+| Table         | Description                              |
+| ------------- | ---------------------------------------- |
 | `ingredients` | Ingredient catalog with nutritional data |
-| `orders` | Order headers with status and totals |
+| `orders`      | Order headers with status and totals     |
 | `order_items` | Line items linking orders to ingredients |
-| `robots` | Robot registry for device management |
+| `robots`      | Robot registry for device management     |
 
 ### Commands
 
@@ -195,16 +195,16 @@ pending → queued → assigned → preparing → ready → completed
                     failed
 ```
 
-| Status | Description |
-|--------|-------------|
-| `pending` | Order created, awaiting robot assignment |
-| `queued` | Assigned to robot, waiting for pickup |
-| `assigned` | Robot has fetched order details |
-| `preparing` | Robot is preparing the bowl |
-| `ready` | Bowl complete, awaiting pickup |
-| `completed` | Order fulfilled |
-| `cancelled` | Order cancelled (admin) |
-| `failed` | Error during preparation |
+| Status      | Description                              |
+| ----------- | ---------------------------------------- |
+| `pending`   | Order created, awaiting robot assignment |
+| `queued`    | Assigned to robot, waiting for pickup    |
+| `assigned`  | Robot has fetched order details          |
+| `preparing` | Robot is preparing the bowl              |
+| `ready`     | Bowl complete, awaiting pickup           |
+| `completed` | Order fulfilled                          |
+| `cancelled` | Order cancelled (admin)                  |
+| `failed`    | Error during preparation                 |
 
 ---
 
@@ -278,13 +278,14 @@ terraform output api_gateway_url
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
+| Variable       | Description                  |
+| -------------- | ---------------------------- |
 | `DATABASE_URL` | PostgreSQL connection string |
 
 ### CORS Configuration
 
 Configured in `api_gateway.tf`:
+
 - Allowed origins: Configurable via `cors_allowed_origins` variable
 - Allowed methods: GET, POST, PUT, DELETE, OPTIONS
 - Allowed headers: Content-Type, Authorization
@@ -294,18 +295,23 @@ Configured in `api_gateway.tf`:
 ## Scripts
 
 ### `npm run dev`
+
 Starts the Express development server with hot reload.
 
 ### `npm run build`
+
 Compiles TypeScript and builds Lambda deployment package.
 
 ### `npm run build:lambda`
+
 Builds only the Lambda zip package (skips TypeScript compilation).
 
 ### `npm run typecheck`
+
 Runs TypeScript compiler without emitting files.
 
 ### `npm run lint`
+
 Runs ESLint on source files.
 
 ---
@@ -326,11 +332,13 @@ For AWS deployment, set via Terraform variables or AWS Parameter Store.
 ## Dependencies
 
 ### Runtime
+
 - `@prisma/client` - Database ORM
 - `zod` - Schema validation
 - `@aristaeus/shared` - Shared types
 
 ### Development
+
 - `express` - Local dev server
 - `esbuild` - Lambda bundling
 - `tsx` - TypeScript execution
@@ -341,16 +349,20 @@ For AWS deployment, set via Terraform variables or AWS Parameter Store.
 ## Troubleshooting
 
 ### Lambda Cold Starts
+
 Prisma client is initialized once per Lambda instance. First invocation may be slower.
 
 ### Database Connection Issues
+
 - Verify `DATABASE_URL` is correct
 - Check security group allows Lambda access
 - Ensure database is running
 
 ### CORS Errors
+
 - Verify `cors_allowed_origins` includes your frontend domain
 - Check API Gateway CORS configuration in AWS Console
 
 ### Prisma Binary Issues
+
 The schema includes `binaryTargets = ["native", "rhel-openssl-3.0.x"]` for Lambda compatibility.

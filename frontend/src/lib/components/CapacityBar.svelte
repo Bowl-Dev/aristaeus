@@ -24,21 +24,20 @@
 		</span>
 	</div>
 	<div class="capacity-bar">
-		<div
-			class="capacity-fill"
-			class:warning={warning}
-			class:exceeded={exceeded}
-			style="width: {percentage}%"
-		></div>
+		<div class="capacity-fill" class:warning class:exceeded style="width: {percentage}%"></div>
 	</div>
 	{#if exceeded}
 		<p class="capacity-message error">
 			{$_('capacity.exceeded', { values: { amount: Math.abs(remaining).toFixed(0) } })}
 		</p>
 	{:else if warning}
-		<p class="capacity-message warning">{$_('capacity.onlyRemaining', { values: { amount: remaining.toFixed(0) } })}</p>
+		<p class="capacity-message warning">
+			{$_('capacity.onlyRemaining', { values: { amount: remaining.toFixed(0) } })}
+		</p>
 	{:else}
-		<p class="capacity-message">{$_('capacity.remaining', { values: { amount: remaining.toFixed(0) } })}</p>
+		<p class="capacity-message">
+			{$_('capacity.remaining', { values: { amount: remaining.toFixed(0) } })}
+		</p>
 	{/if}
 </div>
 

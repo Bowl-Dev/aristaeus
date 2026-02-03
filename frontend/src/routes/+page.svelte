@@ -1,6 +1,13 @@
 <script lang="ts">
 	// Aristaeus - Automated Bowl Kitchen
-	import { type Ingredient, type BowlSize, type BowlSizePrice, type NutritionalSummary as NutritionalSummaryType, BOWL_SIZES, BOWL_SIZE_PRICES} from '$lib/types';
+	import {
+		type Ingredient,
+		type BowlSize,
+		type NutritionalSummary as NutritionalSummaryType,
+		BOWL_SIZES,
+		BOWL_SIZE_PRICES
+	} from '$lib/types';
+	import { SvelteMap } from 'svelte/reactivity';
 	import IngredientCard from '$lib/components/IngredientCard.svelte';
 	import BowlSizeSelector from '$lib/components/BowlSizeSelector.svelte';
 	import NutritionalSummary from '$lib/components/NutritionalSummary.svelte';
@@ -8,11 +15,11 @@
 	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
 
 	let yes = $state(false); //Variable for the default bowl checkbox
-	let isCutlery = $state(false); //Variable for checking if customer wants cutlery	
+	let isCutlery = $state(false); //Variable for checking if customer wants cutlery
 
 	// Ingredients fetched from API
 	let ingredients = $state<Ingredient[]>([]);
-	
+
 	// Loading and error states
 	let loading = $state(true);
 	let error = $state<string | null>(null);
@@ -41,7 +48,7 @@
 	// Group ingredients by category
 	const ingredientsByCategory = $derived.by(() => {
 		const grouped: Record<string, Ingredient[]> = {};
-		ingredients.forEach(ingredient => {
+		ingredients.forEach((ingredient) => {
 			if (!grouped[ingredient.category]) {
 				grouped[ingredient.category] = [];
 			}
@@ -52,32 +59,47 @@
 
 	//Set priority to category, sets the order in which categories are shown
 	const priority: Record<string, number> = {
-		    base: 0, vegetable: 1,  protein: 2, topping: 3, dressing: 4
-  	};
-	//let cat:string[] = $derived(Object.keys(ingredientsByCategory));	
-	let orderedCategories = $derived(Object.fromEntries(Object.entries(ingredientsByCategory).sort(([a],[b]) => {		
-		const orderA = priority[a] ?? 999;
-      	const orderB = priority[b] ?? 999;
-      	return orderA - orderB;
-		}		
-	)))
-	
+		base: 0,
+		vegetable: 1,
+		protein: 2,
+		topping: 3,
+		dressing: 4
+	};
+	//let cat:string[] = $derived(Object.keys(ingredientsByCategory));
+	let orderedCategories = $derived(
+		Object.fromEntries(
+			Object.entries(ingredientsByCategory).sort(([a], [b]) => {
+				const orderA = priority[a] ?? 999;
+				const orderB = priority[b] ?? 999;
+				return orderA - orderB;
+			})
+		)
+	);
+
 	//$inspect(ingredients);
-	//let cat:string[] = $derived(Object.keys(orderedCategories));			
+	//let cat:string[] = $derived(Object.keys(orderedCategories));
 
 	// State
 	let customerName = $state('');
 	let customerPhone = $state('');
 	let selectedBowlSize = $state<BowlSize | null>(null);
-	let selectedItems = $state<Map<number, number>>(new Map()); // ingredientId -> quantityGrams
+	let selectedItems = new SvelteMap<number, number>(); // ingredientId -> quantityGrams
 
 	// Functions for selecting a predefined bowl
-	function setDefaultBowlSize(){		
-		return selectedBowlSize = BOWL_SIZES[1];		
+	function setDefaultBowlSize() {
+		return (selectedBowlSize = BOWL_SIZES[1]);
 	}
-	function setDefaultBowlIng(){				
-		return selectedItems = 	new Map([[107,40],[102,140],[104,40],[106,40],[108,40],[100,120],[115,25]]);		
-	}	
+	function setDefaultBowlIng() {
+		return (selectedItems = new SvelteMap([
+			[107, 40],
+			[102, 140],
+			[104, 40],
+			[106, 40],
+			[108, 40],
+			[100, 120],
+			[115, 25]
+		]));
+	}
 
 	// Calculate nutritional summary
 	//const priceMult = (1/0.33); //Define multiplier for charging the customer
@@ -89,23 +111,24 @@
 			fatG: 0,
 			fiberG: 0,
 			totalWeightG: 0,
-			totalPrice: 0,
+			totalPrice: 0
 		};
-		if(selectedBowlSize == BOWL_SIZES[0]){   //Where the prices of the packaging are shown
+		if (selectedBowlSize == BOWL_SIZES[0]) {
+			//Where the prices of the packaging are shown
 			totals.totalPrice = BOWL_SIZE_PRICES[0];
 		}
-		if(selectedBowlSize == BOWL_SIZES[1]){   
+		if (selectedBowlSize == BOWL_SIZES[1]) {
 			totals.totalPrice = BOWL_SIZE_PRICES[1];
-		} 
-		if(selectedBowlSize == BOWL_SIZES[2]){
-			totals.totalPrice = BOWL_SIZE_PRICES[2]
 		}
-		if(isCutlery == true){
+		if (selectedBowlSize == BOWL_SIZES[2]) {
+			totals.totalPrice = BOWL_SIZE_PRICES[2];
+		}
+		if (isCutlery == true) {
 			totals.totalPrice += 300;
-		}	
+		}
 
 		selectedItems.forEach((quantityGrams, ingredientId) => {
-			const ingredient = ingredients.find(i => i.id === ingredientId);
+			const ingredient = ingredients.find((i) => i.id === ingredientId);
 			if (ingredient && quantityGrams > 0) {
 				const multiplier = quantityGrams / 100;
 				totals.calories += ingredient.caloriesPer100g * multiplier;
@@ -114,7 +137,7 @@
 				totals.fatG += ingredient.fatGPer100g * multiplier;
 				totals.fiberG += (ingredient.fiberGPer100g || 0) * multiplier;
 				totals.totalWeightG += quantityGrams;
-				totals.totalPrice += ingredient.pricePerG * (multiplier*100);
+				totals.totalPrice += ingredient.pricePerG * (multiplier * 100);
 			}
 		});
 
@@ -127,28 +150,24 @@
 	);
 
 	// Check if capacity is exceeded
-	const capacityExceeded = $derived(
-		remainingCapacity !== null && remainingCapacity < 0
-	);
+	const capacityExceeded = $derived(remainingCapacity !== null && remainingCapacity < 0);
 
 	// Check if form is valid
 	const isFormValid = $derived(
 		customerName.trim().length > 0 &&
-		selectedBowlSize !== null &&
-		selectedItems.size > 0 &&
-		!capacityExceeded
+			selectedBowlSize !== null &&
+			selectedItems.size > 0 &&
+			!capacityExceeded
 	);
 
 	// Update ingredient quantity
 	function updateQuantity(ingredientId: number, quantity: number) {
-		// Create new Map to trigger reactivity (Svelte 5 runes requirement)
-		const newMap = new Map(selectedItems);
+		// SvelteMap is reactive, so we can mutate it directly
 		if (quantity > 0) {
-			newMap.set(ingredientId, quantity);
+			selectedItems.set(ingredientId, quantity);
 		} else {
-			newMap.delete(ingredientId);
+			selectedItems.delete(ingredientId);
 		}
-		selectedItems = newMap;
 	}
 
 	// Submit order
@@ -174,7 +193,7 @@
 			orderSuccess = { orderId: response.orderId, status: response.status };
 			customerName = '';
 			selectedBowlSize = null;
-			selectedItems = new Map();
+			selectedItems = new SvelteMap();
 		} catch (e) {
 			const message = e instanceof ApiError ? e.message : 'Failed to submit order';
 			alert(`Error: ${message}`);
@@ -203,7 +222,7 @@
 		<div class="success-banner">
 			<p>Order #{orderSuccess.orderId} created successfully!</p>
 			<p>Status: {orderSuccess.status}</p>
-			<button onclick={() => orderSuccess = null}>Create Another Order</button>
+			<button onclick={() => (orderSuccess = null)}>Create Another Order</button>
 		</div>
 	{/if}
 
@@ -228,7 +247,7 @@
 					required
 				/>
 			</div>
-			<br>			
+			<br />
 			<div class="input-group">
 				<label for="customer-phone">{$_('customerInfo.phoneLabel')}</label>
 				<input
@@ -240,18 +259,25 @@
 				/>
 			</div>
 		</section>
-		<div class="default-bowl"> 
-			<label>			
-			<input type="checkbox" bind:checked={yes} onchange={() => {setDefaultBowlSize(); setDefaultBowlIng()}} />
-			{$_('app.defaultBowl')}
+		<div class="default-bowl">
+			<label>
+				<input
+					type="checkbox"
+					bind:checked={yes}
+					onchange={() => {
+						setDefaultBowlSize();
+						setDefaultBowlIng();
+					}}
+				/>
+				{$_('app.defaultBowl')}
 			</label>
 		</div>
-		<br>
-		
-		<!-- Bowl Size Selection -->		 
+		<br />
+
+		<!-- Bowl Size Selection -->
 		<BowlSizeSelector
 			selectedSize={selectedBowlSize}
-			onSizeChange={(size) => selectedBowlSize = size}
+			onSizeChange={(size) => (selectedBowlSize = size)}
 		/>
 
 		<!-- Ingredient Selection Section -->
@@ -267,24 +293,24 @@
 					<p>No ingredients available at this time.</p>
 				</div>
 			{:else}
-				{#each Object.entries(orderedCategories) as [category, items]}
+				{#each Object.entries(orderedCategories) as [category, items] (category)}
 					<div class="category-group">
-						<!--{#if getCategoryName(category) != $_('ingredients.categories.dressing')}-->						 
-							<h3>{getCategoryName(category)}</h3>
-							<div class="ingredient-grid">
-								{#each items as ingredient}
-									<IngredientCard
-										{ingredient}
-										ingredientName={getIngredientName(ingredient.name)}
-										ingredientCategory={getCategoryName(category)}
-										isSelected={selectedItems.has(ingredient.id)}
-										quantity={selectedItems.get(ingredient.id) || 0}
-										onSelect={() => updateQuantity(ingredient.id, 50)}
-										onRemove={() => updateQuantity(ingredient.id, 0)}
-										onQuantityChange={(qty) => updateQuantity(ingredient.id, qty)}
-									/>
-								{/each}
-							</div>
+						<!--{#if getCategoryName(category) != $_('ingredients.categories.dressing')}-->
+						<h3>{getCategoryName(category)}</h3>
+						<div class="ingredient-grid">
+							{#each items as ingredient (ingredient.id)}
+								<IngredientCard
+									{ingredient}
+									ingredientName={getIngredientName(ingredient.name)}
+									ingredientCategory={getCategoryName(category)}
+									isSelected={selectedItems.has(ingredient.id)}
+									quantity={selectedItems.get(ingredient.id) || 0}
+									onSelect={() => updateQuantity(ingredient.id, 50)}
+									onRemove={() => updateQuantity(ingredient.id, 0)}
+									onQuantityChange={(qty) => updateQuantity(ingredient.id, qty)}
+								/>
+							{/each}
+						</div>
 						<!--{/if}-->
 					</div>
 				{/each}
@@ -292,24 +318,20 @@
 		</section>
 
 		<!-- Cutelry check -->
-		<div class="default-bowl"> 
-			<label>			
-			<input type="checkbox" bind:checked={isCutlery} />
-			{$_('app.cutlery')}
+		<div class="default-bowl">
+			<label>
+				<input type="checkbox" bind:checked={isCutlery} />
+				{$_('app.cutlery')}
 			</label>
 		</div>
-		<br>
+		<br />
 
 		<!-- Nutritional Summary -->
-		<NutritionalSummary nutrition={nutritionalSummary} bowlSize={selectedBowlSize}/>
+		<NutritionalSummary nutrition={nutritionalSummary} bowlSize={selectedBowlSize} />
 
 		<!-- Submit Button -->
 		<div class="submit-section">
-			<button
-				class="submit-button"
-				disabled={!isFormValid || submitting}
-				onclick={submitOrder}
-			>
+			<button class="submit-button" disabled={!isFormValid || submitting} onclick={submitOrder}>
 				{#if submitting}
 					Submitting...
 				{:else}
@@ -325,7 +347,8 @@
 		padding: 2rem;
 		max-width: 1200px;
 		margin: 0 auto;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 	}
 
 	h1 {
@@ -343,7 +366,7 @@
 	.form-container {
 		background: #fff;
 		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		padding: 2rem;
 	}
 
@@ -382,7 +405,7 @@
 		color: #34495e;
 	}
 
-	.input-group input[type="text"] {
+	.input-group input[type='text'] {
 		padding: 0.75rem;
 		border: 2px solid #ecf0f1;
 		border-radius: 4px;
@@ -390,7 +413,7 @@
 		transition: border-color 0.3s;
 	}
 
-	.input-group input[type="text"]:focus {
+	.input-group input[type='text']:focus {
 		outline: none;
 		border-color: #16a085;
 	}
@@ -402,7 +425,7 @@
 		color: #34495e;
 		margin-bottom: 1rem;
 	}
-	.default-bowl input[type="checkbox"] {
+	.default-bowl input[type='checkbox'] {
 		transform: scale(1.5);
 		vertical-align: middle;
 		width: 1.5em;
@@ -418,7 +441,7 @@
 	.ingredient-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-		gap: 1rem;		
+		gap: 1rem;
 		justify-content: center;
 	}
 
@@ -438,7 +461,9 @@
 		font-size: 1.125rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: background-color 0.3s, transform 0.1s;
+		transition:
+			background-color 0.3s,
+			transform 0.1s;
 	}
 
 	.submit-button:hover:not(:disabled) {

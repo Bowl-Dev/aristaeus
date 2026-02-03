@@ -1,38 +1,53 @@
-# sv
+# Aristaeus Frontend
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit-based frontend for the Aristaeus automated bowl kitchen system.
 
-## Creating a project
+## Development
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+```bash
+# From the monorepo root
+npm install                    # Install all dependencies
+npm run dev                    # Start dev server (http://localhost:5173)
 ```
 
-## Developing
+## Linting & Formatting
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+This project uses ESLint and Prettier for code quality. Pre-commit hooks automatically run linting on staged files.
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+# From the monorepo root
+npm run lint                   # Run ESLint
+npm run lint:fix               # Run ESLint with auto-fix
+npm run format                 # Format with Prettier
+npm run format:check           # Check formatting
 ```
 
 ## Building
 
-To create a production version of your app:
-
-```sh
-npm run build
+```bash
+npm run build                  # Build for production (GitHub Pages)
+npm run preview                # Preview production build
 ```
 
-You can preview the production build with `npm run preview`.
+## Type Checking
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```bash
+npm run check                  # Run svelte-check
+npm run check:watch            # Run svelte-check in watch mode
+```
+
+## Environment Variables
+
+Create `frontend/.env` for local development:
+
+```bash
+VITE_API_URL=http://localhost:3000   # Backend API URL
+BASE_PATH=/aristaeus                  # For GitHub Pages deployment
+```
+
+## Tech Stack
+
+- SvelteKit 2.0 with adapter-static
+- Svelte 5 (using runes: `$state`, `$derived`, `$effect`)
+- TypeScript
+- svelte-i18n for internationalization

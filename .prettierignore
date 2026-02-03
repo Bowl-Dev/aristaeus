@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+dist/
+.svelte-kit/
+
+# Terraform
+backend/infra/**/*.tf
+
+# Generated files
+*.lock
+package-lock.json
+
+# Prisma
+backend/prisma/migrations/

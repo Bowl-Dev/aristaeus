@@ -20,7 +20,7 @@
 <section class="bowl-size-selection">
 	<h2>{$_('bowlSize.title')}</h2>
 	<div class="bowl-sizes">
-		{#each bowlSizes as { size, nameKey }}
+		{#each bowlSizes as { size, nameKey } (size)}
 			<button
 				class="bowl-size-option"
 				class:selected={selectedSize === size}

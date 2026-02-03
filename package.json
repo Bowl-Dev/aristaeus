@@ -1,28 +1,54 @@
 {
-  "name": "aristaeus",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "workspaces": [
-    "frontend",
-    "backend",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "npm run dev --workspace=frontend",
-    "dev:backend": "npm run dev --workspace=@aristaeus/backend",
-    "build": "npm run build --workspace=frontend",
-    "build:backend": "npm run build --workspace=@aristaeus/backend",
-    "preview": "npm run preview --workspace=frontend",
-    "check": "npm run check --workspace=frontend",
-    "check:watch": "npm run check:watch --workspace=frontend",
-    "db:generate": "npm run db:generate --workspace=@aristaeus/backend",
-    "db:push": "npm run db:push --workspace=@aristaeus/backend",
-    "db:migrate": "npm run db:migrate --workspace=@aristaeus/backend",
-    "db:seed": "npm run db:seed --workspace=@aristaeus/backend",
-    "db:studio": "npm run db:studio --workspace=@aristaeus/backend"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+	"name": "aristaeus",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"workspaces": [
+		"frontend",
+		"backend",
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "npm run dev --workspace=frontend",
+		"dev:backend": "npm run dev --workspace=@aristaeus/backend",
+		"build": "npm run build --workspace=frontend",
+		"build:backend": "npm run build --workspace=@aristaeus/backend",
+		"preview": "npm run preview --workspace=frontend",
+		"check": "npm run check --workspace=frontend",
+		"check:watch": "npm run check:watch --workspace=frontend",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"db:generate": "npm run db:generate --workspace=@aristaeus/backend",
+		"db:push": "npm run db:push --workspace=@aristaeus/backend",
+		"db:migrate": "npm run db:migrate --workspace=@aristaeus/backend",
+		"db:seed": "npm run db:seed --workspace=@aristaeus/backend",
+		"db:studio": "npm run db:studio --workspace=@aristaeus/backend",
+		"prepare": "husky"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.2",
+		"eslint": "^9.39.2",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.14.0",
+		"globals": "^17.3.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.5.2",
+		"prettier": "^3.8.1",
+		"prettier-plugin-svelte": "^3.4.1",
+		"typescript-eslint": "^8.54.0"
+	},
+	"lint-staged": {
+		"*.{js,ts,svelte}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{json,md,yml,yaml}": [
+			"prettier --write"
+		]
+	}
 }

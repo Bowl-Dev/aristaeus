@@ -17,6 +17,7 @@ GitHub Pages (Static)  ──HTTP──►  AWS API Gateway  ──►  Lambda  
 ```
 
 **Key Points:**
+
 - No server-side rendering (SSR) - fully client-side rendered (SPA)
 - API routes are NOT in the frontend - they're in the backend workspace
 - Uses `@sveltejs/adapter-static` for GitHub Pages deployment
@@ -27,6 +28,7 @@ GitHub Pages (Static)  ──HTTP──►  AWS API Gateway  ──►  Lambda  
 ## Quick Reference
 
 ### Project Structure
+
 ```
 frontend/
 ├── src/
@@ -103,7 +105,7 @@ export interface Ingredient {
 // Item in current bowl being built
 export interface BowlItem {
 	ingredient_id: number;
-	ingredient: Ingredient;  // Denormalized for easy access
+	ingredient: Ingredient; // Denormalized for easy access
 	quantity_grams: number;
 	sequence_order: number;
 }
@@ -120,7 +122,7 @@ export interface NutritionalSummary {
 
 // Complete bowl state
 export interface Bowl {
-	bowl_size: BowlSize | null;  // Selected bowl size
+	bowl_size: BowlSize | null; // Selected bowl size
 	items: BowlItem[];
 	nutritionalSummary: NutritionalSummary;
 }
@@ -183,10 +185,7 @@ export const selectedBowlSize = writable<BowlSize | null>(null);
 export const bowlItems = writable<BowlItem[]>([]);
 
 // Derived nutritional summary (auto-recalculates when items change)
-export const nutritionalSummary = derived(
-	bowlItems,
-	($items) => calculateNutrition($items)
-);
+export const nutritionalSummary = derived(bowlItems, ($items) => calculateNutrition($items));
 
 // Derived remaining capacity
 export const remainingCapacity = derived(
@@ -209,20 +208,23 @@ export function setBowlSize(size: BowlSize) {
 }
 
 export function addIngredient(ingredient: Ingredient, quantity_grams: number = 100) {
-	bowlItems.update(items => {
+	bowlItems.update((items) => {
 		const sequence_order = items.length + 1;
-		return [...items, {
-			ingredient_id: ingredient.id,
-			ingredient,
-			quantity_grams,
-			sequence_order
-		}];
+		return [
+			...items,
+			{
+				ingredient_id: ingredient.id,
+				ingredient,
+				quantity_grams,
+				sequence_order
+			}
+		];
 	});
 }
 
 export function removeIngredient(ingredient_id: number) {
-	bowlItems.update(items => {
-		const filtered = items.filter(item => item.ingredient_id !== ingredient_id);
+	bowlItems.update((items) => {
+		const filtered = items.filter((item) => item.ingredient_id !== ingredient_id);
 		// Resequence
 		return filtered.map((item, index) => ({
 			...item,
@@ -232,12 +234,8 @@ export function removeIngredient(ingredient_id: number) {
 }
 
 export function updateQuantity(ingredient_id: number, quantity_grams: number) {
-	bowlItems.update(items =>
-		items.map(item =>
-			item.ingredient_id === ingredient_id
-				? { ...item, quantity_grams }
-				: item
-		)
+	bowlItems.update((items) =>
+		items.map((item) => (item.ingredient_id === ingredient_id ? { ...item, quantity_grams } : item))
 	);
 }
 
@@ -268,9 +266,9 @@ export function calculateNutrition(items: BowlItem[]): NutritionalSummary {
 		total_weight_g: 0
 	};
 
-	items.forEach(item => {
+	items.forEach((item) => {
 		const { ingredient, quantity_grams } = item;
-		const multiplier = quantity_grams / 100;  // Per 100g basis
+		const multiplier = quantity_grams / 100; // Per 100g basis
 
 		totals.total_calories += ingredient.calories_per_100g * multiplier;
 		totals.total_protein_g += ingredient.protein_g_per_100g * multiplier;
@@ -306,11 +304,13 @@ export function formatMacro(value: number, unit: string = 'g'): string {
 **Purpose:** Display ingredients by category, allow user to add to bowl
 
 **Props:**
+
 ```typescript
 export let ingredients: Ingredient[];
 ```
 
 **Behavior:**
+
 - Group ingredients by category
 - Display nutritional info on hover/expand
 - "Add to Bowl" button for each ingredient
@@ -318,23 +318,28 @@ export let ingredients: Ingredient[];
 - Disable if already in bowl
 
 **Events:**
+
 - Dispatch `add` event with ingredient data
 
 **Template Structure:**
+
 ```svelte
 <script lang="ts">
 	import type { Ingredient } from '$lib/types';
 	import { addIngredient } from '$lib/stores/bowl';
-	
+
 	export let ingredients: Ingredient[];
-	
+
 	// Group by category
-	$: grouped = ingredients.reduce((acc, ing) => {
-		if (!acc[ing.category]) acc[ing.category] = [];
-		acc[ing.category].push(ing);
-		return acc;
-	}, {} as Record<string, Ingredient[]>);
-	
+	$: grouped = ingredients.reduce(
+		(acc, ing) => {
+			if (!acc[ing.category]) acc[ing.category] = [];
+			acc[ing.category].push(ing);
+			return acc;
+		},
+		{} as Record<string, Ingredient[]>
+	);
+
 	const categories = ['protein', 'base', 'vegetable', 'topping', 'dressing'];
 </script>
 
@@ -346,11 +351,13 @@ export let ingredients: Ingredient[];
 **Purpose:** Show real-time nutritional totals
 
 **Props:**
+
 ```typescript
 // Uses store directly, no props needed
 ```
 
 **Behavior:**
+
 - Subscribe to `nutritionalSummary` store
 - Display totals in clear format
 - Highlight macros (calories, protein, carbs, fat, fiber)
@@ -358,6 +365,7 @@ export let ingredients: Ingredient[];
 - Total weight display
 
 **Template Structure:**
+
 ```svelte
 <script lang="ts">
 	import { nutritionalSummary } from '$lib/stores/bowl';
@@ -388,11 +396,13 @@ export let ingredients: Ingredient[];
 **Purpose:** Show current bowl items, quantities, submit order
 
 **Props:**
+
 ```typescript
 // Uses stores directly
 ```
 
 **Behavior:**
+
 - List all items in bowl with quantities
 - Allow quantity adjustment (increment/decrement)
 - Allow item removal
@@ -402,43 +412,45 @@ export let ingredients: Ingredient[];
 - Handle order submission
 
 **Events:**
+
 - Handle API call to POST /api/orders
 - Navigate to order status page on success
 
 **Template Structure:**
+
 ```svelte
 <script lang="ts">
 	import { bowlItems, nutritionalSummary, clearBowl } from '$lib/stores/bowl';
 	import { goto } from '$app/navigation';
 	import type { CreateOrderRequest } from '$lib/types';
-	
+
 	let submitting = false;
 	let error: string | null = null;
-	
+
 	async function submitOrder() {
 		submitting = true;
 		error = null;
-		
+
 		const payload: CreateOrderRequest = {
-			items: $bowlItems.map(item => ({
+			items: $bowlItems.map((item) => ({
 				ingredient_id: item.ingredient_id,
 				quantity_grams: item.quantity_grams,
 				sequence_order: item.sequence_order
 			})),
 			nutritional_summary: $nutritionalSummary
 		};
-		
+
 		try {
 			const response = await fetch('/api/orders', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
 			});
-			
+
 			if (!response.ok) {
 				throw new Error('Order submission failed');
 			}
-			
+
 			const data = await response.json();
 			clearBowl();
 			goto(`/order/${data.order_id}`);
@@ -468,7 +480,7 @@ import type { IngredientsResponse } from '$lib/types';
 export const load: PageLoad = async ({ fetch }) => {
 	const response = await fetch('/api/ingredients');
 	const data: IngredientsResponse = await response.json();
-	
+
 	return {
 		ingredients: data.ingredients
 	};
@@ -484,21 +496,21 @@ export const load: PageLoad = async ({ fetch }) => {
 	import NutritionalDisplay from '$lib/components/NutritionalDisplay.svelte';
 	import OrderSummary from '$lib/components/OrderSummary.svelte';
 	import { bowlItems } from '$lib/stores/bowl';
-	
+
 	export let data: PageData;
 </script>
 
 <main>
 	<h1>Build Your Bowl</h1>
-	
+
 	<div class="builder-layout">
 		<section class="ingredient-selection">
 			<IngredientSelector ingredients={data.ingredients} />
 		</section>
-		
+
 		<aside class="bowl-summary">
 			<NutritionalDisplay />
-			
+
 			{#if $bowlItems.length > 0}
 				<OrderSummary />
 			{:else}
@@ -515,7 +527,7 @@ export const load: PageLoad = async ({ fetch }) => {
 		gap: 2rem;
 		padding: 2rem;
 	}
-	
+
 	@media (max-width: 768px) {
 		.builder-layout {
 			grid-template-columns: 1fr;
@@ -533,7 +545,7 @@ import type { Order } from '$lib/types';
 export const load: PageLoad = async ({ params, fetch }) => {
 	const response = await fetch(`/api/orders/${params.id}`);
 	const order: Order = await response.json();
-	
+
 	return { order };
 };
 ```
@@ -544,7 +556,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
 <script lang="ts">
 	import type { PageData } from './$types';
 	export let data: PageData;
-	
+
 	const statusLabels = {
 		pending: 'Order Received',
 		queued: 'Waiting for Robot',
@@ -558,12 +570,12 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
 <main>
 	<h1>Order #{data.order.id}</h1>
-	
+
 	<div class="status-display">
 		<h2>{statusLabels[data.order.status]}</h2>
 		<p class="status-badge {data.order.status}">{data.order.status}</p>
 	</div>
-	
+
 	{#if data.order.items}
 		<section class="order-items">
 			<h3>Your Bowl</h3>
@@ -576,7 +588,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
 			</ul>
 		</section>
 	{/if}
-	
+
 	{#if data.order.nutritional_summary}
 		<section class="nutrition">
 			<h3>Nutritional Information</h3>
@@ -588,7 +600,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
 			</div>
 		</section>
 	{/if}
-	
+
 	<p class="timestamp">Ordered: {new Date(data.order.created_at).toLocaleString()}</p>
 </main>
 ```
@@ -603,10 +615,10 @@ The frontend communicates with the AWS Lambda backend via an API client. **There
 
 ```typescript
 import type {
-  Ingredient,
-  CreateOrderRequest,
-  CreateOrderResponse,
-  OrderStatusResponse,
+	Ingredient,
+	CreateOrderRequest,
+	CreateOrderResponse,
+	OrderStatusResponse
 } from '@aristaeus/shared';
 
 // API base URL - configured via environment variable
@@ -616,73 +628,77 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * Custom API Error class
  */
 export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-    public readonly details?: unknown
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
+	constructor(
+		public readonly status: number,
+		message: string,
+		public readonly details?: unknown
+	) {
+		super(message);
+		this.name = 'ApiError';
+	}
 }
 
 /**
  * Fetch all available ingredients
  */
 export async function getIngredients(): Promise<Ingredient[]> {
-  const response = await fetch(`${API_BASE_URL}/api/ingredients`);
-  if (!response.ok) throw new ApiError(response.status, 'Failed to fetch ingredients');
-  const data = await response.json();
-  return data.ingredients;
+	const response = await fetch(`${API_BASE_URL}/api/ingredients`);
+	if (!response.ok) throw new ApiError(response.status, 'Failed to fetch ingredients');
+	const data = await response.json();
+	return data.ingredients;
 }
 
 /**
  * Create a new order
  */
 export async function createOrder(order: CreateOrderRequest): Promise<CreateOrderResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/orders`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(order),
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, error.message || 'Failed to create order');
-  }
-  return response.json();
+	const response = await fetch(`${API_BASE_URL}/api/orders`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(order)
+	});
+	if (!response.ok) {
+		const error = await response.json().catch(() => ({}));
+		throw new ApiError(response.status, error.message || 'Failed to create order');
+	}
+	return response.json();
 }
 
 /**
  * Get order status by ID
  */
 export async function getOrderStatus(orderId: number): Promise<OrderStatusResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`);
-  if (!response.ok) throw new ApiError(response.status, 'Order not found');
-  return response.json();
+	const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`);
+	if (!response.ok) throw new ApiError(response.status, 'Order not found');
+	return response.json();
 }
 
 /**
  * List all orders (admin)
  */
 export async function listOrders(): Promise<AdminOrder[]> {
-  const response = await apiFetch<{ orders: AdminOrder[] }>('/api/orders');
-  return response.orders;
+	const response = await apiFetch<{ orders: AdminOrder[] }>('/api/orders');
+	return response.orders;
 }
 
 /**
  * Update order status (admin)
  */
-export async function updateOrderStatus(orderId: number, status: string): Promise<{ success: boolean }> {
-  return apiFetch(`/api/orders/${orderId}/status`, {
-    method: 'PUT',
-    body: JSON.stringify({ status }),
-  });
+export async function updateOrderStatus(
+	orderId: number,
+	status: string
+): Promise<{ success: boolean }> {
+	return apiFetch(`/api/orders/${orderId}/status`, {
+		method: 'PUT',
+		body: JSON.stringify({ status })
+	});
 }
 ```
 
 ### Environment Configuration
 
 Create `.env` file for local development:
+
 ```bash
 # Local backend (serverless-offline)
 VITE_API_URL=http://localhost:3000
@@ -695,21 +711,21 @@ VITE_API_URL=http://localhost:3000
 
 ```svelte
 <script lang="ts">
-  import { getIngredients, createOrder, ApiError } from '$lib/api/client';
-  import { onMount } from 'svelte';
+	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
+	import { onMount } from 'svelte';
 
-  let ingredients = $state<Ingredient[]>([]);
-  let error = $state<string | null>(null);
+	let ingredients = $state<Ingredient[]>([]);
+	let error = $state<string | null>(null);
 
-  onMount(async () => {
-    try {
-      ingredients = await getIngredients();
-    } catch (e) {
-      if (e instanceof ApiError) {
-        error = e.message;
-      }
-    }
-  });
+	onMount(async () => {
+		try {
+			ingredients = await getIngredients();
+		} catch (e) {
+			if (e instanceof ApiError) {
+				error = e.message;
+			}
+		}
+	});
 </script>
 ```
 
@@ -722,26 +738,26 @@ VITE_API_URL=http://localhost:3000
 ```css
 :root {
 	/* Colors */
-	--color-primary: #4CAF50;
-	--color-secondary: #FF9800;
-	--color-background: #FAFAFA;
-	--color-surface: #FFFFFF;
+	--color-primary: #4caf50;
+	--color-secondary: #ff9800;
+	--color-background: #fafafa;
+	--color-surface: #ffffff;
 	--color-text: #333333;
 	--color-text-secondary: #666666;
-	
+
 	/* Nutritional macro colors */
-	--color-protein: #E91E63;
-	--color-carbs: #2196F3;
-	--color-fat: #FFC107;
-	--color-fiber: #9C27B0;
-	
+	--color-protein: #e91e63;
+	--color-carbs: #2196f3;
+	--color-fat: #ffc107;
+	--color-fiber: #9c27b0;
+
 	/* Spacing */
 	--spacing-xs: 0.25rem;
 	--spacing-sm: 0.5rem;
 	--spacing-md: 1rem;
 	--spacing-lg: 1.5rem;
 	--spacing-xl: 2rem;
-	
+
 	/* Typography */
 	--font-family: system-ui, -apple-system, sans-serif;
 	--font-size-base: 16px;
@@ -752,6 +768,7 @@ VITE_API_URL=http://localhost:3000
 ```
 
 ### Design Principles
+
 - Mobile-first responsive design
 - Clear visual hierarchy (ingredients → bowl → nutrition)
 - Accessible (ARIA labels, keyboard navigation)
@@ -765,10 +782,12 @@ VITE_API_URL=http://localhost:3000
 ### Client-Side Validation
 
 #### Bowl Size Validation
+
 1. **Required:** User must select a bowl size before submitting order
 2. **Valid sizes:** 250g, 320g, or 480g only
 
 #### Ingredient Validation
+
 1. **Minimum quantity:** 10g per ingredient
 2. **Maximum quantity:** 500g per ingredient (suggested, but limited by bowl capacity)
 3. **Bowl capacity:** Total ingredient weight cannot exceed selected bowl size
@@ -776,6 +795,7 @@ VITE_API_URL=http://localhost:3000
 5. **Required:** At least 1 ingredient to submit order
 
 #### Real-time Validation
+
 1. **Capacity feedback:** Show remaining capacity as user adds ingredients
 2. **Prevent exceeding:** Disable ingredient input or show error when approaching/at capacity
 3. **Visual feedback:** Highlight capacity bar/indicator when nearing limit
@@ -793,8 +813,7 @@ const validationErrors = {
 	maxQuantity: 'Quantity cannot exceed 500g',
 	capacityExceeded: (selected: number, capacity: number) =>
 		`Total weight (${selected}g) exceeds bowl capacity (${capacity}g)`,
-	capacityWarning: (remaining: number) =>
-		`Only ${remaining}g remaining in bowl`,
+	capacityWarning: (remaining: number) => `Only ${remaining}g remaining in bowl`,
 	maxIngredients: 'Maximum 10 ingredients per bowl',
 	minIngredients: 'Add at least one ingredient to your bowl',
 
@@ -833,26 +852,28 @@ VITE_API_URL=http://localhost:3000
 The frontend uses `@sveltejs/adapter-static` for static site generation.
 
 **svelte.config.js:**
+
 ```javascript
 import adapter from '@sveltejs/adapter-static';
 
 const config = {
-  kit: {
-    adapter: adapter({
-      pages: 'build',
-      assets: 'build',
-      fallback: 'index.html', // SPA fallback
-      precompress: false,
-      strict: true
-    }),
-    paths: {
-      base: process.env.BASE_PATH || ''
-    }
-  }
+	kit: {
+		adapter: adapter({
+			pages: 'build',
+			assets: 'build',
+			fallback: 'index.html', // SPA fallback
+			precompress: false,
+			strict: true
+		}),
+		paths: {
+			base: process.env.BASE_PATH || ''
+		}
+	}
 };
 ```
 
 **+layout.ts (required for static adapter):**
+
 ```typescript
 export const prerender = true;
 export const ssr = false;
@@ -864,6 +885,7 @@ export const ssr = false;
 Push to `main` branch triggers `.github/workflows/deploy-frontend.yml`
 
 **2. Manual:**
+
 ```bash
 cd frontend
 npm run deploy:gh-pages
@@ -880,6 +902,7 @@ npm run deploy:gh-pages
 ## Testing Checklist
 
 ### Functionality
+
 - [ ] Load ingredients from API
 - [ ] Add ingredient to bowl
 - [ ] Remove ingredient from bowl
@@ -890,6 +913,7 @@ npm run deploy:gh-pages
 - [ ] Display order status correctly
 
 ### Edge Cases
+
 - [ ] Empty bowl cannot be submitted
 - [ ] Quantities below minimum show error
 - [ ] Quantities above maximum show error
@@ -897,6 +921,7 @@ npm run deploy:gh-pages
 - [ ] Loading states displayed during API calls
 
 ### Responsive Design
+
 - [ ] Mobile layout works correctly
 - [ ] Tablet layout works correctly
 - [ ] Desktop layout works correctly
@@ -960,7 +985,7 @@ const pool = new Pool({
 
 export const db = {
 	query: (text: string, params?: any[]) => pool.query(text, params),
-	
+
 	// Helper methods
 	getIngredients: async () => {
 		const result = await pool.query(
@@ -968,12 +993,12 @@ export const db = {
 		);
 		return result.rows;
 	},
-	
+
 	createOrder: async (items: any[], nutritionalSummary: any) => {
 		// Transaction to insert order + order_items
 		// Return order_id
 	},
-	
+
 	getOrder: async (orderId: number) => {
 		// Query with joins
 		// Return full order details
@@ -1002,20 +1027,20 @@ export const load: PageLoad = async ({ fetch, params }) => {
 <script>
 	let submitting = false;
 	let error: string | null = null;
-	
+
 	async function handleSubmit() {
 		submitting = true;
 		error = null;
-		
+
 		try {
 			const response = await fetch('/api/endpoint', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
 			});
-			
+
 			if (!response.ok) throw new Error('Request failed');
-			
+
 			const data = await response.json();
 			// Handle success
 		} catch (err) {
@@ -1032,7 +1057,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
 ```svelte
 <script>
 	let items = [];
-	
+
 	// Automatically recalculates when items changes
 	$: total = items.reduce((sum, item) => sum + item.value, 0);
 </script>

@@ -10,7 +10,7 @@
 		//totalPrice: number;
 	}
 
-	let { nutrition, bowlSize}: Props = $props();	
+	let { nutrition, bowlSize }: Props = $props();
 </script>
 
 <section class="nutritional-summary">
@@ -18,7 +18,7 @@
 
 	<!-- Bowl Capacity Bar -->
 	{#if bowlSize}
-		<CapacityBar currentWeight={nutrition.totalWeightG} bowlSize={bowlSize} />
+		<CapacityBar currentWeight={nutrition.totalWeightG} {bowlSize} />
 	{/if}
 
 	<div class="nutrition-grid">
@@ -49,8 +49,8 @@
 	</div>
 
 	<div class="nutrition-item">
-			<span class="label">Precio</span>
-			<span class="value">{Math.round(nutrition.totalPrice/100)*100}$COP</span>
+		<span class="label">Precio</span>
+		<span class="value">{Math.round(nutrition.totalPrice / 100) * 100}$COP</span>
 	</div>
 </section>
 

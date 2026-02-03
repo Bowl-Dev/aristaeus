@@ -188,46 +188,49 @@ CREATE INDEX idx_robots_status ON robots(status);
 ### Sample Data Structure
 
 **Ingredient Example:**
+
 ```json
 {
-  "id": 1,
-  "name": "Grilled Chicken",
-  "category": "protein",
-  "calories_per_100g": 165,
-  "protein_g_per_100g": 31,
-  "carbs_g_per_100g": 0,
-  "fat_g_per_100g": 3.6,
-  "fiber_g_per_100g": 0,
-  "price_per_g": 25.2,
-  "available": true
+	"id": 1,
+	"name": "Grilled Chicken",
+	"category": "protein",
+	"calories_per_100g": 165,
+	"protein_g_per_100g": 31,
+	"carbs_g_per_100g": 0,
+	"fat_g_per_100g": 3.6,
+	"fiber_g_per_100g": 0,
+	"price_per_g": 25.2,
+	"available": true
 }
 ```
 
 **Order Example:**
+
 ```json
 {
-  "id": 42,
-  "bowl_size": 450,
-  "status": "queued",
-  "total_calories": 450,
-  "total_protein_g": 35,
-  "total_carbs_g": 45,
-  "total_fat_g": 12,
-  "total_weight_g": 350,
-  "total_price": 15800,
-  "assigned_robot_id": null,
-  "created_at": "2025-11-13T10:30:00Z"
+	"id": 42,
+	"bowl_size": 450,
+	"status": "queued",
+	"total_calories": 450,
+	"total_protein_g": 35,
+	"total_carbs_g": 45,
+	"total_fat_g": 12,
+	"total_weight_g": 350,
+	"total_price": 15800,
+	"assigned_robot_id": null,
+	"created_at": "2025-11-13T10:30:00Z"
 }
 ```
 
 **Order Item Example:**
+
 ```json
 {
-  "id": 101,
-  "order_id": 42,
-  "ingredient_id": 1,
-  "quantity_grams": 150,
-  "sequence_order": 2
+	"id": 101,
+	"order_id": 42,
+	"ingredient_id": 1,
+	"quantity_grams": 150,
+	"sequence_order": 2
 }
 ```
 
@@ -238,67 +241,73 @@ CREATE INDEX idx_robots_status ON robots(status);
 ### User-Facing APIs
 
 #### GET `/api/ingredients`
+
 Returns all available ingredients with nutritional data.
 
 **Response:**
+
 ```json
 {
-  "ingredients": [
-    {
-      "id": 1,
-      "name": "Grilled Chicken",
-      "category": "protein",
-      "calories_per_100g": 165,
-      "protein_g_per_100g": 31,
-      "carbs_g_per_100g": 0,
-      "fat_g_per_100g": 3.6,
-      "fiber_g_per_100g": 0,
-      "available": true
-    }
-  ]
+	"ingredients": [
+		{
+			"id": 1,
+			"name": "Grilled Chicken",
+			"category": "protein",
+			"calories_per_100g": 165,
+			"protein_g_per_100g": 31,
+			"carbs_g_per_100g": 0,
+			"fat_g_per_100g": 3.6,
+			"fiber_g_per_100g": 0,
+			"available": true
+		}
+	]
 }
 ```
 
 #### POST `/api/orders`
+
 Creates a new bowl order.
 
 **Request:**
+
 ```json
 {
-  "bowl_size": 480,
-  "items": [
-    {
-      "ingredient_id": 1,
-      "quantity_grams": 150,
-      "sequence_order": 1
-    },
-    {
-      "ingredient_id": 5,
-      "quantity_grams": 100,
-      "sequence_order": 2
-    }
-  ],
-  "nutritional_summary": {
-    "total_calories": 450,
-    "total_protein_g": 35,
-    "total_carbs_g": 45,
-    "total_fat_g": 12,
-    "total_fiber_g": 8,
-    "total_weight_g": 350
-  }
+	"bowl_size": 480,
+	"items": [
+		{
+			"ingredient_id": 1,
+			"quantity_grams": 150,
+			"sequence_order": 1
+		},
+		{
+			"ingredient_id": 5,
+			"quantity_grams": 100,
+			"sequence_order": 2
+		}
+	],
+	"nutritional_summary": {
+		"total_calories": 450,
+		"total_protein_g": 35,
+		"total_carbs_g": 45,
+		"total_fat_g": 12,
+		"total_fiber_g": 8,
+		"total_weight_g": 350
+	}
 }
 ```
 
 **Response:**
+
 ```json
 {
-  "order_id": 42,
-  "status": "pending",
-  "created_at": "2025-11-13T10:30:00Z"
+	"order_id": 42,
+	"status": "pending",
+	"created_at": "2025-11-13T10:30:00Z"
 }
 ```
 
 **Business Logic:**
+
 1. Validate bowl_size is one of the allowed values (250, 450, 600)
 2. Validate all ingredient IDs exist and are available
 3. Validate quantities are positive and meet minimum requirement (10g per ingredient)
@@ -309,9 +318,11 @@ Creates a new bowl order.
 8. Attempt to assign to available robot (status → `queued` if successful)
 
 #### GET `/api/orders/{id}`
+
 Retrieves order details and current status.
 
 **Response:**
+
 ```json
 {
   "id": 42,
@@ -335,9 +346,11 @@ Retrieves order details and current status.
 ### Admin APIs
 
 #### GET `/api/orders`
+
 Returns all orders (admin view).
 
 **Response:**
+
 ```json
 {
   "orders": [
@@ -357,23 +370,26 @@ Returns all orders (admin view).
 ```
 
 #### PUT `/api/orders/{orderId}/status`
+
 Admin updates order status (no robot validation).
 
 **Request:**
+
 ```json
 {
-  "status": "completed"
+	"status": "completed"
 }
 ```
 
 **Valid statuses:** `pending`, `queued`, `assigned`, `preparing`, `ready`, `completed`, `cancelled`, `failed`
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "orderId": 42,
-  "currentStatus": "completed"
+	"success": true,
+	"orderId": 42,
+	"currentStatus": "completed"
 }
 ```
 
@@ -384,111 +400,127 @@ Admin updates order status (no robot validation).
 These APIs define the contract for ESP32 integration.
 
 #### POST `/api/robots/register`
+
 Robot registration (one-time setup).
 
 **Request:**
+
 ```json
 {
-  "name": "Kitchen Robot 01",
-  "identifier": "ESP32_ABC123"
+	"name": "Kitchen Robot 01",
+	"identifier": "ESP32_ABC123"
 }
 ```
 
 **Response:**
+
 ```json
 {
-  "robot_id": 1,
-  "status": "online"
+	"robot_id": 1,
+	"status": "online"
 }
 ```
 
 #### GET `/api/robots/{robot_id}/next-order`
+
 Robot polls for next assigned order.
 
 **Response (order available):**
+
 ```json
 {
-  "order_id": 42,
-  "items": [
-    {
-      "ingredient_id": 1,
-      "ingredient_name": "Grilled Chicken",
-      "quantity_grams": 150,
-      "sequence_order": 1
-    },
-    {
-      "ingredient_id": 5,
-      "ingredient_name": "Quinoa",
-      "quantity_grams": 100,
-      "sequence_order": 2
-    }
-  ]
+	"order_id": 42,
+	"items": [
+		{
+			"ingredient_id": 1,
+			"ingredient_name": "Grilled Chicken",
+			"quantity_grams": 150,
+			"sequence_order": 1
+		},
+		{
+			"ingredient_id": 5,
+			"ingredient_name": "Quinoa",
+			"quantity_grams": 100,
+			"sequence_order": 2
+		}
+	]
 }
 ```
 
 **Response (no orders):**
+
 ```json
 {
-  "order_id": null
+	"order_id": null
 }
 ```
 
 **Business Logic:**
+
 - Returns order with status `queued` OR `assigned` to this robot
 - Updates order status to `assigned` and `assigned_at` timestamp
 - Sets `current_order_id` on robot record
 
 #### POST `/api/orders/{order_id}/status`
+
 Robot updates order status.
 
 **Request:**
+
 ```json
 {
-  "robot_id": 1,
-  "status": "preparing",
-  "timestamp": "2025-11-13T10:35:00Z"
+	"robot_id": 1,
+	"status": "preparing",
+	"timestamp": "2025-11-13T10:35:00Z"
 }
 ```
 
 **Valid Status Transitions:**
+
 - `assigned` → `preparing` (robot started work)
 - `preparing` → `ready` (bowl complete, ready for pickup)
 - `preparing` → `failed` (error occurred)
 - `ready` → `completed` (order picked up - future)
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "current_status": "preparing"
+	"success": true,
+	"current_status": "preparing"
 }
 ```
 
 **Business Logic:**
+
 - Validate robot_id matches assigned_robot_id on order
 - Validate status transition is allowed
 - Update order status and relevant timestamp fields
 - If status is terminal (`completed`, `failed`), clear robot's `current_order_id`
 
 #### POST `/api/robots/{robot_id}/heartbeat`
+
 Robot sends periodic heartbeat.
 
 **Request:**
+
 ```json
 {
-  "status": "online",
-  "timestamp": "2025-11-13T10:35:00Z"
+	"status": "online",
+	"timestamp": "2025-11-13T10:35:00Z"
 }
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true
+	"success": true
 }
 ```
 
 **Business Logic:**
+
 - Update `last_heartbeat` timestamp
 - Update robot `status` if changed
 
@@ -525,28 +557,28 @@ Robot sends periodic heartbeat.
 ```javascript
 // Frontend calculation
 function calculateNutrition(orderItems, ingredientsData) {
-  let totals = {
-    calories: 0,
-    protein_g: 0,
-    carbs_g: 0,
-    fat_g: 0,
-    fiber_g: 0,
-    weight_g: 0
-  };
+	let totals = {
+		calories: 0,
+		protein_g: 0,
+		carbs_g: 0,
+		fat_g: 0,
+		fiber_g: 0,
+		weight_g: 0
+	};
 
-  orderItems.forEach(item => {
-    const ingredient = ingredientsData.find(i => i.id === item.ingredient_id);
-    const multiplier = item.quantity_grams / 100;
+	orderItems.forEach((item) => {
+		const ingredient = ingredientsData.find((i) => i.id === item.ingredient_id);
+		const multiplier = item.quantity_grams / 100;
 
-    totals.calories += ingredient.calories_per_100g * multiplier;
-    totals.protein_g += ingredient.protein_g_per_100g * multiplier;
-    totals.carbs_g += ingredient.carbs_g_per_100g * multiplier;
-    totals.fat_g += ingredient.fat_g_per_100g * multiplier;
-    totals.fiber_g += (ingredient.fiber_g_per_100g || 0) * multiplier;
-    totals.weight_g += item.quantity_grams;
-  });
+		totals.calories += ingredient.calories_per_100g * multiplier;
+		totals.protein_g += ingredient.protein_g_per_100g * multiplier;
+		totals.carbs_g += ingredient.carbs_g_per_100g * multiplier;
+		totals.fat_g += ingredient.fat_g_per_100g * multiplier;
+		totals.fiber_g += (ingredient.fiber_g_per_100g || 0) * multiplier;
+		totals.weight_g += item.quantity_grams;
+	});
 
-  return totals;
+	return totals;
 }
 ```
 
@@ -562,8 +594,8 @@ When an order is created or a robot becomes available:
 
 ```typescript
 async function assignOrderToRobot(orderId: number): Promise<boolean> {
-  // Find available robot (status = 'online', current_order_id = null)
-  const availableRobot = await db.query(`
+	// Find available robot (status = 'online', current_order_id = null)
+	const availableRobot = await db.query(`
     SELECT id FROM robots
     WHERE status = 'online'
     AND current_order_id IS NULL
@@ -571,31 +603,38 @@ async function assignOrderToRobot(orderId: number): Promise<boolean> {
     LIMIT 1
   `);
 
-  if (!availableRobot) {
-    return false; // No robots available, order stays in 'pending'
-  }
+	if (!availableRobot) {
+		return false; // No robots available, order stays in 'pending'
+	}
 
-  // Assign order to robot
-  await db.query(`
+	// Assign order to robot
+	await db.query(
+		`
     UPDATE orders
     SET assigned_robot_id = $1,
         status = 'queued',
         assigned_at = NOW()
     WHERE id = $2
-  `, [availableRobot.id, orderId]);
+  `,
+		[availableRobot.id, orderId]
+	);
 
-  await db.query(`
+	await db.query(
+		`
     UPDATE robots
     SET current_order_id = $1,
         status = 'busy'
     WHERE id = $2
-  `, [orderId, availableRobot.id]);
+  `,
+		[orderId, availableRobot.id]
+	);
 
-  return true;
+	return true;
 }
 ```
 
 **Trigger Points:**
+
 - After order creation
 - When robot sends heartbeat with status 'online' and no current order
 - When robot completes/fails an order
@@ -609,6 +648,7 @@ pending → queued → assigned → preparing → ready → completed
 ```
 
 **Status Definitions:**
+
 - `pending`: Order created, awaiting robot assignment
 - `queued`: Order assigned to robot, waiting for robot to fetch
 - `assigned`: Robot has fetched order details
@@ -629,50 +669,52 @@ All robot communication goes through a service interface. MVP implementation use
 
 ```typescript
 interface RobotService {
-  // Called when robot polls for orders
-  getNextOrder(robotId: number): Promise<Order | null>;
+	// Called when robot polls for orders
+	getNextOrder(robotId: number): Promise<Order | null>;
 
-  // Called when robot updates order status
-  updateOrderStatus(orderId: number, robotId: number, status: string): Promise<void>;
+	// Called when robot updates order status
+	updateOrderStatus(orderId: number, robotId: number, status: string): Promise<void>;
 
-  // Called when robot sends heartbeat
-  recordHeartbeat(robotId: number, status: string): Promise<void>;
+	// Called when robot sends heartbeat
+	recordHeartbeat(robotId: number, status: string): Promise<void>;
 
-  // Called when order is created (attempt assignment)
-  attemptOrderAssignment(orderId: number): Promise<boolean>;
+	// Called when order is created (attempt assignment)
+	attemptOrderAssignment(orderId: number): Promise<boolean>;
 }
 
 // MVP Mock Implementation
 class MockRobotService implements RobotService {
-  async getNextOrder(robotId: number): Promise<Order | null> {
-    // Query database for assigned orders
-    return await db.getAssignedOrder(robotId);
-  }
+	async getNextOrder(robotId: number): Promise<Order | null> {
+		// Query database for assigned orders
+		return await db.getAssignedOrder(robotId);
+	}
 
-  async updateOrderStatus(orderId: number, robotId: number, status: string): Promise<void> {
-    // Validate and update in database
-    await db.updateOrderStatus(orderId, status);
-  }
+	async updateOrderStatus(orderId: number, robotId: number, status: string): Promise<void> {
+		// Validate and update in database
+		await db.updateOrderStatus(orderId, status);
+	}
 
-  async recordHeartbeat(robotId: number, status: string): Promise<void> {
-    await db.updateRobotHeartbeat(robotId, status);
-  }
+	async recordHeartbeat(robotId: number, status: string): Promise<void> {
+		await db.updateRobotHeartbeat(robotId, status);
+	}
 
-  async attemptOrderAssignment(orderId: number): Promise<boolean> {
-    return await assignOrderToRobot(orderId);
-  }
+	async attemptOrderAssignment(orderId: number): Promise<boolean> {
+		return await assignOrderToRobot(orderId);
+	}
 }
 ```
 
 ### Future ESP32 Integration Notes
 
 **Recommended Approach: HTTP Polling**
+
 - ESP32 sends `GET /api/robots/{id}/next-order` every 5-10 seconds
 - Simple, no persistent connections needed
 - Works with NAT/firewalls
 - Low latency acceptable per requirements
 
 **Alternative: MQTT via AWS IoT Core**
+
 - More complex setup
 - Better for lower latency needs
 - Bidirectional communication
@@ -699,6 +741,7 @@ The project uses a split architecture optimized for early development:
 ```
 
 ### Frontend: GitHub Pages
+
 - **Adapter:** `@sveltejs/adapter-static` for static site generation
 - **Deployment:** GitHub Actions workflow on push to main
 - **Cost:** Free
@@ -707,11 +750,13 @@ The project uses a split architecture optimized for early development:
 ### Backend: AWS Serverless
 
 **API Layer:**
+
 - **AWS API Gateway** (HTTP API) - Routes requests to Lambda functions
 - **AWS Lambda** - Serverless functions for API handlers
 - **Serverless Framework** - Infrastructure as code deployment
 
 **Database:**
+
 - **Aurora Serverless v2** (recommended) - PostgreSQL-compatible, scales to near-zero
 - **Alternative:** RDS PostgreSQL for predictable workloads
 - **ORM:** Prisma for type-safe database access
@@ -739,12 +784,14 @@ npm run deploy:backend:prod   # production stage
 ### Environment Configuration
 
 **Frontend** (`.env` or GitHub repo variables):
+
 ```
 VITE_API_URL=https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
 BASE_PATH=/aristaeus  # For GitHub Pages subdirectory
 ```
 
 **Backend** (`.env` or AWS Parameter Store):
+
 ```
 DATABASE_URL=postgresql://user:pass@aurora-cluster.us-east-1.rds.amazonaws.com:5432/aristaeus
 ```
@@ -752,6 +799,7 @@ DATABASE_URL=postgresql://user:pass@aurora-cluster.us-east-1.rds.amazonaws.com:5
 ### Future Migration Path
 
 When ready for production with custom domain:
+
 1. Keep AWS backend unchanged
 2. Either:
    - Add custom domain to GitHub Pages, OR
@@ -767,6 +815,7 @@ When ready for production with custom domain:
 Create a simple testing UI or use Postman to simulate robot behavior:
 
 1. **Register Mock Robot:**
+
    ```
    POST /api/robots/register
    { "name": "Test Robot", "identifier": "MOCK_001" }
@@ -775,11 +824,13 @@ Create a simple testing UI or use Postman to simulate robot behavior:
 2. **Create Test Order via User Interface**
 
 3. **Fetch Order as Robot:**
+
    ```
    GET /api/robots/1/next-order
    ```
 
 4. **Update Order Status:**
+
    ```
    POST /api/orders/1/status
    { "robot_id": 1, "status": "preparing" }
@@ -806,12 +857,14 @@ Create a simple testing UI or use Postman to simulate robot behavior:
 ## Implementation Phases
 
 ### Phase 1: Database & API Foundation
+
 1. Set up PostgreSQL database
 2. Create schema and seed ingredient data
 3. Implement API routes (all endpoints)
 4. Create mock robot service
 
 ### Phase 2: Frontend Development
+
 1. Ingredient catalog display
 2. Bowl builder form
 3. Real-time nutritional calculation
@@ -819,11 +872,13 @@ Create a simple testing UI or use Postman to simulate robot behavior:
 5. Order status display (basic)
 
 ### Phase 3: Integration & Testing
+
 1. End-to-end order flow testing
 2. Robot API testing with mock client
 3. Edge case handling (no robots available, invalid ingredients, etc.)
 
 ### Phase 4: Deployment
+
 1. Set up AWS infrastructure
 2. Deploy application
 3. Configure database connection
@@ -838,21 +893,25 @@ Create a simple testing UI or use Postman to simulate robot behavior:
 Must be created for MVP functionality:
 
 **Proteins:**
+
 - Grilled Chicken (165 cal/100g, 31g protein)
 - Tofu (76 cal/100g, 8g protein)
 - Hard Boiled Egg (155 cal/100g, 13g protein)
 
 **Bases:**
+
 - Quinoa (120 cal/100g, 4.4g protein, 21g carbs)
 - Brown Rice (111 cal/100g, 2.6g protein, 23g carbs)
 - Mixed Greens (15 cal/100g, 1.4g protein, 2.9g carbs)
 
 **Vegetables:**
+
 - Cherry Tomatoes (18 cal/100g, 0.9g protein)
 - Cucumber (16 cal/100g, 0.7g protein)
 - Avocado (160 cal/100g, 2g protein, 8.5g carbs, 15g fat)
 
 **Dressings:**
+
 - Olive Oil Vinaigrette (450 cal/100ml, 50g fat)
 - Tahini (595 cal/100g, 17g protein, 24g fat)
 
@@ -863,6 +922,7 @@ Must be created for MVP functionality:
 ## Future Enhancements (Post-MVP)
 
 ### Near-Term
+
 - User authentication and profiles
 - Order history and reordering
 - Multiple bowl orders
@@ -870,12 +930,14 @@ Must be created for MVP functionality:
 - Real-time order status updates (WebSockets)
 
 ### Medium-Term
+
 - Inventory management and stock tracking
 - Ingredient availability based on stock
 - Analytics dashboard (order volume, popular ingredients)
 - User preference tracking
 
 ### Long-Term
+
 - Recommendation engine based on user history
 - Health metrics integration
 - Allergen and dietary restriction filtering
@@ -887,6 +949,7 @@ Must be created for MVP functionality:
 ## Technical Constraints & Assumptions
 
 ### Assumptions
+
 1. Nutritional data is static (doesn't change frequently)
 2. Ingredient availability is manually managed (not auto-depleted)
 3. Single-bowl orders only
@@ -898,6 +961,7 @@ Must be created for MVP functionality:
 ### Constraints
 
 #### Bowl Size Constraints
+
 1. **Fixed Bowl Sizes:** Orders must select one of three standardized bowl sizes:
    - **Small:** 250g total capacity (packaging: 1200 COP)
    - **Medium:** 450g total capacity (packaging: 1300 COP)
@@ -908,11 +972,13 @@ Must be created for MVP functionality:
 5. **Validation:** Both client-side (real-time feedback) and server-side (order submission) validation required
 
 #### Ingredient Constraints
+
 1. **Minimum ingredient quantity:** 10g per ingredient
 2. **Maximum ingredients per bowl:** TBD (suggest 10)
 3. **Ingredient selection:** Users input gram amounts that must sum to ≤ selected bowl capacity
 
 #### Operational Constraints
+
 1. **Robot polling interval:** 5-10 seconds (configurable)
 2. **Order timeout:** If not picked up by robot in 5 minutes, return to queue
 
@@ -940,6 +1006,7 @@ Must be created for MVP functionality:
    - Especially critical for future ESP32 communication
 
 ### Post-MVP Security Enhancements
+
 - User authentication (JWT tokens)
 - Robot authentication tokens (not just IDs)
 - Rate limiting on APIs
@@ -1009,6 +1076,7 @@ AWS_IOT_ENDPOINT=<iot-endpoint>
 ## Contact & Support
 
 For implementation questions or clarifications:
+
 - Refer to this document first
 - Check API examples and sample data
 - Validate against database schema
@@ -1017,12 +1085,12 @@ For implementation questions or clarifications:
 
 ## Document Revision History
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2025-11-13 | Initial specification | System Architect |
-| 1.1 | 2025-12-02 | Added bowl size constraints (250g/320g/480g), updated database schema, API specs, and validation rules | Claude Code |
-| 2.0 | 2026-01-09 | Updated architecture (GitHub Pages + AWS Lambda), added admin APIs, MVP complete | Claude Code |
-| 2.1 | 2026-02-03 | Updated bowl sizes (250/450/600g), added pricing model (packaging + ingredients + cutlery) | Claude Code |
+| Version | Date       | Changes                                                                                                | Author           |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------ | ---------------- |
+| 1.0     | 2025-11-13 | Initial specification                                                                                  | System Architect |
+| 1.1     | 2025-12-02 | Added bowl size constraints (250g/320g/480g), updated database schema, API specs, and validation rules | Claude Code      |
+| 2.0     | 2026-01-09 | Updated architecture (GitHub Pages + AWS Lambda), added admin APIs, MVP complete                       | Claude Code      |
+| 2.1     | 2026-02-03 | Updated bowl sizes (250/450/600g), added pricing model (packaging + ingredients + cutlery)             | Claude Code      |
 
 ---
 
@@ -1031,11 +1099,13 @@ For implementation questions or clarifications:
 ### Complete Order Flow Example
 
 **1. User loads ingredients:**
+
 ```bash
 GET /api/ingredients
 ```
 
 **2. User submits order:**
+
 ```bash
 POST /api/orders
 Content-Type: application/json
@@ -1061,6 +1131,7 @@ Response: {"order_id": 42, "status": "queued"}
 ```
 
 **3. Robot polls for order:**
+
 ```bash
 GET /api/robots/1/next-order
 
@@ -1076,6 +1147,7 @@ Response:
 ```
 
 **4. Robot starts preparation:**
+
 ```bash
 POST /api/orders/42/status
 Content-Type: application/json
@@ -1084,6 +1156,7 @@ Content-Type: application/json
 ```
 
 **5. Robot completes bowl:**
+
 ```bash
 POST /api/orders/42/status
 Content-Type: application/json
