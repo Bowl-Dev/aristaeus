@@ -57,6 +57,7 @@ This is an **npm workspaces monorepo**. All commands should be run from the root
 aristaeus/
 ├── package.json                       # Root package.json with workspaces config
 ├── package-lock.json                  # Shared lockfile for all workspaces
+├── docker-compose.yml                 # Local PostgreSQL database
 ├── tsconfig.base.json                 # Shared TypeScript configuration
 ├── eslint.config.js                   # ESLint flat config
 ├── .prettierrc                        # Prettier configuration
@@ -71,6 +72,8 @@ aristaeus/
 │   ├── README.md                      # SvelteKit project readme
 │   ├── package.json                   # Frontend-specific dependencies
 │   ├── svelte.config.js               # SvelteKit config (adapter-static)
+│   ├── .env.local                     # Local backend URL (committed)
+│   ├── .env.hosted.example            # Template for hosted backend URL
 │   ├── src/
 │   │   ├── routes/
 │   │   │   ├── +page.svelte           # Main bowl builder interface
@@ -89,6 +92,8 @@ aristaeus/
 ├── backend/                           # @aristaeus/backend workspace
 │   ├── package.json                   # Backend dependencies
 │   ├── tsconfig.json                  # Backend TypeScript config
+│   ├── .env.local                     # Docker PostgreSQL connection (committed)
+│   ├── .env.hosted.example            # Template for Aurora credentials
 │   ├── prisma/
 │   │   ├── schema.prisma              # Database schema
 │   │   └── seed.ts                    # Database seed script
@@ -280,14 +285,45 @@ pending → queued → assigned → preparing → ready → completed
 npm install                    # Install all workspace dependencies
 ```
 
-### Running Development Servers
+### Development Modes
+
+Three development configurations are available:
+
+| Mode              | Command                | Frontend       | Backend        | Database          |
+| ----------------- | ---------------------- | -------------- | -------------- | ----------------- |
+| **Local**         | `npm run dev:local`    | localhost:5173 | localhost:3000 | Docker PostgreSQL |
+| **Hybrid**        | `npm run dev:hybrid`   | localhost:5173 | localhost:3000 | AWS Aurora        |
+| **Frontend-only** | `npm run dev:frontend` | localhost:5173 | AWS Lambda     | AWS Aurora        |
 
 ```bash
-# Frontend (http://localhost:5173)
-npm run dev
+# Full local development (Docker DB required)
+npm run dev:local
 
-# Backend API (http://localhost:3000)
-npm run dev:backend
+# Local backend with hosted database
+npm run dev:hybrid
+
+# Frontend only, connecting to production backend
+npm run dev:frontend
+```
+
+#### First-time Local Setup
+
+```bash
+npm run docker:up              # Start Docker PostgreSQL
+npm run db:setup               # Push schema and seed data
+npm run dev:local              # Run local development
+```
+
+#### Using Hosted Database
+
+```bash
+# Create .env.hosted files from templates
+cp backend/.env.hosted.example backend/.env.hosted
+cp frontend/.env.hosted.example frontend/.env.hosted
+
+# Edit with your credentials, then run:
+npm run dev:hybrid             # Local backend + hosted DB
+npm run dev:frontend           # Hosted backend + hosted DB
 ```
 
 ### Linting & Formatting
@@ -309,9 +345,9 @@ npm run format:check           # Check formatting without modifying
 ```bash
 npm run db:generate            # Generate Prisma client
 npm run db:push                # Push schema to database
-npm run db:migrate             # Create migration
 npm run db:seed                # Seed database with sample data
 npm run db:studio              # Open Prisma Studio GUI
+npm run db:setup               # Push schema + seed (shortcut)
 ```
 
 ### Building & Deployment
@@ -331,19 +367,16 @@ terraform apply
 
 ### Environment Setup
 
-**Backend** (`backend/.env`):
+Environment files are managed by npm scripts. Use development modes instead of editing `.env` directly:
 
-```bash
-DATABASE_URL="postgresql://user:pass@host:5432/aristaeus"
-```
+| File                   | Purpose                      | Committed                              |
+| ---------------------- | ---------------------------- | -------------------------------------- |
+| `backend/.env.local`   | Docker PostgreSQL connection | Yes                                    |
+| `backend/.env.hosted`  | Aurora credentials           | No (create from `.env.hosted.example`) |
+| `frontend/.env.local`  | Local backend URL            | Yes                                    |
+| `frontend/.env.hosted` | AWS API Gateway URL          | No (create from `.env.hosted.example`) |
 
-**Frontend** (`frontend/.env`):
-
-```bash
-VITE_API_URL=http://localhost:3000   # Local development
-# VITE_API_URL=https://xxx.execute-api.us-east-1.amazonaws.com  # Production
-BASE_PATH=/aristaeus                  # For GitHub Pages (repo name)
-```
+The `.env` files are auto-generated when running `npm run dev:local`, `dev:hybrid`, or `dev:frontend`.
 
 ---
 

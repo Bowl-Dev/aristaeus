@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+/* Skeleton UI - must come after tailwindcss import */
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton/themes/cerberus';
+
+/* Tell Tailwind to scan Skeleton components for classes */
+@source '../../node_modules/@skeletonlabs/skeleton-svelte/dist';
+
+/* Tailwind forms plugin */
+@plugin '@tailwindcss/forms';
+
+/* Base body styling */
+body {
+	@apply bg-surface-50 dark:bg-surface-900 text-surface-900 dark:text-surface-50;
+}

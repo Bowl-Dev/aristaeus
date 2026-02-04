@@ -57,44 +57,85 @@ aristaeus/
 
 - Node.js 18+
 - npm 9+
-- PostgreSQL database (for backend development)
+- Docker (for local database)
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/bowl-dev/aristaeus.git
 cd aristaeus
-
-# Install all dependencies
 npm install
 ```
 
-### Development
+### Development Modes
+
+Three development configurations are available:
+
+| Mode         | Command                | Description                                 |
+| ------------ | ---------------------- | ------------------------------------------- |
+| **Local**    | `npm run dev:local`    | Full local stack with Docker PostgreSQL     |
+| **Hybrid**   | `npm run dev:hybrid`   | Local backend with hosted Aurora database   |
+| **Frontend** | `npm run dev:frontend` | Frontend only, connecting to hosted backend |
+
+### Local Development (Recommended)
+
+Run the entire stack locally using Docker for the database:
 
 ```bash
-# Start frontend dev server (http://localhost:5173)
-npm run dev
+# 1. Start the database
+npm run docker:up
 
-# Start backend dev server (http://localhost:3000)
-npm run dev:backend
+# 2. Set up schema and seed data
+npm run db:setup
 
-# Both servers can run simultaneously
+# 3. Start development servers
+npm run dev:local
 ```
 
-### Environment Setup
+This starts:
 
-**Frontend** (`frontend/.env`):
+- Frontend at http://localhost:5173
+- Backend at http://localhost:3000
+- PostgreSQL at localhost:5432
+
+### Hybrid Development
+
+Use the local backend with the hosted Aurora database (useful for testing against production data):
 
 ```bash
-VITE_API_URL=http://localhost:3000   # Local development
-BASE_PATH=/aristaeus                  # For GitHub Pages
+# 1. Create config from template
+cp backend/.env.hosted.example backend/.env.hosted
+
+# 2. Edit backend/.env.hosted with your Aurora credentials
+
+# 3. Start development
+npm run dev:hybrid
 ```
 
-**Backend** (`backend/.env`):
+### Frontend-Only Development
+
+Connect directly to the hosted backend (no local backend needed):
 
 ```bash
-DATABASE_URL="postgresql://user:pass@host:5432/aristaeus"
+# 1. Create config from template
+cp frontend/.env.hosted.example frontend/.env.hosted
+
+# 2. Edit frontend/.env.hosted with your API Gateway URL
+
+# 3. Start frontend
+npm run dev:frontend
+```
+
+### Other Commands
+
+```bash
+# Database
+npm run db:studio              # Open Prisma Studio GUI
+npm run docker:reset           # Reset database with fresh data
+
+# Code quality
+npm run lint                   # Run ESLint
+npm run format                 # Run Prettier
 ```
 
 ---

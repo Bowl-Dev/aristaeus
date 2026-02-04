@@ -2,7 +2,6 @@
 	import type { BowlSize } from '$lib/types';
 	import { _ } from 'svelte-i18n';
 
-	// Props
 	interface Props {
 		currentWeight: number;
 		bowlSize: BowlSize;
@@ -16,94 +15,36 @@
 	const percentage = $derived(Math.min((currentWeight / bowlSize) * 100, 100));
 </script>
 
-<div class="capacity-section">
-	<div class="capacity-header">
-		<span class="capacity-label">{$_('capacity.title')}</span>
-		<span class="capacity-values">
+<div
+	class="card bg-surface-200 dark:bg-surface-700 border border-surface-300 dark:border-surface-600 rounded-xl p-4 mb-6"
+>
+	<div class="flex justify-between items-center mb-3">
+		<span class="font-semibold">{$_('capacity.title')}</span>
+		<span class="font-bold text-primary-500">
 			{currentWeight.toFixed(0)}g / {bowlSize}g
 		</span>
 	</div>
-	<div class="capacity-bar">
-		<div class="capacity-fill" class:warning class:exceeded style="width: {percentage}%"></div>
+	<div class="w-full h-6 bg-surface-300 dark:bg-surface-600 rounded-full overflow-hidden mb-2">
+		<div
+			class="h-full rounded-full transition-all duration-300 {exceeded
+				? 'bg-error-500'
+				: warning
+					? 'bg-warning-500'
+					: 'bg-primary-500'}"
+			style="width: {percentage}%"
+		></div>
 	</div>
 	{#if exceeded}
-		<p class="capacity-message error">
+		<p class="text-error-500 font-semibold text-center">
 			{$_('capacity.exceeded', { values: { amount: Math.abs(remaining).toFixed(0) } })}
 		</p>
 	{:else if warning}
-		<p class="capacity-message warning">
+		<p class="text-warning-500 font-semibold text-center">
 			{$_('capacity.onlyRemaining', { values: { amount: remaining.toFixed(0) } })}
 		</p>
 	{:else}
-		<p class="capacity-message">
+		<p class="text-surface-500 font-semibold text-center">
 			{$_('capacity.remaining', { values: { amount: remaining.toFixed(0) } })}
 		</p>
 	{/if}
 </div>
-
-<style>
-	.capacity-section {
-		margin-bottom: 1.5rem;
-		padding: 1rem;
-		background: #f8f9fa;
-		border-radius: 8px;
-	}
-
-	.capacity-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.75rem;
-	}
-
-	.capacity-label {
-		font-weight: 600;
-		color: #34495e;
-	}
-
-	.capacity-values {
-		font-weight: 700;
-		color: #16a085;
-	}
-
-	.capacity-bar {
-		width: 100%;
-		height: 24px;
-		background: #ecf0f1;
-		border-radius: 12px;
-		overflow: hidden;
-		margin-bottom: 0.5rem;
-	}
-
-	.capacity-fill {
-		height: 100%;
-		background: #16a085;
-		transition: all 0.3s ease;
-		border-radius: 12px;
-	}
-
-	.capacity-fill.warning {
-		background: #f39c12;
-	}
-
-	.capacity-fill.exceeded {
-		background: #e74c3c;
-	}
-
-	.capacity-message {
-		margin: 0;
-		font-size: 0.875rem;
-		font-weight: 600;
-		text-align: center;
-		color: #7f8c8d;
-	}
-
-	.capacity-message.warning {
-		color: #f39c12;
-	}
-
-	.capacity-message.error {
-		color: #e74c3c;
-		font-size: 1rem;
-	}
-</style>

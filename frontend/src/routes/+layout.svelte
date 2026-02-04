@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import '$lib/i18n';
 	import { isLoading } from 'svelte-i18n';
@@ -17,45 +18,17 @@
 </svelte:head>
 
 {#if $isLoading}
-	<div class="loading">Loading...</div>
+	<div class="flex items-center justify-center h-screen">
+		<p class="text-xl text-surface-500">Loading...</p>
+	</div>
 {:else}
-	<div class="language-switcher">
-		<button onclick={toggleLocale} class="lang-btn">
+	<div class="fixed top-4 right-4 z-50">
+		<button
+			onclick={toggleLocale}
+			class="btn bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md"
+		>
 			{$locale === 'es' ? 'EN' : 'ES'}
 		</button>
 	</div>
 	{@render children()}
 {/if}
-
-<style>
-	.loading {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		height: 100vh;
-		font-size: 1.5rem;
-		color: #7f8c8d;
-	}
-
-	.language-switcher {
-		position: fixed;
-		top: 1rem;
-		right: 1rem;
-		z-index: 1000;
-	}
-
-	.lang-btn {
-		padding: 0.5rem 1rem;
-		background: #16a085;
-		color: white;
-		border: none;
-		border-radius: 4px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.2s;
-	}
-
-	.lang-btn:hover {
-		background: #138d75;
-	}
-</style>

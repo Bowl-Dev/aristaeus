@@ -1,0 +1,23 @@
+# Aristaeus Local Development Database
+# PostgreSQL configuration to match Aurora Serverless behavior
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: aristaeus-db
+    environment:
+      POSTGRES_USER: aristaeus
+      POSTGRES_PASSWORD: aristaeus
+      POSTGRES_DB: aristaeus
+    ports:
+      - '5432:5432'
+    volumes:
+      - aristaeus_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U aristaeus -d aristaeus']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  aristaeus_postgres_data:
