@@ -2,7 +2,10 @@
 	"app": {
 		"title": "Al Gramo",
 		"subtitle": "Create your custom bowl",
-		"defaultBowl": "I DON'T KNOW HOW MANY GRAMS I WANT. I WANT AN AVERGAE BOWL",
+		"surpriseMe": "Surprise Me!",
+		"surpriseMeDescription": "Generate a random balanced bowl",
+		"clearAll": "Clear All",
+		"clearAllDescription": "Reset all selections",
 		"cutlery": "I want cutlery +300 COP"
 	},
 	"customerInfo": {
@@ -74,5 +77,13 @@
 	"order": {
 		"submit": "Submit Order",
 		"submitted": "Order submitted for {name}!\n\nBowl Size: {size}g\nTotal: {weight}g\nCalories: {calories}"
+	},
+	"orderSummary": {
+		"title": "Your Order",
+		"for": "For",
+		"empty": "Your bowl is empty",
+		"emptyHint": "Select ingredients to build your bowl",
+		"total": "Total",
+		"submitting": "Placing order..."
 	}
 }

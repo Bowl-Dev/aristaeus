@@ -2,7 +2,10 @@
 	"app": {
 		"title": "Al Gramo",
 		"subtitle": "Crea tu bowl personalizado",
-		"defaultBowl": "NO SÉ CUANTOS SON MUCHOS O POCOS GRAMOS. QUIERO UN BOWL PROMEDIO",
+		"surpriseMe": "Sorpréndeme!",
+		"surpriseMeDescription": "Genera un bowl balanceado al azar",
+		"clearAll": "Limpiar Todo",
+		"clearAllDescription": "Reiniciar todas las selecciones",
 		"cutlery": "Quiero cubiertos +300 COP"
 	},
 	"customerInfo": {
@@ -74,5 +77,13 @@
 	"order": {
 		"submit": "Enviar Pedido",
 		"submitted": "¡Pedido enviado para {name}!\n\nTamaño del Bowl: {size}g\nTotal: {weight}g\nCalorías: {calories}"
+	},
+	"orderSummary": {
+		"title": "Tu Pedido",
+		"for": "Para",
+		"empty": "Tu bowl está vacío",
+		"emptyHint": "Selecciona ingredientes para armar tu bowl",
+		"total": "Total",
+		"submitting": "Enviando pedido..."
 	}
 }
