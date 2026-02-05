@@ -1,89 +1,61 @@
 {
-	"app": {
-		"title": "Al Gramo",
-		"subtitle": "Crea tu bowl personalizado",
-		"surpriseMe": "Sorpréndeme!",
-		"surpriseMeDescription": "Genera un bowl balanceado al azar",
-		"clearAll": "Limpiar Todo",
-		"clearAllDescription": "Reiniciar todas las selecciones",
-		"cutlery": "Quiero cubiertos +300 COP"
+	"common": {
+		"loading": "Cargando...",
+		"error": "Error",
+		"tryAgain": "Intentar de nuevo"
 	},
-	"customerInfo": {
-		"title": "Tu Información",
-		"nameLabel": "Nombre",
-		"namePlaceholder": "Ingresa tu nombre",
-		"phoneLabel": "Número de celular",
-		"phonePlaceholder": "Ingresa tu número de celular"
-	},
-	"bowlSize": {
-		"title": "Selecciona el Tamaño del Bowl",
-		"small": "Pequeño",
-		"medium": "Mediano",
-		"large": "Grande"
-	},
-	"ingredients": {
-		"title": "Construye Tu Bowl",
+	"home": {
+		"title": "Arma Tu Bowl",
+		"subtitle": "Selecciona ingredientes para crear tu bowl perfecto",
+		"customerName": {
+			"label": "Tu Nombre",
+			"placeholder": "Ingresa tu nombre"
+		},
+		"bowlSize": {
+			"label": "Tamaño del Bowl"
+		},
+		"actions": {
+			"surpriseMe": "Sorpréndeme",
+			"clear": "Limpiar",
+			"add": "Agregar"
+		},
+		"cutlery": {
+			"label": "Agregar cubiertos (+$300)"
+		},
 		"categories": {
-			"protein": "Proteínas",
-			"base": "Bases",
+			"base": "Base",
+			"protein": "Proteína",
 			"vegetable": "Vegetales",
 			"topping": "Toppings",
-			"dressing": "Aderezos. SE ENVÍA POR RECIPIENTES DE 25g"
+			"dressing": "Aderezo"
 		},
-		"names": {
-			"Chicken": "Pechuga a la plancha 🍗",
-			"Salmon": "Salmón a la plancha 🐟",
-			"Rice": "Arroz 🍚",
-			"Quinoa": "Quinoa 🌾",
-			"Cherry Tomatoes": "Tomate Cherry 🍒",
-			"Mango": "Mango 🥭",
-			"Carrot": "Zanahoria 🥕",
-			"Onion": "Cebolla 🧅",
-			"Avocado": "Aguacate 🥑",
-			"Beef": "Carne de Res",
-			"Corn": "Maíz 🌽",
-			"Cucumber": "Pepino 🥒",
-			"Mozzarella": "Queso Mozzarella 🧀",
-			"Green Onion": "Cebollín 🌿",
-			"Peanuts": "Maní 🥜",
-			"Teriyaki": "Teriyaki 🍶",
-			"Olive Oil Balsamic": "Aceite de Oliva y Balsámico 🫒"
+		"ingredient": {
+			"cal": "cal",
+			"protein": "proteína",
+			"decrease": "Disminuir {name}",
+			"increase": "Aumentar {name}"
+		},
+		"order": {
+			"title": "Tu Pedido",
+			"for": "Para {name}",
+			"capacity": "Capacidad",
+			"overCapacity": "Excede la capacidad por {amount}g",
+			"noItems": "No hay ingredientes seleccionados",
+			"calories": "Calorías",
+			"protein": "Proteína",
+			"total": "Total",
+			"placeOrder": "Hacer Pedido",
+			"placingOrder": "Enviando Pedido...",
+			"placing": "Enviando...",
+			"items": "{count} items"
+		},
+		"success": {
+			"title": "Pedido Realizado",
+			"message": "El pedido #{id} se está preparando",
+			"newOrder": "Nuevo Pedido"
+		},
+		"loading": {
+			"ingredients": "Cargando ingredientes..."
 		}
-	},
-	"ingredientCard": {
-		"cal": "cal",
-		"protein": "proteína",
-		"quantity": "Cantidad:",
-		"grams": "gramos",
-		"units": "recipiente(s)",
-		"clickToAdd": "Clic para agregar",
-		"remove": "Quitar {name}"
-	},
-	"nutrition": {
-		"title": "Resumen Nutricional",
-		"totalWeight": "Peso Total",
-		"calories": "Calorías",
-		"protein": "Proteína",
-		"carbs": "Carbohidratos",
-		"fat": "Grasa",
-		"fiber": "Fibra"
-	},
-	"capacity": {
-		"title": "Capacidad del Bowl",
-		"exceeded": "¡Capacidad del bowl excedida por {amount}g!",
-		"remaining": "{amount}g restantes",
-		"onlyRemaining": "Solo {amount}g restantes"
-	},
-	"order": {
-		"submit": "Enviar Pedido",
-		"submitted": "¡Pedido enviado para {name}!\n\nTamaño del Bowl: {size}g\nTotal: {weight}g\nCalorías: {calories}"
-	},
-	"orderSummary": {
-		"title": "Tu Pedido",
-		"for": "Para",
-		"empty": "Tu bowl está vacío",
-		"emptyHint": "Selecciona ingredientes para armar tu bowl",
-		"total": "Total",
-		"submitting": "Enviando pedido..."
 	}
 }

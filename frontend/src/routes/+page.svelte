@@ -3,6 +3,7 @@
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
 	import { slide, fade } from 'svelte/transition';
+	import { _ } from 'svelte-i18n';
 
 	// State
 	let ingredients = $state<Ingredient[]>([]);
@@ -187,14 +188,7 @@
 	}
 
 	function getCategoryLabel(cat: string): string {
-		const labels: Record<string, string> = {
-			base: 'Base',
-			protein: 'Protein',
-			vegetable: 'Vegetables',
-			topping: 'Toppings',
-			dressing: 'Dressing'
-		};
-		return labels[cat] || cat;
+		return $_(`home.categories.${cat}`) || cat;
 	}
 
 	function formatPrice(cop: number): string {
@@ -230,13 +224,15 @@
 					/>
 				</svg>
 			</div>
-			<h2 class="text-xl font-semibold text-gray-900 mb-1">Order Placed</h2>
-			<p class="text-gray-500 mb-6">Order #{orderSuccess.orderId} is being prepared</p>
+			<h2 class="text-xl font-semibold text-gray-900 mb-1">{$_('home.success.title')}</h2>
+			<p class="text-gray-500 mb-6">
+				{$_('home.success.message', { values: { id: orderSuccess.orderId } })}
+			</p>
 			<button
 				class="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
 				onclick={() => (orderSuccess = null)}
 			>
-				New Order
+				{$_('home.success.newOrder')}
 			</button>
 		</div>
 	</div>
@@ -249,27 +245,29 @@
 			<div class="max-w-2xl mx-auto px-6 py-8">
 				<!-- Header -->
 				<header class="mb-8">
-					<h1 class="text-3xl font-bold text-gray-900 tracking-tight">Build Your Bowl</h1>
-					<p class="text-gray-500 mt-1">Select ingredients to create your perfect meal</p>
+					<h1 class="text-3xl font-bold text-gray-900 tracking-tight">{$_('home.title')}</h1>
+					<p class="text-gray-500 mt-1">{$_('home.subtitle')}</p>
 				</header>
 
 				<!-- Customer Name -->
 				<section class="mb-8">
 					<label for="customer-name" class="block text-sm font-medium text-gray-700 mb-2"
-						>Your Name</label
+						>{$_('home.customerName.label')}</label
 					>
 					<input
 						id="customer-name"
 						type="text"
 						bind:value={customerName}
-						placeholder="Enter your name"
+						placeholder={$_('home.customerName.placeholder')}
 						class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
 					/>
 				</section>
 
 				<!-- Bowl Size -->
 				<section class="mb-8">
-					<span class="block text-sm font-medium text-gray-700 mb-3">Bowl Size</span>
+					<span class="block text-sm font-medium text-gray-700 mb-3"
+						>{$_('home.bowlSize.label')}</span
+					>
 					<div class="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Bowl size selection">
 						{#each BOWL_SIZES as size, i (size)}
 							<button
@@ -309,7 +307,7 @@
 								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
 							/>
 						</svg>
-						Surprise Me
+						{$_('home.actions.surpriseMe')}
 					</button>
 					<button
 						type="button"
@@ -325,7 +323,7 @@
 								d="M6 18L18 6M6 6l12 12"
 							/>
 						</svg>
-						Clear
+						{$_('home.actions.clear')}
 					</button>
 				</div>
 
@@ -335,7 +333,7 @@
 						<div
 							class="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"
 						></div>
-						<p class="text-gray-500 mt-4 text-sm">Loading ingredients...</p>
+						<p class="text-gray-500 mt-4 text-sm">{$_('home.loading.ingredients')}</p>
 					</div>
 				{:else if error}
 					<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
@@ -344,7 +342,7 @@
 							onclick={loadIngredients}
 							class="mt-2 text-sm font-medium text-red-700 hover:underline"
 						>
-							Try again
+							{$_('common.tryAgain')}
 						</button>
 					</div>
 				{:else}
@@ -411,9 +409,11 @@
 														</span>
 													</div>
 													<div class="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-														<span>{ingredient.caloriesPer100g} cal</span>
+														<span>{ingredient.caloriesPer100g} {$_('home.ingredient.cal')}</span>
 														<span class="text-gray-300">|</span>
-														<span>{ingredient.proteinGPer100g}g protein</span>
+														<span
+															>{ingredient.proteinGPer100g}g {$_('home.ingredient.protein')}</span
+														>
 													</div>
 												</div>
 
@@ -423,7 +423,9 @@
 														<button
 															type="button"
 															onclick={() => removeIngredient(ingredient.id)}
-															aria-label="Decrease {ingredient.name}"
+															aria-label={$_('home.ingredient.decrease', {
+																values: { name: ingredient.name }
+															})}
 															class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
 														>
 															<svg
@@ -446,7 +448,9 @@
 														<button
 															type="button"
 															onclick={() => addIngredient(ingredient.id)}
-															aria-label="Increase {ingredient.name}"
+															aria-label={$_('home.ingredient.increase', {
+																values: { name: ingredient.name }
+															})}
 															class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors"
 														>
 															<svg
@@ -469,7 +473,7 @@
 															onclick={() => setQuantity(ingredient.id, 50)}
 															class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
 														>
-															Add
+															{$_('home.actions.add')}
 														</button>
 													{/if}
 												</div>
@@ -490,7 +494,7 @@
 							bind:checked={isCutlery}
 							class="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
 						/>
-						<span class="text-sm text-gray-700">Add cutlery (+$300)</span>
+						<span class="text-sm text-gray-700">{$_('home.cutlery.label')}</span>
 					</label>
 				</section>
 			</div>
@@ -503,9 +507,11 @@
 			<div class="h-full flex flex-col p-6">
 				<!-- Header -->
 				<div class="mb-6">
-					<h2 class="text-xl font-bold text-gray-900">Your Order</h2>
+					<h2 class="text-xl font-bold text-gray-900">{$_('home.order.title')}</h2>
 					{#if customerName}
-						<p class="text-sm text-gray-500 mt-1">For {customerName}</p>
+						<p class="text-sm text-gray-500 mt-1">
+							{$_('home.order.for', { values: { name: customerName } })}
+						</p>
 					{/if}
 				</div>
 
@@ -513,7 +519,7 @@
 				{#if selectedBowlSize}
 					<div class="mb-6">
 						<div class="flex justify-between text-sm mb-2">
-							<span class="text-gray-500">Capacity</span>
+							<span class="text-gray-500">{$_('home.order.capacity')}</span>
 							<span class="font-medium {isOverCapacity ? 'text-red-600' : 'text-gray-900'}">
 								{totals.weight}g / {selectedBowlSize}g
 							</span>
@@ -528,7 +534,9 @@
 						</div>
 						{#if isOverCapacity}
 							<p class="text-xs text-red-600 mt-1">
-								Over capacity by {totals.weight - selectedBowlSize}g
+								{$_('home.order.overCapacity', {
+									values: { amount: totals.weight - selectedBowlSize }
+								})}
 							</p>
 						{/if}
 					</div>
@@ -551,7 +559,7 @@
 									d="M12 6v6m0 0v6m0-6h6m-6 0H6"
 								/>
 							</svg>
-							<p class="text-sm">No ingredients selected</p>
+							<p class="text-sm">{$_('home.order.noItems')}</p>
 						</div>
 					{:else}
 						<ul class="space-y-2">
@@ -576,13 +584,17 @@
 								<span class="block text-2xl font-bold text-gray-900"
 									>{Math.round(totals.calories)}</span
 								>
-								<span class="block text-xs text-gray-500 uppercase tracking-wide">Calories</span>
+								<span class="block text-xs text-gray-500 uppercase tracking-wide"
+									>{$_('home.order.calories')}</span
+								>
 							</div>
 							<div class="bg-gray-50 rounded-lg py-3">
 								<span class="block text-2xl font-bold text-gray-900"
 									>{Math.round(totals.protein)}g</span
 								>
-								<span class="block text-xs text-gray-500 uppercase tracking-wide">Protein</span>
+								<span class="block text-xs text-gray-500 uppercase tracking-wide"
+									>{$_('home.order.protein')}</span
+								>
 							</div>
 						</div>
 					</div>
@@ -591,7 +603,7 @@
 				<!-- Price & Submit -->
 				<div class="border-t border-gray-100 pt-4 mt-4">
 					<div class="flex items-center justify-between mb-4">
-						<span class="text-gray-500">Total</span>
+						<span class="text-gray-500">{$_('home.order.total')}</span>
 						<span class="text-2xl font-bold text-gray-900">{formatPrice(totals.price)} COP</span>
 					</div>
 					<button
@@ -617,10 +629,10 @@
 										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
 									></path>
 								</svg>
-								Placing Order...
+								{$_('home.order.placingOrder')}
 							</span>
 						{:else}
-							Place Order
+							{$_('home.order.placeOrder')}
 						{/if}
 					</button>
 				</div>
@@ -633,7 +645,9 @@
 		>
 			<div class="flex items-center justify-between gap-4">
 				<div>
-					<span class="block text-xs text-gray-500">{selectedList.length} items</span>
+					<span class="block text-xs text-gray-500"
+						>{$_('home.order.items', { values: { count: selectedList.length } })}</span
+					>
 					<span class="block text-lg font-bold text-gray-900">{formatPrice(totals.price)} COP</span>
 				</div>
 				<button
@@ -642,7 +656,7 @@
 					disabled={!canSubmit || submitting}
 					class="flex-1 max-w-[200px] py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
 				>
-					{submitting ? 'Placing...' : 'Place Order'}
+					{submitting ? $_('home.order.placing') : $_('home.order.placeOrder')}
 				</button>
 			</div>
 		</div>
