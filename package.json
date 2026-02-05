@@ -14,6 +14,7 @@
 		"dev:frontend": "cp frontend/.env.hosted frontend/.env && npm run dev -w frontend",
 		"build": "npm run build -w frontend",
 		"build:backend": "npm run build -w @aristaeus/backend",
+		"check": "npm run check -w frontend",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"format": "prettier --write .",
