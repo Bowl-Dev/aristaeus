@@ -7,9 +7,46 @@
 	"home": {
 		"title": "Arma Tu Bowl",
 		"subtitle": "Selecciona ingredientes para crear tu bowl perfecto",
+		"customerInfo": {
+			"title": "Información de Contacto"
+		},
 		"customerName": {
 			"label": "Tu Nombre",
 			"placeholder": "Ingresa tu nombre"
+		},
+		"customerPhone": {
+			"label": "Número de Teléfono",
+			"placeholder": "+57 o 10 dígitos",
+			"invalid": "Ingresa un número de teléfono colombiano válido (+57XXXXXXXXXX o 10 dígitos)"
+		},
+		"customerEmail": {
+			"label": "Correo Electrónico (opcional)",
+			"placeholder": "tu@correo.com",
+			"invalid": "Ingresa un correo electrónico válido"
+		},
+		"address": {
+			"title": "Dirección de Entrega",
+			"streetAddress": {
+				"label": "Dirección",
+				"placeholder": "Calle 100 # 15-20"
+			},
+			"neighborhood": {
+				"label": "Barrio",
+				"placeholder": "Chicó"
+			},
+			"city": {
+				"label": "Ciudad",
+				"placeholder": "Bogotá"
+			},
+			"department": {
+				"label": "Departamento",
+				"placeholder": "Bogotá D.C."
+			},
+			"postalCode": {
+				"label": "Código Postal (opcional)",
+				"placeholder": "110131",
+				"invalid": "El código postal debe tener 6 dígitos"
+			}
 		},
 		"bowlSize": {
 			"label": "Tamaño del Bowl"

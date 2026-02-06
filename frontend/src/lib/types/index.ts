@@ -12,7 +12,10 @@ export type {
 	OrderItem,
 	CreateOrderRequest,
 	CreateOrderResponse,
-	OrderStatusResponse
+	OrderStatusResponse,
+	ColombianAddress,
+	User,
+	CustomerInfo
 } from '@aristaeus/shared';
 
 export { BOWL_SIZES } from '@aristaeus/shared';

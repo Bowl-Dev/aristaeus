@@ -27,7 +27,11 @@
 		"docker:up": "docker compose up -d",
 		"docker:down": "docker compose down",
 		"docker:reset": "docker compose down -v && docker compose up -d",
-		"prepare": "husky"
+		"prepare": "husky",
+		"test": "npm run test -ws --if-present",
+		"test:backend": "npm run test -w @aristaeus/backend",
+		"test:frontend": "npm run test -w @aristaeus/frontend",
+		"test:coverage": "npm run test:coverage -ws --if-present"
 	},
 	"engines": {
 		"node": ">=18.0.0"

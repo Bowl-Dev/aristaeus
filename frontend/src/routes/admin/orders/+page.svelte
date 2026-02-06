@@ -128,10 +128,35 @@
 							</div>
 							<div class="flex items-center gap-2 text-sm text-surface-500">
 								<span class="font-semibold">Bowl: {order.bowlSize}g</span>
-								{#if order.customerName}
-									<span>|</span>
-									<span class="font-semibold">{order.customerName}</span>
-								{/if}
+							</div>
+
+							<!-- Customer Contact Info -->
+							<div class="mt-3 p-3 bg-surface-100 dark:bg-surface-800 rounded-lg text-sm space-y-1">
+								<div class="font-semibold text-surface-700 dark:text-surface-300">
+									{order.user.name}
+								</div>
+								<div class="text-surface-500">
+									<div class="flex items-center gap-1">
+										<span>📞</span>
+										<span>{order.user.phone}</span>
+									</div>
+									{#if order.user.email}
+										<div class="flex items-center gap-1">
+											<span>📧</span>
+											<span>{order.user.email}</span>
+										</div>
+									{/if}
+									<div class="flex items-start gap-1 mt-1">
+										<span>📍</span>
+										<span>
+											{order.user.address.streetAddress}, {order.user.address.neighborhood}<br />
+											{order.user.address.city}, {order.user.address.department}
+											{#if order.user.address.postalCode}
+												- {order.user.address.postalCode}
+											{/if}
+										</span>
+									</div>
+								</div>
 							</div>
 						</div>
 

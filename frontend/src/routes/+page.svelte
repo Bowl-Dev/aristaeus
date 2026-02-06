@@ -12,12 +12,41 @@
 	let submitting = $state(false);
 	let orderSuccess = $state<{ orderId: number } | null>(null);
 
-	// Form state
+	// Form state - Customer info
 	let customerName = $state('');
+	let customerPhone = $state('');
+	let customerEmail = $state('');
+
+	// Form state - Colombian address
+	let streetAddress = $state('');
+	let neighborhood = $state('');
+	let city = $state('');
+	let department = $state('');
+	let postalCode = $state('');
+
+	// Form state - Bowl
 	let selectedBowlSize = $state<BowlSize | null>(null);
 	let selectedItems = new SvelteMap<number, number>();
 	let expandedCategories = new SvelteSet<string>(['base']);
 	let isCutlery = $state(false);
+
+	// Validation helpers
+	const isValidColombianPhone = $derived(
+		/^(\+57)?[0-9]{10}$/.test(customerPhone.replace(/\s/g, ''))
+	);
+
+	const isValidEmail = $derived(
+		customerEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)
+	);
+
+	const isValidPostalCode = $derived(postalCode.length === 0 || /^[0-9]{6}$/.test(postalCode));
+
+	const isAddressComplete = $derived(
+		streetAddress.trim().length >= 5 &&
+			neighborhood.trim().length >= 2 &&
+			city.trim().length >= 2 &&
+			department.trim().length >= 2
+	);
 
 	// Load ingredients
 	async function loadIngredients() {
@@ -93,6 +122,10 @@
 
 	const canSubmit = $derived(
 		customerName.trim().length > 0 &&
+			isValidColombianPhone &&
+			isAddressComplete &&
+			isValidEmail &&
+			isValidPostalCode &&
 			selectedBowlSize !== null &&
 			selectedItems.size > 0 &&
 			!isOverCapacity
@@ -170,13 +203,33 @@
 			}));
 
 			const response = await createOrder({
-				customerName,
 				bowlSize: selectedBowlSize,
+				customer: {
+					name: customerName,
+					phone: customerPhone,
+					email: customerEmail || undefined,
+					address: {
+						streetAddress,
+						neighborhood,
+						city,
+						department,
+						postalCode: postalCode || undefined
+					}
+				},
 				items
 			});
 
 			orderSuccess = { orderId: response.orderId };
+
+			// Reset form
 			customerName = '';
+			customerPhone = '';
+			customerEmail = '';
+			streetAddress = '';
+			neighborhood = '';
+			city = '';
+			department = '';
+			postalCode = '';
 			selectedBowlSize = null;
 			selectedItems.clear();
 			isCutlery = false;
@@ -249,18 +302,149 @@
 					<p class="text-gray-500 mt-1">{$_('home.subtitle')}</p>
 				</header>
 
-				<!-- Customer Name -->
-				<section class="mb-8">
-					<label for="customer-name" class="block text-sm font-medium text-gray-700 mb-2"
-						>{$_('home.customerName.label')}</label
-					>
-					<input
-						id="customer-name"
-						type="text"
-						bind:value={customerName}
-						placeholder={$_('home.customerName.placeholder')}
-						class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
-					/>
+				<!-- Customer Information -->
+				<section class="mb-8 space-y-4">
+					<h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+						{$_('home.customerInfo.title')}
+					</h3>
+
+					<!-- Name -->
+					<div>
+						<label for="customer-name" class="block text-sm font-medium text-gray-700 mb-2"
+							>{$_('home.customerName.label')}</label
+						>
+						<input
+							id="customer-name"
+							type="text"
+							bind:value={customerName}
+							placeholder={$_('home.customerName.placeholder')}
+							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
+						/>
+					</div>
+
+					<!-- Phone -->
+					<div>
+						<label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-2"
+							>{$_('home.customerPhone.label')}</label
+						>
+						<input
+							id="customer-phone"
+							type="tel"
+							bind:value={customerPhone}
+							placeholder={$_('home.customerPhone.placeholder')}
+							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow {customerPhone &&
+							!isValidColombianPhone
+								? 'border-red-300 focus:ring-red-500'
+								: ''}"
+						/>
+						{#if customerPhone && !isValidColombianPhone}
+							<p class="text-xs text-red-600 mt-1">{$_('home.customerPhone.invalid')}</p>
+						{/if}
+					</div>
+
+					<!-- Email (optional) -->
+					<div>
+						<label for="customer-email" class="block text-sm font-medium text-gray-700 mb-2"
+							>{$_('home.customerEmail.label')}</label
+						>
+						<input
+							id="customer-email"
+							type="email"
+							bind:value={customerEmail}
+							placeholder={$_('home.customerEmail.placeholder')}
+							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow {customerEmail &&
+							!isValidEmail
+								? 'border-red-300 focus:ring-red-500'
+								: ''}"
+						/>
+						{#if customerEmail && !isValidEmail}
+							<p class="text-xs text-red-600 mt-1">{$_('home.customerEmail.invalid')}</p>
+						{/if}
+					</div>
+				</section>
+
+				<!-- Delivery Address -->
+				<section class="mb-8 space-y-4">
+					<h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+						{$_('home.address.title')}
+					</h3>
+
+					<!-- Street Address -->
+					<div>
+						<label for="street-address" class="block text-sm font-medium text-gray-700 mb-2"
+							>{$_('home.address.streetAddress.label')}</label
+						>
+						<input
+							id="street-address"
+							type="text"
+							bind:value={streetAddress}
+							placeholder={$_('home.address.streetAddress.placeholder')}
+							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
+						/>
+					</div>
+
+					<!-- Neighborhood -->
+					<div>
+						<label for="neighborhood" class="block text-sm font-medium text-gray-700 mb-2"
+							>{$_('home.address.neighborhood.label')}</label
+						>
+						<input
+							id="neighborhood"
+							type="text"
+							bind:value={neighborhood}
+							placeholder={$_('home.address.neighborhood.placeholder')}
+							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
+						/>
+					</div>
+
+					<!-- City & Department (side by side) -->
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<label for="city" class="block text-sm font-medium text-gray-700 mb-2"
+								>{$_('home.address.city.label')}</label
+							>
+							<input
+								id="city"
+								type="text"
+								bind:value={city}
+								placeholder={$_('home.address.city.placeholder')}
+								class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
+							/>
+						</div>
+						<div>
+							<label for="department" class="block text-sm font-medium text-gray-700 mb-2"
+								>{$_('home.address.department.label')}</label
+							>
+							<input
+								id="department"
+								type="text"
+								bind:value={department}
+								placeholder={$_('home.address.department.placeholder')}
+								class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
+							/>
+						</div>
+					</div>
+
+					<!-- Postal Code (optional) -->
+					<div>
+						<label for="postal-code" class="block text-sm font-medium text-gray-700 mb-2"
+							>{$_('home.address.postalCode.label')}</label
+						>
+						<input
+							id="postal-code"
+							type="text"
+							bind:value={postalCode}
+							placeholder={$_('home.address.postalCode.placeholder')}
+							maxlength="6"
+							class="w-full max-w-[200px] px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow {postalCode &&
+							!isValidPostalCode
+								? 'border-red-300 focus:ring-red-500'
+								: ''}"
+						/>
+						{#if postalCode && !isValidPostalCode}
+							<p class="text-xs text-red-600 mt-1">{$_('home.address.postalCode.invalid')}</p>
+						{/if}
+					</div>
 				</section>
 
 				<!-- Bowl Size -->

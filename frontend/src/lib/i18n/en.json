@@ -7,9 +7,46 @@
 	"home": {
 		"title": "Build Your Bowl",
 		"subtitle": "Select ingredients to create your perfect meal",
+		"customerInfo": {
+			"title": "Contact Information"
+		},
 		"customerName": {
 			"label": "Your Name",
 			"placeholder": "Enter your name"
+		},
+		"customerPhone": {
+			"label": "Phone Number",
+			"placeholder": "+57 or 10 digits",
+			"invalid": "Enter a valid Colombian phone number (+57XXXXXXXXXX or 10 digits)"
+		},
+		"customerEmail": {
+			"label": "Email (optional)",
+			"placeholder": "your@email.com",
+			"invalid": "Enter a valid email address"
+		},
+		"address": {
+			"title": "Delivery Address",
+			"streetAddress": {
+				"label": "Street Address",
+				"placeholder": "Calle 100 # 15-20"
+			},
+			"neighborhood": {
+				"label": "Neighborhood",
+				"placeholder": "Chicó"
+			},
+			"city": {
+				"label": "City",
+				"placeholder": "Bogotá"
+			},
+			"department": {
+				"label": "Department",
+				"placeholder": "Bogotá D.C."
+			},
+			"postalCode": {
+				"label": "Postal Code (optional)",
+				"placeholder": "110131",
+				"invalid": "Postal code must be 6 digits"
+			}
 		},
 		"bowlSize": {
 			"label": "Bowl Size"

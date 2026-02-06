@@ -17,11 +17,45 @@ import { calculateNutrition } from '../lib/nutrition.js';
 const VALID_BOWL_SIZES = [250, 450, 600] as const;
 const MIN_QUANTITY_GRAMS = 10;
 
+// Colombian address validation schema
+const colombianAddressSchema = z.object({
+	streetAddress: z
+		.string()
+		.min(5, 'Street address must be at least 5 characters')
+		.max(200, 'Street address cannot exceed 200 characters'),
+	neighborhood: z
+		.string()
+		.min(2, 'Neighborhood must be at least 2 characters')
+		.max(100, 'Neighborhood cannot exceed 100 characters'),
+	city: z
+		.string()
+		.min(2, 'City must be at least 2 characters')
+		.max(100, 'City cannot exceed 100 characters'),
+	department: z
+		.string()
+		.min(2, 'Department must be at least 2 characters')
+		.max(100, 'Department cannot exceed 100 characters'),
+	postalCode: z
+		.string()
+		.regex(/^[0-9]{6}$/, 'Postal code must be exactly 6 digits')
+		.optional()
+});
+
+// Customer information validation schema
+const customerSchema = z.object({
+	name: z.string().min(1, 'Name is required').max(100, 'Name cannot exceed 100 characters'),
+	phone: z
+		.string()
+		.regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format. Use +57XXXXXXXXXX or 10 digits'),
+	email: z.string().email('Invalid email format').max(255).optional(),
+	address: colombianAddressSchema
+});
+
 const createOrderSchema = z.object({
 	bowlSize: z.number().refine((val) => VALID_BOWL_SIZES.includes(val as 250 | 450 | 600), {
 		message: 'Bowl size must be 250, 450, or 600 grams'
 	}),
-	customerName: z.string().min(1).max(100).optional(),
+	customer: customerSchema,
 	items: z
 		.array(
 			z.object({
@@ -74,7 +108,7 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 			return badRequest('Validation failed', parseResult.error.flatten());
 		}
 
-		const { bowlSize, customerName, items } = parseResult.data;
+		const { bowlSize, customer, items } = parseResult.data;
 
 		// Fetch all ingredients for validation and calculation
 		const ingredientIds = items.map((item) => item.ingredientId);
@@ -105,13 +139,37 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 			);
 		}
 
-		// Create order with items in a transaction
+		// Create order with user and items in a transaction
 		const order = await prisma.$transaction(async (tx) => {
-			// Create the order
+			// Find or create user by phone number (upsert)
+			const user = await tx.user.upsert({
+				where: { phone: customer.phone },
+				update: {
+					name: customer.name,
+					email: customer.email ?? null,
+					streetAddress: customer.address.streetAddress,
+					neighborhood: customer.address.neighborhood,
+					city: customer.address.city,
+					department: customer.address.department,
+					postalCode: customer.address.postalCode ?? null
+				},
+				create: {
+					name: customer.name,
+					phone: customer.phone,
+					email: customer.email ?? null,
+					streetAddress: customer.address.streetAddress,
+					neighborhood: customer.address.neighborhood,
+					city: customer.address.city,
+					department: customer.address.department,
+					postalCode: customer.address.postalCode ?? null
+				}
+			});
+
+			// Create the order linked to user
 			const newOrder = await tx.order.create({
 				data: {
+					userId: user.id,
 					bowlSize,
-					customerName: customerName ?? null,
 					status: 'pending',
 					totalCalories: nutrition.totalCalories,
 					totalProteinG: nutrition.totalProteinG,
@@ -165,6 +223,7 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
 		const order = await prisma.order.findUnique({
 			where: { id: orderId },
 			include: {
+				user: true,
 				items: {
 					include: {
 						ingredient: {
@@ -183,7 +242,19 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
 		return success({
 			id: order.id,
 			bowlSize: order.bowlSize,
-			customerName: order.customerName,
+			user: {
+				id: order.user.id,
+				name: order.user.name,
+				phone: order.user.phone,
+				email: order.user.email,
+				address: {
+					streetAddress: order.user.streetAddress,
+					neighborhood: order.user.neighborhood,
+					city: order.user.city,
+					department: order.user.department,
+					postalCode: order.user.postalCode
+				}
+			},
 			status: order.status,
 			items: order.items.map((item) => ({
 				ingredientName: item.ingredient.name,
@@ -219,6 +290,7 @@ export const listOrders: APIGatewayProxyHandler = async () => {
 	try {
 		const orders = await prisma.order.findMany({
 			include: {
+				user: true,
 				items: {
 					include: {
 						ingredient: {
@@ -235,7 +307,19 @@ export const listOrders: APIGatewayProxyHandler = async () => {
 			orders: orders.map((order) => ({
 				id: order.id,
 				bowlSize: order.bowlSize,
-				customerName: order.customerName,
+				user: {
+					id: order.user.id,
+					name: order.user.name,
+					phone: order.user.phone,
+					email: order.user.email,
+					address: {
+						streetAddress: order.user.streetAddress,
+						neighborhood: order.user.neighborhood,
+						city: order.user.city,
+						department: order.user.department,
+						postalCode: order.user.postalCode
+					}
+				},
 				status: order.status,
 				items: order.items.map((item) => ({
 					ingredientName: item.ingredient.name,

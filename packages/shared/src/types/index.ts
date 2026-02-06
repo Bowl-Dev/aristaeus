@@ -1,4 +1,41 @@
+// ============================================
+// Colombian Address Structure
+// ============================================
+
+export interface ColombianAddress {
+	streetAddress: string; // e.g., "Calle 160A # 7G-16"
+	neighborhood: string; // e.g., "Usaquén" (Barrio)
+	city: string; // e.g., "Bogotá"
+	department: string; // e.g., "Bogotá D.C." (32 departments + Bogotá D.C.)
+	postalCode?: string; // e.g., "110131" (6 digits, optional)
+}
+
+// ============================================
+// User (Customer) Types
+// ============================================
+
+export interface User {
+	id: string; // UUID
+	name: string;
+	phone: string;
+	email: string | null;
+	address: ColombianAddress;
+	createdAt: string;
+	updatedAt: string;
+}
+
+// Customer data for order creation (subset of User)
+export interface CustomerInfo {
+	name: string;
+	phone: string;
+	email?: string;
+	address: ColombianAddress;
+}
+
+// ============================================
 // Ingredient types
+// ============================================
+
 export type IngredientCategory = 'protein' | 'base' | 'vegetable' | 'topping' | 'dressing';
 
 export interface Ingredient {
@@ -43,6 +80,7 @@ export interface OrderItem {
 
 export interface Order {
 	id: number;
+	userId: string; // UUID reference to User
 	bowlSize: BowlSize;
 	status: OrderStatus;
 	totalCalories: number | null;
@@ -90,14 +128,14 @@ export interface SelectedIngredient {
 
 export interface BowlConfiguration {
 	bowlSize: BowlSize;
-	customerName: string;
+	customer: CustomerInfo;
 	selectedIngredients: SelectedIngredient[];
 }
 
 // API request/response types
 export interface CreateOrderRequest {
 	bowlSize: BowlSize;
-	customerName: string;
+	customer: CustomerInfo;
 	items: Array<{
 		ingredientId: number;
 		quantityGrams: number;

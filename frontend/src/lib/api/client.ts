@@ -7,7 +7,8 @@ import type {
 	Ingredient,
 	CreateOrderRequest,
 	CreateOrderResponse,
-	OrderStatusResponse
+	OrderStatusResponse,
+	ColombianAddress
 } from '@aristaeus/shared';
 
 // API base URL - configured via environment variable
@@ -109,10 +110,18 @@ export async function updateOrderStatus(
 // Utility Types
 // ============================================
 
+export interface AdminOrderUser {
+	id: string;
+	name: string;
+	phone: string;
+	email: string | null;
+	address: ColombianAddress;
+}
+
 export interface AdminOrder {
 	id: number;
 	bowlSize: number;
-	customerName: string | null;
+	user: AdminOrderUser;
 	status: string;
 	items: Array<{
 		ingredientName: string;
@@ -140,7 +149,7 @@ export interface ApiIngredientsResponse {
 export interface ApiOrderResponse {
 	id: number;
 	bowlSize: number;
-	customerName: string | null;
+	user: AdminOrderUser;
 	status: string;
 	items: Array<{
 		ingredientName: string;
