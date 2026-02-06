@@ -244,6 +244,10 @@
 		return $_(`home.categories.${cat}`) || cat;
 	}
 
+	function getIngredientName(name: string): string {
+		return $_(`ingredients.${name}`) || name;
+	}
+
 	function formatPrice(cop: number): string {
 		return `$${Math.round(cop / 100) * 100}`;
 	}
@@ -589,7 +593,7 @@
 												<div class="flex-1 min-w-0">
 													<div class="flex items-center gap-2">
 														<span class="font-medium text-gray-900 truncate">
-															{ingredient.name}
+															{getIngredientName(ingredient.name)}
 														</span>
 													</div>
 													<div class="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
@@ -608,7 +612,7 @@
 															type="button"
 															onclick={() => removeIngredient(ingredient.id)}
 															aria-label={$_('home.ingredient.decrease', {
-																values: { name: ingredient.name }
+																values: { name: getIngredientName(ingredient.name) }
 															})}
 															class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
 														>
@@ -633,7 +637,7 @@
 															type="button"
 															onclick={() => addIngredient(ingredient.id)}
 															aria-label={$_('home.ingredient.increase', {
-																values: { name: ingredient.name }
+																values: { name: getIngredientName(ingredient.name) }
 															})}
 															class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors"
 														>
@@ -752,7 +756,9 @@
 									class="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg"
 									transition:slide={{ duration: 150 }}
 								>
-									<span class="text-sm font-medium text-gray-900 truncate">{ingredient.name}</span>
+									<span class="text-sm font-medium text-gray-900 truncate"
+										>{getIngredientName(ingredient.name)}</span
+									>
 									<span class="text-sm text-gray-500 ml-2 shrink-0">{quantity}g</span>
 								</li>
 							{/each}

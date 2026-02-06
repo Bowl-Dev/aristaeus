@@ -4,6 +4,25 @@
 		"error": "Error",
 		"tryAgain": "Intentar de nuevo"
 	},
+	"ingredients": {
+		"Chicken": "Pollo",
+		"Salmon": "Salmón",
+		"Mushroom": "Champiñón",
+		"Rice": "Arroz",
+		"Quinoa": "Quinoa",
+		"Cherry Tomatoes": "Tomates Cherry",
+		"Mango": "Mango",
+		"Carrot": "Zanahoria",
+		"Onion": "Cebolla",
+		"Avocado": "Aguacate",
+		"Corn": "Maíz",
+		"Cucumber": "Pepino",
+		"Mozzarella": "Mozzarella",
+		"Green Onion": "Cebollín",
+		"Peanuts": "Maní",
+		"Teriyaki": "Teriyaki",
+		"Olive Oil Balsamic": "Aceite de Oliva Balsámico"
+	},
 	"home": {
 		"title": "Arma Tu Bowl",
 		"subtitle": "Selecciona ingredientes para crear tu bowl perfecto",

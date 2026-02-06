@@ -4,6 +4,25 @@
 		"error": "Error",
 		"tryAgain": "Try again"
 	},
+	"ingredients": {
+		"Chicken": "Chicken",
+		"Salmon": "Salmon",
+		"Mushroom": "Mushroom",
+		"Rice": "Rice",
+		"Quinoa": "Quinoa",
+		"Cherry Tomatoes": "Cherry Tomatoes",
+		"Mango": "Mango",
+		"Carrot": "Carrot",
+		"Onion": "Onion",
+		"Avocado": "Avocado",
+		"Corn": "Corn",
+		"Cucumber": "Cucumber",
+		"Mozzarella": "Mozzarella",
+		"Green Onion": "Green Onion",
+		"Peanuts": "Peanuts",
+		"Teriyaki": "Teriyaki",
+		"Olive Oil Balsamic": "Olive Oil Balsamic"
+	},
 	"home": {
 		"title": "Build Your Bowl",
 		"subtitle": "Select ingredients to create your perfect meal",
