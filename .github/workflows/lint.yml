@@ -57,6 +57,10 @@ jobs:
       - name: Generate Prisma client
         run: npm run db:generate
 
+      - name: Sync SvelteKit
+        run: npx svelte-kit sync
+        working-directory: frontend
+
       - name: Run backend tests
         run: npm run test:backend
 
