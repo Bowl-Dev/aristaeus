@@ -1,9 +1,14 @@
 <script lang="ts">
-	import { type Ingredient, type BowlSize, BOWL_SIZES, BOWL_SIZE_PRICES } from '$lib/types';
+	import { type Ingredient, type BowlSize, BOWL_SIZE_PRICES } from '$lib/types';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
-	import { slide, fade } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import { _ } from 'svelte-i18n';
+
+	// Import components
+	import CustomerForm from '$lib/components/CustomerForm.svelte';
+	import BowlIngredients from '$lib/components/BowlIngredients.svelte';
+	import OrderSummary from '$lib/components/OrderSummary.svelte';
 
 	// State
 	let ingredients = $state<Ingredient[]>([]);
@@ -239,18 +244,6 @@
 			submitting = false;
 		}
 	}
-
-	function getCategoryLabel(cat: string): string {
-		return $_(`home.categories.${cat}`) || cat;
-	}
-
-	function getIngredientName(name: string): string {
-		return $_(`ingredients.${name}`) || name;
-	}
-
-	function formatPrice(cop: number): string {
-		return `$${Math.round(cop / 100) * 100}`;
-	}
 </script>
 
 <svelte:head>
@@ -297,7 +290,7 @@
 
 <div class="min-h-screen bg-gray-50 font-sans">
 	<div class="flex min-h-screen">
-		<!-- Left: Ingredient Selection -->
+		<!-- Left: Form and Ingredients -->
 		<main class="flex-1 lg:mr-[420px]">
 			<div class="max-w-2xl mx-auto px-6 py-8">
 				<!-- Header -->
@@ -306,559 +299,55 @@
 					<p class="text-gray-500 mt-1">{$_('home.subtitle')}</p>
 				</header>
 
-				<!-- Customer Information -->
-				<section class="mb-8 space-y-4">
-					<h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-						{$_('home.customerInfo.title')}
-					</h3>
+				<!-- Customer Form Component -->
+				<CustomerForm
+					bind:customerName
+					bind:customerPhone
+					bind:customerEmail
+					bind:streetAddress
+					bind:neighborhood
+					bind:city
+					bind:department
+					bind:postalCode
+				/>
 
-					<!-- Name -->
-					<div>
-						<label for="customer-name" class="block text-sm font-medium text-gray-700 mb-2"
-							>{$_('home.customerName.label')}</label
-						>
-						<input
-							id="customer-name"
-							type="text"
-							bind:value={customerName}
-							placeholder={$_('home.customerName.placeholder')}
-							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
-						/>
-					</div>
-
-					<!-- Phone -->
-					<div>
-						<label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-2"
-							>{$_('home.customerPhone.label')}</label
-						>
-						<input
-							id="customer-phone"
-							type="tel"
-							bind:value={customerPhone}
-							placeholder={$_('home.customerPhone.placeholder')}
-							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow {customerPhone &&
-							!isValidColombianPhone
-								? 'border-red-300 focus:ring-red-500'
-								: ''}"
-						/>
-						{#if customerPhone && !isValidColombianPhone}
-							<p class="text-xs text-red-600 mt-1">{$_('home.customerPhone.invalid')}</p>
-						{/if}
-					</div>
-
-					<!-- Email (optional) -->
-					<div>
-						<label for="customer-email" class="block text-sm font-medium text-gray-700 mb-2"
-							>{$_('home.customerEmail.label')}</label
-						>
-						<input
-							id="customer-email"
-							type="email"
-							bind:value={customerEmail}
-							placeholder={$_('home.customerEmail.placeholder')}
-							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow {customerEmail &&
-							!isValidEmail
-								? 'border-red-300 focus:ring-red-500'
-								: ''}"
-						/>
-						{#if customerEmail && !isValidEmail}
-							<p class="text-xs text-red-600 mt-1">{$_('home.customerEmail.invalid')}</p>
-						{/if}
-					</div>
-				</section>
-
-				<!-- Delivery Address -->
-				<section class="mb-8 space-y-4">
-					<h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-						{$_('home.address.title')}
-					</h3>
-
-					<!-- Street Address -->
-					<div>
-						<label for="street-address" class="block text-sm font-medium text-gray-700 mb-2"
-							>{$_('home.address.streetAddress.label')}</label
-						>
-						<input
-							id="street-address"
-							type="text"
-							bind:value={streetAddress}
-							placeholder={$_('home.address.streetAddress.placeholder')}
-							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
-						/>
-					</div>
-
-					<!-- Neighborhood -->
-					<div>
-						<label for="neighborhood" class="block text-sm font-medium text-gray-700 mb-2"
-							>{$_('home.address.neighborhood.label')}</label
-						>
-						<input
-							id="neighborhood"
-							type="text"
-							bind:value={neighborhood}
-							placeholder={$_('home.address.neighborhood.placeholder')}
-							class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
-						/>
-					</div>
-
-					<!-- City & Department (side by side) -->
-					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<label for="city" class="block text-sm font-medium text-gray-700 mb-2"
-								>{$_('home.address.city.label')}</label
-							>
-							<input
-								id="city"
-								type="text"
-								bind:value={city}
-								placeholder={$_('home.address.city.placeholder')}
-								class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
-							/>
-						</div>
-						<div>
-							<label for="department" class="block text-sm font-medium text-gray-700 mb-2"
-								>{$_('home.address.department.label')}</label
-							>
-							<input
-								id="department"
-								type="text"
-								bind:value={department}
-								placeholder={$_('home.address.department.placeholder')}
-								class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow"
-							/>
-						</div>
-					</div>
-
-					<!-- Postal Code (optional) -->
-					<div>
-						<label for="postal-code" class="block text-sm font-medium text-gray-700 mb-2"
-							>{$_('home.address.postalCode.label')}</label
-						>
-						<input
-							id="postal-code"
-							type="text"
-							bind:value={postalCode}
-							placeholder={$_('home.address.postalCode.placeholder')}
-							maxlength="6"
-							class="w-full max-w-[200px] px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-shadow {postalCode &&
-							!isValidPostalCode
-								? 'border-red-300 focus:ring-red-500'
-								: ''}"
-						/>
-						{#if postalCode && !isValidPostalCode}
-							<p class="text-xs text-red-600 mt-1">{$_('home.address.postalCode.invalid')}</p>
-						{/if}
-					</div>
-				</section>
-
-				<!-- Bowl Size -->
-				<section class="mb-8">
-					<span class="block text-sm font-medium text-gray-700 mb-3"
-						>{$_('home.bowlSize.label')}</span
-					>
-					<div class="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Bowl size selection">
-						{#each BOWL_SIZES as size, i (size)}
-							<button
-								type="button"
-								onclick={() => (selectedBowlSize = size)}
-								class="relative py-4 px-3 rounded-xl border-2 transition-all {selectedBowlSize ===
-								size
-									? 'border-gray-900 bg-gray-900 text-white'
-									: 'border-gray-200 bg-white text-gray-900 hover:border-gray-300'}"
-							>
-								<span class="block text-lg font-semibold">{size}g</span>
-								<span
-									class="block text-xs mt-0.5 {selectedBowlSize === size
-										? 'text-gray-300'
-										: 'text-gray-400'}"
-								>
-									{formatPrice(BOWL_SIZE_PRICES[i])}
-								</span>
-							</button>
-						{/each}
-					</div>
-				</section>
-
-				<!-- Quick Actions -->
-				<div class="flex gap-3 mb-8">
-					<button
-						type="button"
-						onclick={generateRandom}
-						disabled={loading}
-						class="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-50"
-					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-							/>
-						</svg>
-						{$_('home.actions.surpriseMe')}
-					</button>
-					<button
-						type="button"
-						onclick={clearAll}
-						disabled={selectedItems.size === 0}
-						class="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-50"
-					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-						{$_('home.actions.clear')}
-					</button>
-				</div>
-
-				<!-- Ingredients Accordion -->
-				{#if loading}
-					<div class="text-center py-16">
-						<div
-							class="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto"
-						></div>
-						<p class="text-gray-500 mt-4 text-sm">{$_('home.loading.ingredients')}</p>
-					</div>
-				{:else if error}
-					<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
-						<p class="text-red-600 text-sm">{error}</p>
-						<button
-							onclick={loadIngredients}
-							class="mt-2 text-sm font-medium text-red-700 hover:underline"
-						>
-							{$_('common.tryAgain')}
-						</button>
-					</div>
-				{:else}
-					<section class="space-y-3">
-						{#each sortedCategories as category (category)}
-							{@const isExpanded = expandedCategories.has(category)}
-							{@const categoryItems = ingredientsByCategory[category]}
-							{@const selectedInCategory = categoryItems.filter((i) =>
-								selectedItems.has(i.id)
-							).length}
-
-							<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-								<!-- Category Header -->
-								<button
-									type="button"
-									onclick={() => toggleCategory(category)}
-									class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
-								>
-									<div class="flex items-center gap-3">
-										<span class="text-base font-semibold text-gray-900"
-											>{getCategoryLabel(category)}</span
-										>
-										{#if selectedInCategory > 0}
-											<span
-												class="px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded-full"
-											>
-												{selectedInCategory}
-											</span>
-										{/if}
-									</div>
-									<svg
-										class="w-5 h-5 text-gray-400 transition-transform {isExpanded
-											? 'rotate-180'
-											: ''}"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M19 9l-7 7-7-7"
-										/>
-									</svg>
-								</button>
-
-								<!-- Ingredients List -->
-								{#if isExpanded}
-									<div class="border-t border-gray-100" transition:slide={{ duration: 200 }}>
-										{#each categoryItems as ingredient (ingredient.id)}
-											{@const qty = selectedItems.get(ingredient.id) || 0}
-											{@const isSelected = qty > 0}
-
-											<div
-												class="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-b-0 {isSelected
-													? 'bg-gray-50'
-													: ''}"
-											>
-												<div class="flex-1 min-w-0">
-													<div class="flex items-center gap-2">
-														<span class="font-medium text-gray-900 truncate">
-															{getIngredientName(ingredient.name)}
-														</span>
-													</div>
-													<div class="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-														<span>{ingredient.caloriesPer100g} {$_('home.ingredient.cal')}</span>
-														<span class="text-gray-300">|</span>
-														<span
-															>{ingredient.proteinGPer100g}g {$_('home.ingredient.protein')}</span
-														>
-													</div>
-												</div>
-
-												<!-- Quantity Controls -->
-												<div class="flex items-center gap-2 ml-4">
-													{#if isSelected}
-														<button
-															type="button"
-															onclick={() => removeIngredient(ingredient.id)}
-															aria-label={$_('home.ingredient.decrease', {
-																values: { name: getIngredientName(ingredient.name) }
-															})}
-															class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
-														>
-															<svg
-																class="w-4 h-4"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M20 12H4"
-																/>
-															</svg>
-														</button>
-														<span class="w-12 text-center text-sm font-semibold text-gray-900"
-															>{qty}g</span
-														>
-														<button
-															type="button"
-															onclick={() => addIngredient(ingredient.id)}
-															aria-label={$_('home.ingredient.increase', {
-																values: { name: getIngredientName(ingredient.name) }
-															})}
-															class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors"
-														>
-															<svg
-																class="w-4 h-4"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M12 4v16m8-8H4"
-																/>
-															</svg>
-														</button>
-													{:else}
-														<button
-															type="button"
-															onclick={() => setQuantity(ingredient.id, 50)}
-															class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-														>
-															{$_('home.actions.add')}
-														</button>
-													{/if}
-												</div>
-											</div>
-										{/each}
-									</div>
-								{/if}
-							</div>
-						{/each}
-					</section>
-				{/if}
-
-				<!-- Cutlery Option -->
-				<section class="mt-8 mb-24 lg:mb-8">
-					<label class="flex items-center gap-3 cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={isCutlery}
-							class="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
-						/>
-						<span class="text-sm text-gray-700">{$_('home.cutlery.label')}</span>
-					</label>
-				</section>
+				<!-- Bowl Ingredients Component -->
+				<BowlIngredients
+					{ingredients}
+					{loading}
+					{error}
+					bind:selectedBowlSize
+					bind:isCutlery
+					{selectedItems}
+					{expandedCategories}
+					onLoadIngredients={loadIngredients}
+					onAddIngredient={addIngredient}
+					onRemoveIngredient={removeIngredient}
+					onSetQuantity={setQuantity}
+					onClearAll={clearAll}
+					onGenerateRandom={generateRandom}
+					onToggleCategory={toggleCategory}
+				/>
 			</div>
 		</main>
 
-		<!-- Right: Order Summary (Desktop) -->
-		<aside
-			class="hidden lg:block fixed right-0 top-0 bottom-0 w-[420px] bg-white border-l border-gray-200"
-		>
-			<div class="h-full flex flex-col p-6">
-				<!-- Header -->
-				<div class="mb-6">
-					<h2 class="text-xl font-bold text-gray-900">{$_('home.order.title')}</h2>
-					{#if customerName}
-						<p class="text-sm text-gray-500 mt-1">
-							{$_('home.order.for', { values: { name: customerName } })}
-						</p>
-					{/if}
-				</div>
-
-				<!-- Capacity Bar -->
-				{#if selectedBowlSize}
-					<div class="mb-6">
-						<div class="flex justify-between text-sm mb-2">
-							<span class="text-gray-500">{$_('home.order.capacity')}</span>
-							<span class="font-medium {isOverCapacity ? 'text-red-600' : 'text-gray-900'}">
-								{totals.weight}g / {selectedBowlSize}g
-							</span>
-						</div>
-						<div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-							<div
-								class="h-full rounded-full transition-all duration-300 {isOverCapacity
-									? 'bg-red-500'
-									: 'bg-gray-900'}"
-								style="width: {Math.min(capacityUsed, 100)}%"
-							></div>
-						</div>
-						{#if isOverCapacity}
-							<p class="text-xs text-red-600 mt-1">
-								{$_('home.order.overCapacity', {
-									values: { amount: totals.weight - selectedBowlSize }
-								})}
-							</p>
-						{/if}
-					</div>
-				{/if}
-
-				<!-- Selected Items -->
-				<div class="flex-1 overflow-y-auto min-h-0">
-					{#if selectedList.length === 0}
-						<div class="text-center py-12 text-gray-400">
-							<svg
-								class="w-12 h-12 mx-auto mb-3 opacity-50"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="1.5"
-									d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-								/>
-							</svg>
-							<p class="text-sm">{$_('home.order.noItems')}</p>
-						</div>
-					{:else}
-						<ul class="space-y-2">
-							{#each selectedList as { ingredient, quantity } (ingredient.id)}
-								<li
-									class="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg"
-									transition:slide={{ duration: 150 }}
-								>
-									<span class="text-sm font-medium text-gray-900 truncate"
-										>{getIngredientName(ingredient.name)}</span
-									>
-									<span class="text-sm text-gray-500 ml-2 shrink-0">{quantity}g</span>
-								</li>
-							{/each}
-						</ul>
-					{/if}
-				</div>
-
-				<!-- Nutrition Summary -->
-				{#if selectedList.length > 0}
-					<div class="border-t border-gray-100 pt-4 mt-4">
-						<div class="grid grid-cols-2 gap-3 text-center">
-							<div class="bg-gray-50 rounded-lg py-3">
-								<span class="block text-2xl font-bold text-gray-900"
-									>{Math.round(totals.calories)}</span
-								>
-								<span class="block text-xs text-gray-500 uppercase tracking-wide"
-									>{$_('home.order.calories')}</span
-								>
-							</div>
-							<div class="bg-gray-50 rounded-lg py-3">
-								<span class="block text-2xl font-bold text-gray-900"
-									>{Math.round(totals.protein)}g</span
-								>
-								<span class="block text-xs text-gray-500 uppercase tracking-wide"
-									>{$_('home.order.protein')}</span
-								>
-							</div>
-						</div>
-					</div>
-				{/if}
-
-				<!-- Price & Submit -->
-				<div class="border-t border-gray-100 pt-4 mt-4">
-					<div class="flex items-center justify-between mb-4">
-						<span class="text-gray-500">{$_('home.order.total')}</span>
-						<span class="text-2xl font-bold text-gray-900">{formatPrice(totals.price)} COP</span>
-					</div>
-					<button
-						type="button"
-						onclick={submitOrder}
-						disabled={!canSubmit || submitting}
-						class="w-full py-4 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-					>
-						{#if submitting}
-							<span class="inline-flex items-center gap-2">
-								<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-									<circle
-										class="opacity-25"
-										cx="12"
-										cy="12"
-										r="10"
-										stroke="currentColor"
-										stroke-width="4"
-									></circle>
-									<path
-										class="opacity-75"
-										fill="currentColor"
-										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-									></path>
-								</svg>
-								{$_('home.order.placingOrder')}
-							</span>
-						{:else}
-							{$_('home.order.placeOrder')}
-						{/if}
-					</button>
-				</div>
-			</div>
-		</aside>
-
-		<!-- Mobile: Bottom Bar -->
-		<div
-			class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-pb"
-		>
-			<div class="flex items-center justify-between gap-4">
-				<div>
-					<span class="block text-xs text-gray-500"
-						>{$_('home.order.items', { values: { count: selectedList.length } })}</span
-					>
-					<span class="block text-lg font-bold text-gray-900">{formatPrice(totals.price)} COP</span>
-				</div>
-				<button
-					type="button"
-					onclick={submitOrder}
-					disabled={!canSubmit || submitting}
-					class="flex-1 max-w-[200px] py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-				>
-					{submitting ? $_('home.order.placing') : $_('home.order.placeOrder')}
-				</button>
-			</div>
-		</div>
+		<!-- Order Summary Component (Desktop sidebar + Mobile bar) -->
+		<OrderSummary
+			{customerName}
+			{selectedBowlSize}
+			{selectedList}
+			{totals}
+			{capacityUsed}
+			{isOverCapacity}
+			{canSubmit}
+			{submitting}
+			onSubmit={submitOrder}
+		/>
 	</div>
 </div>
 
 <style>
 	:global(body) {
 		font-family: 'DM Sans', system-ui, sans-serif;
-	}
-
-	.safe-area-pb {
-		padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 	}
 </style>
