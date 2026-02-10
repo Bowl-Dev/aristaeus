@@ -83,13 +83,20 @@
 			"protein": "Protein",
 			"vegetable": "Vegetables",
 			"topping": "Toppings",
-			"dressing": "Dressing"
+			"dressing": "Dressing",
+			"dressingNote": "Dressings come in 25g containers"
 		},
 		"ingredient": {
 			"cal": "cal",
 			"protein": "protein",
 			"decrease": "Decrease {name}",
-			"increase": "Increase {name}"
+			"increase": "Increase {name}",
+			"container": "container",
+			"containers": "containers",
+			"cup": "{quantity} cup",
+			"cups": "{quantity} cups",
+			"tbsp": "{quantity} tbsp",
+			"tsp": "{quantity} tsp"
 		},
 		"order": {
 			"title": "Your Order",

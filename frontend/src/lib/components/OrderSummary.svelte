@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Ingredient } from '$lib/types';
+	import { type Ingredient, type IngredientCategory, DRESSING_CONTAINER_GRAMS } from '$lib/types';
+	import { gramsToImperial } from '$lib/utils/imperialConversion';
 	import { slide } from 'svelte/transition';
 	import { _ } from 'svelte-i18n';
 
@@ -46,6 +47,11 @@
 
 	function getIngredientName(name: string): string {
 		return $_(`ingredients.${name}`) || name;
+	}
+
+	function formatImperial(quantity: string, unit: string): string {
+		const translatedUnit = $_(`home.ingredient.${unit}`, { values: { quantity } });
+		return `~${translatedUnit}`;
 	}
 </script>
 
@@ -113,6 +119,9 @@
 			{:else}
 				<ul class="space-y-2">
 					{#each selectedList as { ingredient, quantity } (ingredient.id)}
+						{@const isDressing = ingredient.category === 'dressing'}
+						{@const containers = isDressing ? quantity / DRESSING_CONTAINER_GRAMS : null}
+						{@const imperial = gramsToImperial(quantity, ingredient.category as IngredientCategory)}
 						<li
 							class="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg"
 							transition:slide={{ duration: 150 }}
@@ -120,7 +129,17 @@
 							<span class="text-sm font-medium text-gray-900 truncate"
 								>{getIngredientName(ingredient.name)}</span
 							>
-							<span class="text-sm text-gray-500 ml-2 shrink-0">{quantity}g</span>
+							<span class="text-sm text-gray-500 ml-2 shrink-0">
+								{#if isDressing}
+									{containers}
+									{containers === 1
+										? $_('home.ingredient.container')
+										: $_('home.ingredient.containers')}
+									({quantity}g)
+								{:else}
+									{quantity}g ({formatImperial(imperial.quantity, imperial.unit)})
+								{/if}
+							</span>
 						</li>
 					{/each}
 				</ul>

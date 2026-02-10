@@ -83,13 +83,20 @@
 			"protein": "Proteína",
 			"vegetable": "Vegetales",
 			"topping": "Toppings",
-			"dressing": "Aderezo"
+			"dressing": "Aderezo",
+			"dressingNote": "Los aderezos vienen en contenedores de 25g"
 		},
 		"ingredient": {
 			"cal": "cal",
 			"protein": "proteína",
 			"decrease": "Disminuir {name}",
-			"increase": "Aumentar {name}"
+			"increase": "Aumentar {name}",
+			"container": "contenedor",
+			"containers": "contenedores",
+			"cup": "{quantity} taza",
+			"cups": "{quantity} tazas",
+			"tbsp": "{quantity} cda",
+			"tsp": "{quantity} cdta"
 		},
 		"order": {
 			"title": "Tu Pedido",

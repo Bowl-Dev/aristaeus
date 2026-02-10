@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { type Ingredient, type BowlSize, BOWL_SIZES, BOWL_SIZE_PRICES } from '$lib/types';
+	import {
+		type Ingredient,
+		type BowlSize,
+		BOWL_SIZES,
+		BOWL_SIZE_PRICES,
+		DRESSING_CONTAINER_GRAMS
+	} from '$lib/types';
 	import type { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { slide } from 'svelte/transition';
 	import { _ } from 'svelte-i18n';
@@ -19,7 +25,8 @@
 		onSetQuantity,
 		onClearAll,
 		onGenerateRandom,
-		onToggleCategory
+		onToggleCategory,
+		getInitialQuantity
 	}: {
 		ingredients: Ingredient[];
 		loading: boolean;
@@ -35,6 +42,7 @@
 		onClearAll: () => void;
 		onGenerateRandom: () => void;
 		onToggleCategory: (cat: string) => void;
+		getInitialQuantity: (category: string) => number;
 	} = $props();
 
 	// Category order
@@ -65,6 +73,21 @@
 
 	function formatPrice(cop: number): string {
 		return `$${Math.round(cop / 100) * 100}`;
+	}
+
+	function formatPricePerGram(pricePerG: number): string {
+		return `$${Math.round(pricePerG)}/g`;
+	}
+
+	function formatQuantityDisplay(category: string, grams: number): string {
+		if (category === 'dressing') {
+			const containers = grams / DRESSING_CONTAINER_GRAMS;
+			if (containers === 1) {
+				return $_('home.ingredient.container', { values: { count: 1 } });
+			}
+			return $_('home.ingredient.containers', { values: { count: containers } });
+		}
+		return `${grams}g`;
 	}
 </script>
 
@@ -161,12 +184,18 @@
 					onclick={() => onToggleCategory(category)}
 					class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
 				>
-					<div class="flex items-center gap-3">
-						<span class="text-base font-semibold text-gray-900">{getCategoryLabel(category)}</span>
-						{#if selectedInCategory > 0}
-							<span class="px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded-full">
-								{selectedInCategory}
-							</span>
+					<div class="flex flex-col">
+						<div class="flex items-center gap-3">
+							<span class="text-base font-semibold text-gray-900">{getCategoryLabel(category)}</span
+							>
+							{#if selectedInCategory > 0}
+								<span class="px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded-full">
+									{selectedInCategory}
+								</span>
+							{/if}
+						</div>
+						{#if category === 'dressing'}
+							<span class="text-xs text-gray-500 mt-0.5">{$_('home.categories.dressingNote')}</span>
 						{/if}
 					</div>
 					<svg
@@ -206,6 +235,8 @@
 										<span>{ingredient.caloriesPer100g} {$_('home.ingredient.cal')}</span>
 										<span class="text-gray-300">|</span>
 										<span>{ingredient.proteinGPer100g}g {$_('home.ingredient.protein')}</span>
+										<span class="text-gray-300">|</span>
+										<span>{formatPricePerGram(ingredient.pricePerG)}</span>
 									</div>
 								</div>
 
@@ -229,7 +260,9 @@
 												/>
 											</svg>
 										</button>
-										<span class="w-12 text-center text-sm font-semibold text-gray-900">{qty}g</span>
+										<span class="w-16 text-center text-sm font-semibold text-gray-900"
+											>{formatQuantityDisplay(ingredient.category, qty)}</span
+										>
 										<button
 											type="button"
 											onclick={() => onAddIngredient(ingredient.id)}
@@ -250,7 +283,8 @@
 									{:else}
 										<button
 											type="button"
-											onclick={() => onSetQuantity(ingredient.id, 50)}
+											onclick={() =>
+												onSetQuantity(ingredient.id, getInitialQuantity(ingredient.category))}
 											class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
 										>
 											{$_('home.actions.add')}

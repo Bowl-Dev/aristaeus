@@ -27,3 +27,6 @@ export const BOWL_SIZE_LABELS: Record<import('@aristaeus/shared').BowlSize, stri
 	450: 'Medium (450g)',
 	600: 'Large (600g)'
 };
+
+// Dressing container size in grams
+export const DRESSING_CONTAINER_GRAMS = 25;

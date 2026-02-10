@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { type Ingredient, type BowlSize, BOWL_SIZE_PRICES } from '$lib/types';
+	import {
+		type Ingredient,
+		type BowlSize,
+		BOWL_SIZE_PRICES,
+		DRESSING_CONTAINER_GRAMS
+	} from '$lib/types';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
 	import { fade } from 'svelte/transition';
@@ -146,16 +151,20 @@
 	}
 
 	function addIngredient(id: number) {
+		const ingredient = ingredients.find((i) => i.id === id);
+		const increment = ingredient?.category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 10;
 		const current = selectedItems.get(id) || 0;
-		selectedItems.set(id, current + 10);
+		selectedItems.set(id, current + increment);
 	}
 
 	function removeIngredient(id: number) {
+		const ingredient = ingredients.find((i) => i.id === id);
+		const decrement = ingredient?.category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 10;
 		const current = selectedItems.get(id) || 0;
-		if (current <= 10) {
+		if (current <= decrement) {
 			selectedItems.delete(id);
 		} else {
-			selectedItems.set(id, current - 10);
+			selectedItems.set(id, current - decrement);
 		}
 	}
 
@@ -165,6 +174,10 @@
 		} else {
 			selectedItems.set(id, qty);
 		}
+	}
+
+	function getInitialQuantity(category: string): number {
+		return category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 50;
 	}
 
 	function clearAll() {
@@ -327,6 +340,7 @@
 					onClearAll={clearAll}
 					onGenerateRandom={generateRandom}
 					onToggleCategory={toggleCategory}
+					{getInitialQuantity}
 				/>
 			</div>
 		</main>
