@@ -211,6 +211,31 @@
 <div
 	class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-pb"
 >
+	{#if selectedBowlSize}
+		<div class="mb-2">
+			<div class="flex items-center justify-between text-xs mb-1">
+				<span class="text-gray-500">{$_('home.order.capacity')}</span>
+				<span class="font-medium {isOverCapacity ? 'text-red-600' : 'text-gray-700'}">
+					{totals.weight}g / {selectedBowlSize}g
+				</span>
+			</div>
+			<div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+				<div
+					class="h-full rounded-full transition-all duration-300 {isOverCapacity
+						? 'bg-red-500'
+						: 'bg-gray-900'}"
+					style="width: {Math.min(capacityUsed, 100)}%"
+				></div>
+			</div>
+			{#if isOverCapacity}
+				<p class="text-xs text-red-600 mt-0.5">
+					{$_('home.order.overCapacity', {
+						values: { amount: totals.weight - selectedBowlSize }
+					})}
+				</p>
+			{/if}
+		</div>
+	{/if}
 	<div class="flex items-center justify-between gap-4">
 		<div>
 			<span class="block text-xs text-gray-500"
