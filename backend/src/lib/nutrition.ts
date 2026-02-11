@@ -5,6 +5,7 @@
 
 import type { Ingredient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { BOWL_SIZES, BOWL_SIZE_PRICES, type BowlSize } from '@aristaeus/shared';
 
 export interface NutritionalSummary {
 	totalCalories: number;
@@ -22,12 +23,21 @@ export interface OrderItemInput {
 }
 
 /**
+ * Get the packaging price for a bowl size
+ */
+function getPackagingPrice(bowlSize: BowlSize): number {
+	const index = BOWL_SIZES.indexOf(bowlSize);
+	return index >= 0 ? BOWL_SIZE_PRICES[index] : 0;
+}
+
+/**
  * Calculate nutritional summary for a list of order items
  * This MUST match the frontend calculation exactly
  */
 export function calculateNutrition(
 	items: OrderItemInput[],
-	ingredients: Map<number, Ingredient>
+	ingredients: Map<number, Ingredient>,
+	bowlSize: BowlSize
 ): NutritionalSummary {
 	const totals: NutritionalSummary = {
 		totalCalories: 0,
@@ -36,7 +46,7 @@ export function calculateNutrition(
 		totalFatG: 0,
 		totalFiberG: 0,
 		totalWeightG: 0,
-		totalPrice: 0
+		totalPrice: getPackagingPrice(bowlSize)
 	};
 
 	for (const item of items) {

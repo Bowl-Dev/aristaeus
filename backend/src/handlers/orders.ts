@@ -130,7 +130,7 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 		const ingredientMap = new Map(ingredients.map((i) => [i.id, i]));
 
 		// Calculate nutritional summary (server-side validation)
-		const nutrition = calculateNutrition(items, ingredientMap);
+		const nutrition = calculateNutrition(items, ingredientMap, bowlSize as 250 | 450 | 600);
 
 		// Validate total weight doesn't exceed bowl size
 		if (nutrition.totalWeightG > bowlSize) {
