@@ -113,6 +113,13 @@ resource "aws_apigatewayv2_integration" "robot_heartbeat" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "check_phone" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.check_phone.invoke_arn
+  payload_format_version = "2.0"
+}
+
 # ============================================
 # Routes
 # ============================================
@@ -178,6 +185,13 @@ resource "aws_apigatewayv2_route" "robot_heartbeat" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /api/robots/{robotId}/heartbeat"
   target    = "integrations/${aws_apigatewayv2_integration.robot_heartbeat.id}"
+}
+
+# GET /api/users/check-phone
+resource "aws_apigatewayv2_route" "check_phone" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/users/check-phone"
+  target    = "integrations/${aws_apigatewayv2_integration.check_phone.id}"
 }
 
 # ============================================
@@ -252,6 +266,14 @@ resource "aws_lambda_permission" "robot_heartbeat" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.robot_heartbeat.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "check_phone" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.check_phone.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
