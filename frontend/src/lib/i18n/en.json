@@ -4,6 +4,16 @@
 		"error": "Error",
 		"tryAgain": "Try again"
 	},
+	"customer": {
+		"returning": {
+			"title": "Welcome back!",
+			"message": "We found your information. Would you like to use it or update it?",
+			"useThis": "Use This Info",
+			"updateMy": "Update My Info",
+			"dismiss": "Fill in manually",
+			"recognized": "Returning customer recognized"
+		}
+	},
 	"ingredients": {
 		"Chicken": "Chicken",
 		"Salmon": "Salmon",

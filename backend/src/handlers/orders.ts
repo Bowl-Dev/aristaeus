@@ -63,7 +63,9 @@ const createOrderSchema = z.object({
 				quantityGrams: z.number().min(MIN_QUANTITY_GRAMS)
 			})
 		)
-		.min(1, 'Order must contain at least one item')
+		.min(1, 'Order must contain at least one item'),
+	includeCutlery: z.boolean().optional().default(false),
+	updateUserData: z.boolean().optional().default(false)
 });
 
 const updateStatusSchema = z.object({
@@ -108,7 +110,7 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 			return badRequest('Validation failed', parseResult.error.flatten());
 		}
 
-		const { bowlSize, customer, items } = parseResult.data;
+		const { bowlSize, customer, items, includeCutlery, updateUserData } = parseResult.data;
 
 		// Fetch all ingredients for validation and calculation
 		const ingredientIds = items.map((item) => item.ingredientId);
@@ -141,29 +143,43 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 
 		// Create order with user and items in a transaction
 		const order = await prisma.$transaction(async (tx) => {
-			// Find or create user by phone number (upsert)
-			const user = await tx.user.upsert({
-				where: { phone: customer.phone },
-				update: {
-					name: customer.name,
-					email: customer.email ?? null,
-					streetAddress: customer.address.streetAddress,
-					neighborhood: customer.address.neighborhood,
-					city: customer.address.city,
-					department: customer.address.department,
-					postalCode: customer.address.postalCode ?? null
-				},
-				create: {
-					name: customer.name,
-					phone: customer.phone,
-					email: customer.email ?? null,
-					streetAddress: customer.address.streetAddress,
-					neighborhood: customer.address.neighborhood,
-					city: customer.address.city,
-					department: customer.address.department,
-					postalCode: customer.address.postalCode ?? null
-				}
+			// Find existing user by phone number
+			let user = await tx.user.findUnique({
+				where: { phone: customer.phone }
 			});
+
+			if (user) {
+				// User exists - only update if explicitly requested
+				if (updateUserData) {
+					user = await tx.user.update({
+						where: { phone: customer.phone },
+						data: {
+							name: customer.name,
+							email: customer.email ?? null,
+							streetAddress: customer.address.streetAddress,
+							neighborhood: customer.address.neighborhood,
+							city: customer.address.city,
+							department: customer.address.department,
+							postalCode: customer.address.postalCode ?? null
+						}
+					});
+				}
+				// Otherwise, use existing user data without updating
+			} else {
+				// Create new user
+				user = await tx.user.create({
+					data: {
+						name: customer.name,
+						phone: customer.phone,
+						email: customer.email ?? null,
+						streetAddress: customer.address.streetAddress,
+						neighborhood: customer.address.neighborhood,
+						city: customer.address.city,
+						department: customer.address.department,
+						postalCode: customer.address.postalCode ?? null
+					}
+				});
+			}
 
 			// Create the order linked to user
 			const newOrder = await tx.order.create({
@@ -171,6 +187,7 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 					userId: user.id,
 					bowlSize,
 					status: 'pending',
+					includeCutlery,
 					totalCalories: nutrition.totalCalories,
 					totalProteinG: nutrition.totalProteinG,
 					totalCarbsG: nutrition.totalCarbsG,
@@ -284,29 +301,45 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
 
 /**
  * GET /api/orders
- * List all orders (admin view)
+ * List all orders (admin view) with pagination and filtering
  */
-export const listOrders: APIGatewayProxyHandler = async () => {
+export const listOrders: APIGatewayProxyHandler = async (event) => {
 	try {
+		// Parse query parameters for pagination and filtering
+		const queryParams = event.queryStringParameters || {};
+		const status = queryParams.status || 'all';
+		const limit = Math.min(Math.max(parseInt(queryParams.limit || '20', 10), 1), 100);
+		const offset = Math.max(parseInt(queryParams.offset || '0', 10), 0);
+
+		// Build where clause for status filtering
+		const where = status !== 'all' ? { status } : {};
+
+		// Get total count for pagination
+		const total = await prisma.order.count({ where });
+
 		const orders = await prisma.order.findMany({
+			where,
 			include: {
 				user: true,
 				items: {
 					include: {
 						ingredient: {
-							select: { name: true }
+							select: { name: true, category: true }
 						}
 					},
 					orderBy: { sequenceOrder: 'asc' }
 				}
 			},
-			orderBy: { createdAt: 'desc' }
+			orderBy: { createdAt: 'desc' },
+			take: limit,
+			skip: offset
 		});
 
 		return success({
 			orders: orders.map((order) => ({
 				id: order.id,
 				bowlSize: order.bowlSize,
+				includeCutlery: order.includeCutlery,
 				user: {
 					id: order.user.id,
 					name: order.user.name,
@@ -323,6 +356,7 @@ export const listOrders: APIGatewayProxyHandler = async () => {
 				status: order.status,
 				items: order.items.map((item) => ({
 					ingredientName: item.ingredient.name,
+					ingredientCategory: item.ingredient.category,
 					quantityGrams: item.quantityGrams.toNumber(),
 					sequenceOrder: item.sequenceOrder
 				})),
@@ -338,7 +372,10 @@ export const listOrders: APIGatewayProxyHandler = async () => {
 				assignedAt: order.assignedAt?.toISOString() ?? null,
 				startedAt: order.startedAt?.toISOString() ?? null,
 				completedAt: order.completedAt?.toISOString() ?? null
-			}))
+			})),
+			total,
+			limit,
+			offset
 		});
 	} catch (error) {
 		console.error('Error listing orders:', error);

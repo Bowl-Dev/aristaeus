@@ -4,6 +4,16 @@
 		"error": "Error",
 		"tryAgain": "Intentar de nuevo"
 	},
+	"customer": {
+		"returning": {
+			"title": "¡Bienvenido de nuevo!",
+			"message": "Encontramos tu información. ¿Deseas usarla o actualizarla?",
+			"useThis": "Usar esta información",
+			"updateMy": "Actualizar mis datos",
+			"dismiss": "Llenar manualmente",
+			"recognized": "Cliente recurrente reconocido"
+		}
+	},
 	"ingredients": {
 		"Chicken": "Pollo",
 		"Salmon": "Salmón",

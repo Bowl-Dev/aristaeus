@@ -9,8 +9,8 @@
 		"packages/*"
 	],
 	"scripts": {
-		"dev:local": "cp backend/.env.local backend/.env && cp frontend/.env.local frontend/.env && concurrently -n fe,be -c cyan,yellow \"npm run dev -w frontend\" \"npm run dev -w @aristaeus/backend\"",
-		"dev:hybrid": "cp backend/.env.hosted backend/.env && cp frontend/.env.local frontend/.env && concurrently -n fe,be -c cyan,yellow \"npm run dev -w frontend\" \"npm run dev -w @aristaeus/backend\"",
+		"dev:local": "cp backend/.env.local backend/.env && cp frontend/.env.local frontend/.env && concurrently -n svelte,lambdas -c cyan,yellow \"npm run dev -w frontend\" \"npm run dev -w @aristaeus/backend\"",
+		"dev:hybrid": "cp backend/.env.hosted backend/.env && cp frontend/.env.local frontend/.env && concurrently -n svelte,lambdas -c cyan,yellow \"npm run dev -w frontend\" \"npm run dev -w @aristaeus/backend\"",
 		"dev:frontend": "cp frontend/.env.hosted frontend/.env && npm run dev -w frontend",
 		"build": "npm run build -w frontend",
 		"build:backend": "npm run build -w @aristaeus/backend",

@@ -83,6 +83,7 @@ export interface Order {
 	userId: string; // UUID reference to User
 	bowlSize: BowlSize;
 	status: OrderStatus;
+	includeCutlery: boolean;
 	totalCalories: number | null;
 	totalProteinG: number | null;
 	totalCarbsG: number | null;
@@ -140,6 +141,8 @@ export interface CreateOrderRequest {
 		ingredientId: number;
 		quantityGrams: number;
 	}>;
+	includeCutlery?: boolean;
+	updateUserData?: boolean;
 }
 
 export interface CreateOrderResponse {
@@ -156,4 +159,72 @@ export interface OrderStatusResponse {
 	assignedAt: string | null;
 	startedAt: string | null;
 	completedAt: string | null;
+}
+
+// ============================================
+// Admin API Types
+// ============================================
+
+// Pagination parameters for listing orders
+export interface ListOrdersParams {
+	status?: OrderStatus | 'all';
+	limit?: number;
+	offset?: number;
+}
+
+// Admin order item with category info
+export interface AdminOrderItem {
+	ingredientName: string;
+	ingredientCategory: IngredientCategory;
+	quantityGrams: number;
+	sequenceOrder: number;
+}
+
+// Admin order view with user details
+export interface AdminOrder {
+	id: number;
+	bowlSize: number;
+	includeCutlery: boolean;
+	user: {
+		id: string;
+		name: string;
+		phone: string;
+		email: string | null;
+		address: ColombianAddress;
+	};
+	status: string;
+	items: AdminOrderItem[];
+	totalWeightG: number;
+	totalCalories: number;
+	totalProteinG: number;
+	totalCarbsG: number;
+	totalFatG: number;
+	totalFiberG: number;
+	totalPrice: number;
+	assignedRobotId: number | null;
+	createdAt: string;
+	assignedAt: string | null;
+	startedAt: string | null;
+	completedAt: string | null;
+}
+
+// Paginated orders response
+export interface PaginatedOrdersResponse {
+	orders: AdminOrder[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+// ============================================
+// User Check API Types
+// ============================================
+
+export interface CheckPhoneResponse {
+	exists: boolean;
+	user?: {
+		name: string;
+		email: string | null;
+		address: ColombianAddress;
+	};
 }

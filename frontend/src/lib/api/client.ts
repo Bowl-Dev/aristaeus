@@ -86,11 +86,25 @@ export async function getOrderStatus(orderId: number): Promise<OrderStatusRespon
 }
 
 /**
- * List all orders (admin)
+ * List all orders (admin) with optional pagination and filtering
  */
-export async function listOrders(): Promise<AdminOrder[]> {
-	const response = await apiFetch<{ orders: AdminOrder[] }>('/api/orders');
-	return response.orders;
+export async function listOrders(params: ListOrdersParams = {}): Promise<PaginatedOrdersResponse> {
+	const searchParams = new URLSearchParams();
+
+	if (params.status && params.status !== 'all') {
+		searchParams.set('status', params.status);
+	}
+	if (params.limit !== undefined) {
+		searchParams.set('limit', params.limit.toString());
+	}
+	if (params.offset !== undefined) {
+		searchParams.set('offset', params.offset.toString());
+	}
+
+	const query = searchParams.toString();
+	const endpoint = query ? `/api/orders?${query}` : '/api/orders';
+
+	return apiFetch<PaginatedOrdersResponse>(endpoint);
 }
 
 /**
@@ -106,6 +120,13 @@ export async function updateOrderStatus(
 	});
 }
 
+/**
+ * Check if a phone number exists (returning customer detection)
+ */
+export async function checkPhone(phone: string): Promise<CheckPhoneResponse> {
+	return apiFetch<CheckPhoneResponse>(`/api/users/check-phone?phone=${encodeURIComponent(phone)}`);
+}
+
 // ============================================
 // Utility Types
 // ============================================
@@ -118,16 +139,20 @@ export interface AdminOrderUser {
 	address: ColombianAddress;
 }
 
+export interface AdminOrderItem {
+	ingredientName: string;
+	ingredientCategory: string;
+	quantityGrams: number;
+	sequenceOrder: number;
+}
+
 export interface AdminOrder {
 	id: number;
 	bowlSize: number;
+	includeCutlery: boolean;
 	user: AdminOrderUser;
 	status: string;
-	items: Array<{
-		ingredientName: string;
-		quantityGrams: number;
-		sequenceOrder: number;
-	}>;
+	items: AdminOrderItem[];
 	totalWeightG: number;
 	totalCalories: number;
 	totalProteinG: number;
@@ -140,6 +165,28 @@ export interface AdminOrder {
 	assignedAt: string | null;
 	startedAt: string | null;
 	completedAt: string | null;
+}
+
+export interface ListOrdersParams {
+	status?: string;
+	limit?: number;
+	offset?: number;
+}
+
+export interface PaginatedOrdersResponse {
+	orders: AdminOrder[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+export interface CheckPhoneResponse {
+	exists: boolean;
+	user?: {
+		name: string;
+		email: string | null;
+		address: ColombianAddress;
+	};
 }
 
 export interface ApiIngredientsResponse {

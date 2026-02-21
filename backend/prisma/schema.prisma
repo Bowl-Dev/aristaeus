@@ -90,6 +90,9 @@ model Order {
   // Possible: cancelled, failed
   status          String    @default("pending") @db.VarChar(50)
 
+  // Cutlery preference
+  includeCutlery  Boolean   @default(false) @map("include_cutlery")
+
   // Nutritional summary (calculated from order_items)
   totalCalories   Decimal?  @map("total_calories") @db.Decimal(7, 2)
   totalProteinG   Decimal?  @map("total_protein_g") @db.Decimal(6, 2)

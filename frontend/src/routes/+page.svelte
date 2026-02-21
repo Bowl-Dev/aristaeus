@@ -40,6 +40,9 @@
 	let expandedCategories = new SvelteSet<string>(['base']);
 	let isCutlery = $state(false);
 
+	// Returning customer state
+	let updateUserData = $state(false);
+
 	// Validation helpers
 	const isValidColombianPhone = $derived(
 		/^(\+57)?[0-9]{10}$/.test(customerPhone.replace(/\s/g, ''))
@@ -234,7 +237,9 @@
 						postalCode: postalCode || undefined
 					}
 				},
-				items
+				items,
+				includeCutlery: isCutlery,
+				updateUserData
 			});
 
 			orderSuccess = { orderId: response.orderId };
@@ -251,6 +256,7 @@
 			selectedBowlSize = null;
 			selectedItems.clear();
 			isCutlery = false;
+			updateUserData = false;
 		} catch (e) {
 			alert(e instanceof ApiError ? e.message : 'Failed to submit order');
 		} finally {
@@ -322,6 +328,7 @@
 					bind:city
 					bind:department
 					bind:postalCode
+					bind:updateUserData
 				/>
 
 				<!-- Bowl Ingredients Component -->

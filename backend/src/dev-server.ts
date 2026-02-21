@@ -22,6 +22,7 @@ import {
 	adminUpdateOrderStatus
 } from './handlers/orders.js';
 import { registerRobot, getNextOrder, heartbeat } from './handlers/robots.js';
+import { checkPhone } from './handlers/users.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -156,6 +157,9 @@ function wrapHandler(handler: APIGatewayProxyHandler, pathParamNames?: string[])
 // GET /api/ingredients
 app.get('/api/ingredients', wrapHandler(getIngredients));
 
+// GET /api/users/check-phone (returning customer check)
+app.get('/api/users/check-phone', wrapHandler(checkPhone));
+
 // GET /api/orders (list all - admin)
 app.get('/api/orders', wrapHandler(listOrders));
 
@@ -195,7 +199,8 @@ app.listen(PORT, () => {
 	console.log('');
 	console.log('Available endpoints:');
 	console.log('  GET  /api/ingredients');
-	console.log('  GET  /api/orders              (list all - admin)');
+	console.log('  GET  /api/users/check-phone       (returning customer check)');
+	console.log('  GET  /api/orders                  (list all - admin)');
 	console.log('  POST /api/orders');
 	console.log('  GET  /api/orders/:id');
 	console.log('  PUT  /api/orders/:orderId/status  (admin update)');
