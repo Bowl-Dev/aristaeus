@@ -13,13 +13,16 @@ vi.mock('../../lib/db.js', () => ({
 			findMany: vi.fn()
 		},
 		user: {
-			upsert: vi.fn()
+			findUnique: vi.fn(),
+			create: vi.fn(),
+			update: vi.fn()
 		},
 		order: {
 			create: vi.fn(),
 			findUnique: vi.fn(),
 			findMany: vi.fn(),
-			update: vi.fn()
+			update: vi.fn(),
+			count: vi.fn()
 		},
 		orderItem: {
 			createMany: vi.fn()
@@ -183,11 +186,13 @@ describe('Order Handlers', () => {
 			vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
 				const mockTx = {
 					user: {
-						upsert: vi.fn().mockResolvedValue({
+						findUnique: vi.fn().mockResolvedValue(null), // New user
+						create: vi.fn().mockResolvedValue({
 							id: 'test-uuid',
 							name: validCustomer.name,
 							phone: '+573001234567'
-						})
+						}),
+						update: vi.fn()
 					},
 					order: {
 						create: vi.fn().mockResolvedValue({
@@ -250,11 +255,13 @@ describe('Order Handlers', () => {
 			vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
 				const mockTx = {
 					user: {
-						upsert: vi.fn().mockResolvedValue({
+						findUnique: vi.fn().mockResolvedValue(null), // New user
+						create: vi.fn().mockResolvedValue({
 							id: 'test-uuid',
 							name: validCustomer.name,
 							phone: validCustomer.phone
-						})
+						}),
+						update: vi.fn()
 					},
 					order: {
 						create: vi.fn().mockResolvedValue({
@@ -367,7 +374,11 @@ describe('Order Handlers', () => {
 					vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
 					vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
 						const mockTx = {
-							user: { upsert: vi.fn().mockResolvedValue({ id: 'test-uuid' }) },
+							user: {
+								findUnique: vi.fn().mockResolvedValue(null), // New user
+								create: vi.fn().mockResolvedValue({ id: 'test-uuid' }),
+								update: vi.fn()
+							},
 							order: {
 								create: vi.fn().mockResolvedValue({
 									id: 1,
