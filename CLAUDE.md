@@ -545,9 +545,66 @@ curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json
 | 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                   |
 | 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed |
 | 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                     |
+| 2026-02-21 | 3.2     | Added deployment checklist, lessons learned from checkPhone endpoint deployment             |
 
 ---
 
-**Last Updated:** 2026-02-03
+## Deployment Checklist & Lessons Learned
+
+### Adding a New Lambda Endpoint
+
+When adding a new Lambda handler (e.g., `users.ts`), you must update **all** of the following:
+
+| File                              | What to Add                                     |
+| --------------------------------- | ----------------------------------------------- |
+| `backend/src/handlers/[name].ts`  | The handler code                                |
+| `backend/src/dev-server.ts`       | Express route for local development             |
+| `backend/scripts/build-lambda.sh` | Add to esbuild entry points (**CI uses this**)  |
+| `backend/scripts/build-lambda.js` | Add to esbuild entry points (local builds)      |
+| `backend/infra/lambda.tf`         | CloudWatch log group + Lambda function resource |
+| `backend/infra/api_gateway.tf`    | Integration + Route + Lambda permission         |
+
+**Critical:** CI uses `build-lambda.sh`, not `build-lambda.js`. If you only update the JS file, local builds work but CI deployment fails with 500 errors because the handler code isn't bundled.
+
+### Database Schema Changes
+
+When modifying `backend/prisma/schema.prisma`:
+
+1. **Local development:** `npm run db:push` works fine
+2. **Production deployment:** Requires a migration file in `backend/prisma/migrations/`
+3. **CI automatically runs:** `npx prisma migrate deploy` after Terraform apply
+
+**To create a migration:**
+
+```bash
+# Option 1: Let Prisma generate it
+npx prisma migrate dev --name descriptive_name
+
+# Option 2: Create manually
+mkdir backend/prisma/migrations/YYYYMMDDHHMMSS_descriptive_name
+# Add migration.sql with the ALTER TABLE statements
+```
+
+**Common symptom:** Local works, production returns 500 errors on endpoints using new columns.
+
+### Debugging Production vs Local Issues
+
+If local development works but production fails:
+
+1. **Check build scripts:** Both `.sh` and `.js` versions must include new handlers
+2. **Check migrations:** Schema changes need migration files, not just `db:push`
+3. **Check Terraform:** All 5 resources needed for new endpoints (log group, function, integration, route, permission)
+4. **Check CloudWatch logs:** AWS Console → CloudWatch → Log groups → `/aws/lambda/aristaeus-*`
+
+### Test Mocks After Refactoring
+
+When changing database operations (e.g., replacing `user.upsert` with `user.findUnique`/`user.create`):
+
+- Update test mocks in `backend/src/handlers/__tests__/*.test.ts`
+- Mocks must match the new Prisma operations
+
+---
+
+**Last Updated:** 2026-02-21
 **Project Status:** MVP Complete
 **Current Phase:** Production Ready (Robot integration pending)
