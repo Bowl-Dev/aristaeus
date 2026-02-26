@@ -9,6 +9,7 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "getOrder",
     "adminUpdateOrderStatus",
     "checkPhone",
+    "deleteUser",
     "registerRobot",
     "getNextOrder",
     "updateOrderStatus",
@@ -263,6 +264,32 @@ resource "aws_lambda_function" "check_phone" {
   function_name = "${var.project_name}-checkPhone-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
   handler       = "handlers/users.checkPhone"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "delete_user" {
+  function_name = "${var.project_name}-deleteUser-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/users.deleteUser"
   runtime       = "nodejs20.x"
   timeout       = 30
   memory_size   = 256

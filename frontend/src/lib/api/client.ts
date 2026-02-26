@@ -127,6 +127,17 @@ export async function checkPhone(phone: string): Promise<CheckPhoneResponse> {
 	return apiFetch<CheckPhoneResponse>(`/api/users/check-phone?phone=${encodeURIComponent(phone)}`);
 }
 
+/**
+ * Delete user data by phone number
+ * Implements Colombian Law 1581 right to deletion
+ */
+export async function deleteUserData(phone: string): Promise<DeleteUserResponse> {
+	return apiFetch<DeleteUserResponse>('/api/users', {
+		method: 'DELETE',
+		body: JSON.stringify({ phone })
+	});
+}
+
 // ============================================
 // Utility Types
 // ============================================
@@ -216,4 +227,10 @@ export interface ApiOrderResponse {
 	assignedAt: string | null;
 	startedAt: string | null;
 	completedAt: string | null;
+}
+
+export interface DeleteUserResponse {
+	success: boolean;
+	message: string;
+	ordersDeleted: number;
 }

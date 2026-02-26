@@ -22,7 +22,7 @@ import {
 	adminUpdateOrderStatus
 } from './handlers/orders.js';
 import { registerRobot, getNextOrder, heartbeat } from './handlers/robots.js';
-import { checkPhone } from './handlers/users.js';
+import { checkPhone, deleteUser } from './handlers/users.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -160,6 +160,9 @@ app.get('/api/ingredients', wrapHandler(getIngredients));
 // GET /api/users/check-phone (returning customer check)
 app.get('/api/users/check-phone', wrapHandler(checkPhone));
 
+// DELETE /api/users (delete user data - Law 1581 compliance)
+app.delete('/api/users', wrapHandler(deleteUser));
+
 // GET /api/orders (list all - admin)
 app.get('/api/orders', wrapHandler(listOrders));
 
@@ -200,6 +203,7 @@ app.listen(PORT, () => {
 	console.log('Available endpoints:');
 	console.log('  GET  /api/ingredients');
 	console.log('  GET  /api/users/check-phone       (returning customer check)');
+	console.log('  DELETE /api/users                 (delete user data)');
 	console.log('  GET  /api/orders                  (list all - admin)');
 	console.log('  POST /api/orders');
 	console.log('  GET  /api/orders/:id');

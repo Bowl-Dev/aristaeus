@@ -34,7 +34,7 @@
 		"Olive Oil Balsamic": "Olive Oil Balsamic"
 	},
 	"home": {
-		"title": "Al Grano",
+		"title": "al Gramo.",
 		"subtitle": "Select ingredients to create your perfect meal",
 		"customerInfo": {
 			"title": "Contact Information"
@@ -129,6 +129,86 @@
 		},
 		"loading": {
 			"ingredients": "Loading ingredients..."
+		}
+	},
+	"footer": {
+		"copyright": "al Gramo. {year}. All rights reserved.",
+		"privacyPolicy": "Privacy Policy",
+		"implicitConsent": "By placing an order, you agree to our personal data processing policy."
+	},
+	"privacy": {
+		"title": "Privacy Policy and Personal Data Processing",
+		"lastUpdated": "Last updated: {date}",
+		"backToHome": "Back to home",
+		"dataController": {
+			"title": "1. Data Controller",
+			"content": "The data controller is [COMPANY NAME], identified with NIT [NIT], located at [ADDRESS], Colombia. Email: [EMAIL]. Phone: [PHONE]."
+		},
+		"purpose": {
+			"title": "2. Purpose of Data Processing",
+			"content": "Your personal data will be processed for:",
+			"items": [
+				"Processing and delivering your orders",
+				"Communicating with you about your order status",
+				"Improving our services",
+				"Complying with legal obligations"
+			]
+		},
+		"dataCollected": {
+			"title": "3. Data Collected",
+			"content": "We collect the following data:",
+			"items": [
+				"Full name",
+				"Phone number (unique identifier)",
+				"Email address (optional)",
+				"Complete delivery address",
+				"Order history"
+			]
+		},
+		"rights": {
+			"title": "4. Data Subject Rights",
+			"content": "Under Colombian Law 1581 of 2012, you have the right to:",
+			"items": [
+				"Know, update, and rectify your data",
+				"Request proof of authorization",
+				"Be informed about the use of your data",
+				"Revoke authorization and request deletion of your data",
+				"File complaints with the Superintendence of Industry and Commerce"
+			]
+		},
+		"retention": {
+			"title": "5. Data Retention",
+			"content": "Your data will be kept while you maintain a relationship with us and for the time necessary to comply with legal and contractual obligations."
+		},
+		"security": {
+			"title": "6. Security Measures",
+			"content": "We implement technical and organizational measures to protect your data against unauthorized access, loss, or alteration."
+		},
+		"exerciseRights": {
+			"title": "7. How to Exercise Your Rights",
+			"content": "To exercise your rights, you can:",
+			"items": ["Send an email to [EMAIL]", "Request data deletion on our website"]
+		},
+		"complaints": {
+			"title": "8. Data Protection Authority",
+			"content": "If you believe your rights have been violated, you can file a complaint with the Superintendence of Industry and Commerce (SIC)."
+		},
+		"deleteLink": "Request deletion of my data",
+		"delete": {
+			"title": "Data Deletion Request",
+			"description": "Enter your phone number to request the deletion of your personal data from our system.",
+			"phoneLabel": "Phone Number",
+			"phonePlaceholder": "+57 or 10 digits",
+			"phoneInvalid": "Enter a valid Colombian phone number",
+			"confirmLabel": "I confirm that I want to permanently delete my data and understand this includes my order history.",
+			"submit": "Delete my data",
+			"submitting": "Processing...",
+			"successTitle": "Request Processed",
+			"successMessage": "Your data has been deleted from our system.",
+			"ordersDeleted": "{count} associated order(s) were deleted.",
+			"errorNotFound": "We could not find an account associated with this phone number.",
+			"warning": "Warning: This action is permanent and will delete all your data, including order history.",
+			"backToPrivacy": "Back to Privacy Policy"
 		}
 	}
 }

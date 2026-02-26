@@ -80,7 +80,7 @@ model Order {
 
   // User reference
   userId          String    @map("user_id") @db.Uuid
-  user            User      @relation(fields: [userId], references: [id])
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Bowl configuration
   bowlSize        Int       @map("bowl_size") // 250, 320, or 480 grams
