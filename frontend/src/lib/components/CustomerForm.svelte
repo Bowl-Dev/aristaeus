@@ -314,8 +314,8 @@
 		/>
 	</div>
 
-	<!-- City & Department (side by side) -->
-	<div class="grid grid-cols-2 gap-3">
+	<!-- City & Department (side by side) — hidden, served only in Bogotá -->
+	<div class="hidden">
 		<div>
 			<label for="city" class="block text-sm font-medium text-gray-700 mb-2"
 				>{$_('home.address.city.label')}</label

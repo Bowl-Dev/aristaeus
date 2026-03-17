@@ -30,8 +30,8 @@
 	// Form state - Colombian address
 	let streetAddress = $state('');
 	let neighborhood = $state('');
-	let city = $state('');
-	let department = $state('');
+	let city = $state('Bogotá');
+	let department = $state('Bogotá D.C.');
 	let postalCode = $state('');
 
 	// Form state - Bowl
@@ -318,19 +318,6 @@
 					<p class="text-gray-500 mt-1">{$_('home.subtitle')}</p>
 				</header>
 
-				<!-- Customer Form Component -->
-				<CustomerForm
-					bind:customerName
-					bind:customerPhone
-					bind:customerEmail
-					bind:streetAddress
-					bind:neighborhood
-					bind:city
-					bind:department
-					bind:postalCode
-					bind:updateUserData
-				/>
-
 				<!-- Bowl Ingredients Component -->
 				<BowlIngredients
 					{ingredients}
@@ -348,6 +335,19 @@
 					onGenerateRandom={generateRandom}
 					onToggleCategory={toggleCategory}
 					{getInitialQuantity}
+				/>
+
+				<!-- Customer Form Component -->
+				<CustomerForm
+					bind:customerName
+					bind:customerPhone
+					bind:customerEmail
+					bind:streetAddress
+					bind:neighborhood
+					bind:city
+					bind:department
+					bind:postalCode
+					bind:updateUserData
 				/>
 			</div>
 		</main>
