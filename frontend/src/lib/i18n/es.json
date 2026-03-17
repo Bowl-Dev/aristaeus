@@ -121,7 +121,8 @@
 			"placeOrder": "Hacer Pedido",
 			"placingOrder": "Enviando Pedido...",
 			"placing": "Enviando...",
-			"items": "{count} items"
+			"items": "{count} items",
+			"view": "Ver"
 		},
 		"success": {
 			"title": "Pedido Realizado",
