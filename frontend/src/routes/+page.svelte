@@ -14,6 +14,12 @@
 	import CustomerForm from '$lib/components/CustomerForm.svelte';
 	import BowlIngredients from '$lib/components/BowlIngredients.svelte';
 	import OrderSummary from '$lib/components/OrderSummary.svelte';
+	import LandingView from '$lib/components/LandingView.svelte';
+	import MenuView from '$lib/components/MenuView.svelte';
+	import { type MenuItem } from '$lib/menuItems';
+
+	// View state
+	let view = $state<'landing' | 'menu' | 'builder'>('landing');
 
 	// State
 	let ingredients = $state<Ingredient[]>([]);
@@ -189,6 +195,27 @@
 		isCutlery = false;
 	}
 
+	function handleMenuSelect(
+		_item: MenuItem,
+		size: BowlSize,
+		scaledItems: { ingredientName: string; quantityGrams: number }[]
+	) {
+		clearAll();
+		selectedBowlSize = size;
+		scaledItems.forEach(({ ingredientName, quantityGrams }) => {
+			const ingredient = ingredients.find((i) => i.name === ingredientName);
+			if (ingredient) {
+				selectedItems.set(ingredient.id, quantityGrams);
+			}
+		});
+		view = 'builder';
+	}
+
+	function handleBack() {
+		clearAll();
+		view = 'landing';
+	}
+
 	function generateRandom() {
 		const size: BowlSize = selectedBowlSize ?? 450;
 		selectedBowlSize = size;
@@ -307,65 +334,85 @@
 	</div>
 {/if}
 
-<div class="min-h-screen bg-gray-50 font-sans">
-	<div class="flex min-h-screen">
-		<!-- Left: Form and Ingredients -->
-		<main class="flex-1 lg:mr-[420px]">
-			<div class="max-w-2xl mx-auto px-6 py-8">
-				<!-- Header -->
-				<header class="mb-8">
-					<h1 class="text-3xl font-bold text-gray-900 tracking-tight">{$_('home.title')}</h1>
-					<p class="text-gray-500 mt-1">{$_('home.subtitle')}</p>
-				</header>
+{#if view === 'landing'}
+	<LandingView onBuildOwn={() => (view = 'builder')} onViewMenu={() => (view = 'menu')} />
+{:else if view === 'menu'}
+	<MenuView {ingredients} onSelect={handleMenuSelect} onBack={handleBack} />
+{:else}
+	<div class="min-h-screen bg-gray-50 font-sans">
+		<div class="flex min-h-screen">
+			<!-- Left: Form and Ingredients -->
+			<main class="flex-1 lg:mr-[420px]">
+				<div class="max-w-2xl mx-auto px-6 py-8">
+					<!-- Header -->
+					<header class="mb-8">
+						<button
+							class="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors text-sm font-medium mb-4"
+							onclick={handleBack}
+						>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M15 19l-7-7 7-7"
+								/>
+							</svg>
+							{$_('home.menu.back')}
+						</button>
+						<h1 class="text-3xl font-bold text-gray-900 tracking-tight">{$_('home.title')}</h1>
+						<p class="text-gray-500 mt-1">{$_('home.subtitle')}</p>
+					</header>
 
-				<!-- Bowl Ingredients Component -->
-				<BowlIngredients
-					{ingredients}
-					{loading}
-					{error}
-					bind:selectedBowlSize
-					bind:isCutlery
-					{selectedItems}
-					{expandedCategories}
-					onLoadIngredients={loadIngredients}
-					onAddIngredient={addIngredient}
-					onRemoveIngredient={removeIngredient}
-					onSetQuantity={setQuantity}
-					onClearAll={clearAll}
-					onGenerateRandom={generateRandom}
-					onToggleCategory={toggleCategory}
-					{getInitialQuantity}
-				/>
+					<!-- Bowl Ingredients Component -->
+					<BowlIngredients
+						{ingredients}
+						{loading}
+						{error}
+						bind:selectedBowlSize
+						bind:isCutlery
+						{selectedItems}
+						{expandedCategories}
+						onLoadIngredients={loadIngredients}
+						onAddIngredient={addIngredient}
+						onRemoveIngredient={removeIngredient}
+						onSetQuantity={setQuantity}
+						onClearAll={clearAll}
+						onGenerateRandom={generateRandom}
+						onToggleCategory={toggleCategory}
+						{getInitialQuantity}
+					/>
 
-				<!-- Customer Form Component -->
-				<CustomerForm
-					bind:customerName
-					bind:customerPhone
-					bind:customerEmail
-					bind:streetAddress
-					bind:neighborhood
-					bind:city
-					bind:department
-					bind:postalCode
-					bind:updateUserData
-				/>
-			</div>
-		</main>
+					<!-- Customer Form Component -->
+					<CustomerForm
+						bind:customerName
+						bind:customerPhone
+						bind:customerEmail
+						bind:streetAddress
+						bind:neighborhood
+						bind:city
+						bind:department
+						bind:postalCode
+						bind:updateUserData
+					/>
+				</div>
+			</main>
 
-		<!-- Order Summary Component (Desktop sidebar + Mobile bar) -->
-		<OrderSummary
-			{customerName}
-			{selectedBowlSize}
-			{selectedList}
-			{totals}
-			{capacityUsed}
-			{isOverCapacity}
-			{canSubmit}
-			{submitting}
-			onSubmit={submitOrder}
-		/>
+			<!-- Order Summary Component (Desktop sidebar + Mobile bar) -->
+			<OrderSummary
+				{customerName}
+				{selectedBowlSize}
+				{selectedList}
+				{totals}
+				{capacityUsed}
+				{isOverCapacity}
+				{canSubmit}
+				{submitting}
+				onSubmit={submitOrder}
+			/>
+		</div>
 	</div>
-</div>
+{/if}
 
 <style>
 	:global(body) {

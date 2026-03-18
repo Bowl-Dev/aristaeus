@@ -35,8 +35,49 @@
 		"Honey Mustard Vinagrette": "Vinagreta de Miel Mostaza"
 	},
 	"home": {
-		"title": "al Gramo.",
+		"title": "alGramo.",
 		"subtitle": "Selecciona ingredientes para crear tu bowl perfecto",
+		"landing": {
+			"headline": "¿Cómo quieres tu bowl?",
+			"builder": {
+				"title": "Armar mi bowl",
+				"description": "Elige cada ingrediente a tu gusto y crea tu combinación perfecta"
+			},
+			"menu": {
+				"title": "Ver el menú",
+				"description": "Escoge entre nuestros bowls favoritos, listos para pedir"
+			}
+		},
+		"menu": {
+			"title": "Nuestro Menú",
+			"back": "Volver",
+			"orderButton": "Pedir este bowl",
+			"customizeNote": "Puedes personalizar los ingredientes antes de pedir",
+			"size": {
+				"title": "Elige el tamaño",
+				"small": "Pequeño · 250g",
+				"medium": "Mediano · 450g",
+				"large": "Grande · 600g"
+			}
+		},
+		"menuItems": {
+			"teriyakiChicken": {
+				"title": "Teriyaki Chicken",
+				"description": "Arroz con pollo y salsa teriyaki, acompañado de aguacate y tomates cherry"
+			},
+			"salmonQuinoa": {
+				"title": "Salmon & Quinoa",
+				"description": "Quinoa con salmón fresco, pepino, aguacate y aderezo balsámico"
+			},
+			"mushroomGarden": {
+				"title": "Mushroom Garden",
+				"description": "Bowl vegetal de quinoa con champiñones, zanahoria, maíz y maní"
+			},
+			"classicChicken": {
+				"title": "Classic Chicken",
+				"description": "El clásico: arroz con pollo, tomates cherry y pepino fresco"
+			}
+		},
 		"customerInfo": {
 			"title": "Información de Contacto"
 		},
