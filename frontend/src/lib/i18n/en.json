@@ -35,8 +35,49 @@
 		"Honey Mustard Vinagrette": "Honey Mustard Vinagrette"
 	},
 	"home": {
-		"title": "al Gramo.",
+		"title": "alGramo.",
 		"subtitle": "Select ingredients to create your perfect meal",
+		"landing": {
+			"headline": "How would you like your bowl?",
+			"builder": {
+				"title": "Build my bowl",
+				"description": "Choose each ingredient to your taste and create your perfect combination"
+			},
+			"menu": {
+				"title": "View the menu",
+				"description": "Choose from our favorite bowls, ready to order"
+			}
+		},
+		"menu": {
+			"title": "Our Menu",
+			"back": "Back",
+			"orderButton": "Order this bowl",
+			"customizeNote": "You can customize the ingredients before ordering",
+			"size": {
+				"title": "Choose size",
+				"small": "Small · 250g",
+				"medium": "Medium · 450g",
+				"large": "Large · 600g"
+			}
+		},
+		"menuItems": {
+			"teriyakiChicken": {
+				"title": "Teriyaki Chicken",
+				"description": "Rice with chicken and teriyaki sauce, topped with avocado and cherry tomatoes"
+			},
+			"salmonQuinoa": {
+				"title": "Salmon & Quinoa",
+				"description": "Quinoa with fresh salmon, cucumber, avocado, and balsamic dressing"
+			},
+			"mushroomGarden": {
+				"title": "Mushroom Garden",
+				"description": "Veggie quinoa bowl with mushrooms, carrot, corn, and peanuts"
+			},
+			"classicChicken": {
+				"title": "Classic Chicken",
+				"description": "The classic: rice with chicken, cherry tomatoes, and fresh cucumber"
+			}
+		},
 		"customerInfo": {
 			"title": "Contact Information"
 		},
