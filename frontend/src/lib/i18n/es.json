@@ -32,7 +32,7 @@
 		"Peanuts": "Maní",
 		"Teriyaki": "Teriyaki",
 		"Olive Oil Balsamic": "Aceite de Oliva Balsámico",
-		"Honey Mustard Vinagrette": "Vinagreta de Miel Mostaza"
+		"Honey Mustard": "Miel Mostaza"
 	},
 	"home": {
 		"title": "alGramo.",
@@ -61,21 +61,25 @@
 			}
 		},
 		"menuItems": {
-			"teriyakiChicken": {
-				"title": "Teriyaki Chicken",
-				"description": "Arroz con pollo y salsa teriyaki, acompañado de aguacate y tomates cherry"
+			"buenoBonitoAlGramo": {
+				"title": "Bueno, bonito y al gramo",
+				"description": "Arroz blanco con pollo a la plancha, zanahoria rallada, aguacate, maíz dulce y pepino fresco, acompañado de salsa teriyaki."
 			},
-			"salmonQuinoa": {
-				"title": "Salmon & Quinoa",
-				"description": "Quinoa con salmón fresco, pepino, aguacate y aderezo balsámico"
+			"hoyEmpiezoLaDieta": {
+				"title": "Hoy empiezo la dieta",
+				"description": "Bajo en calorías. Quinua con pollo a la plancha, tomate cherry, mango y vegetales frescos, con vinagreta de aceite de oliva y balsámico."
 			},
-			"mushroomGarden": {
-				"title": "Mushroom Garden",
-				"description": "Bowl vegetal de quinoa con champiñones, zanahoria, maíz y maní"
+			"altoEnProteina": {
+				"title": "Alto en proteína",
+				"description": "Arroz blanco con pollo a la plancha, tomate cherry, mango y trocitos de cebolla roja, acompañado de aguacate, maíz, mozzarella y maní crocante, con salsa teriyaki."
 			},
-			"classicChicken": {
-				"title": "Classic Chicken",
-				"description": "El clásico: arroz con pollo, tomates cherry y pepino fresco"
+			"verdeYSabroso": {
+				"title": "Verde y sabroso",
+				"description": "100% vegetariano. Arroz blanco, champiñones salteados, tomate cherry y mango, zanahoria rallada, aguacate y pepino, con aderezo de miel y mostaza."
+			},
+			"premiumDeSalmon": {
+				"title": "Premium de Salmón",
+				"description": "Quinua con salmón a la plancha, champiñones salteados, tomate cherry y trocitos de mango, acompañado de zanahoria, aguacate y cebollín, con toque de vinagreta de balsámico."
 			}
 		},
 		"customerInfo": {

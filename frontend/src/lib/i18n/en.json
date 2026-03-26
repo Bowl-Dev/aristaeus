@@ -32,7 +32,7 @@
 		"Peanuts": "Peanuts",
 		"Teriyaki": "Teriyaki",
 		"Olive Oil Balsamic": "Olive Oil Balsamic",
-		"Honey Mustard Vinagrette": "Honey Mustard Vinagrette"
+		"Honey Mustard": "Honey Mustard"
 	},
 	"home": {
 		"title": "alGramo.",
@@ -61,21 +61,25 @@
 			}
 		},
 		"menuItems": {
-			"teriyakiChicken": {
-				"title": "Teriyaki Chicken",
-				"description": "Rice with chicken and teriyaki sauce, topped with avocado and cherry tomatoes"
+			"buenoBonitoAlGramo": {
+				"title": "Good, Pretty & Precise",
+				"description": "White rice with grilled chicken, grated carrot, avocado, sweet corn and fresh cucumber, with teriyaki sauce."
 			},
-			"salmonQuinoa": {
-				"title": "Salmon & Quinoa",
-				"description": "Quinoa with fresh salmon, cucumber, avocado, and balsamic dressing"
+			"hoyEmpiezoLaDieta": {
+				"title": "Diet Starts Today",
+				"description": "Low calorie. Quinoa with grilled chicken, cherry tomatoes, mango and fresh vegetables, with olive oil and balsamic vinaigrette."
 			},
-			"mushroomGarden": {
-				"title": "Mushroom Garden",
-				"description": "Veggie quinoa bowl with mushrooms, carrot, corn, and peanuts"
+			"altoEnProteina": {
+				"title": "High Protein",
+				"description": "White rice with grilled chicken, cherry tomatoes, mango and red onion, avocado, corn, mozzarella and crunchy peanuts, with teriyaki sauce."
 			},
-			"classicChicken": {
-				"title": "Classic Chicken",
-				"description": "The classic: rice with chicken, cherry tomatoes, and fresh cucumber"
+			"verdeYSabroso": {
+				"title": "Green & Tasty",
+				"description": "100% vegetarian. White rice, sautéed mushrooms, cherry tomatoes and mango, grated carrot, avocado and cucumber, with honey mustard dressing."
+			},
+			"premiumDeSalmon": {
+				"title": "Salmon Premium",
+				"description": "Quinoa with grilled salmon, sautéed mushrooms, cherry tomatoes and mango, with carrot, avocado and chive, finished with a touch of balsamic vinaigrette."
 			}
 		},
 		"customerInfo": {

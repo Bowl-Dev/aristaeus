@@ -232,6 +232,18 @@ async function main() {
 				pricePerG: 45,
 				available: true,
 				displayOrder: 2
+			},
+			{
+				name: 'Honey Mustard',
+				category: 'dressing',
+				caloriesPer100g: 260,
+				proteinGPer100g: 2,
+				carbsGPer100g: 32,
+				fatGPer100g: 14,
+				fiberGPer100g: 0.5,
+				pricePerG: 15,
+				available: true,
+				displayOrder: 3
 			}
 		]
 	});
