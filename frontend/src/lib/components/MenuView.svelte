@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Ingredient, BowlSize } from '$lib/types';
-	import { BOWL_SIZES } from '$lib/types';
 	import type { MenuItem } from '$lib/menuItems';
 	import { MENU_ITEMS } from '$lib/menuItems';
 	import { _ } from 'svelte-i18n';
@@ -19,15 +18,9 @@
 		onBack: () => void;
 	} = $props();
 
-	let selectedSize = $state<BowlSize>(450);
+	const selectedSize: BowlSize = 450;
 
 	const BOWL_BASE_PRICE: Record<number, number> = { 250: 1200, 450: 1300, 600: 1400 };
-
-	const SIZE_LABELS: Record<BowlSize, string> = {
-		250: 'home.menu.size.small',
-		450: 'home.menu.size.medium',
-		600: 'home.menu.size.large'
-	};
 
 	function scaleQty(qty: number, factor: number): number {
 		return Math.max(5, Math.round((qty * factor) / 5) * 5);
@@ -100,26 +93,6 @@
 			</button>
 			<h1 class="text-3xl font-bold text-gray-900 tracking-tight">{$_('home.menu.title')}</h1>
 			<p class="text-gray-500 mt-1">{$_('home.menu.customizeNote')}</p>
-		</div>
-
-		<!-- Size Picker -->
-		<div class="mb-6">
-			<p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
-				{$_('home.menu.size.title')}
-			</p>
-			<div class="inline-flex gap-2 bg-white border border-gray-200 rounded-2xl p-1.5">
-				{#each BOWL_SIZES as size (size)}
-					<button
-						class="px-5 py-2 rounded-xl text-sm font-medium transition-all duration-150
-							{selectedSize === size
-							? 'bg-gray-900 text-white shadow-sm'
-							: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}"
-						onclick={() => (selectedSize = size)}
-					>
-						{$_(SIZE_LABELS[size])}
-					</button>
-				{/each}
-			</div>
 		</div>
 
 		<!-- Menu Grid -->
