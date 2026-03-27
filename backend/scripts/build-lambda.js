@@ -27,6 +27,7 @@ async function build() {
 	await esbuild.build({
 		entryPoints: [
 			resolve(rootDir, 'src/handlers/ingredients.ts'),
+			resolve(rootDir, 'src/handlers/menus.ts'),
 			resolve(rootDir, 'src/handlers/orders.ts'),
 			resolve(rootDir, 'src/handlers/robots.ts'),
 			resolve(rootDir, 'src/handlers/users.ts')

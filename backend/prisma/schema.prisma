@@ -37,11 +37,45 @@ model Ingredient {
 
   // Relations
   orderItems       OrderItem[]
+  menuItems        MenuIngredient[]
 
   //Price
   pricePerG        Decimal  @default(0.0) @map("price_per_g") @db.Decimal(5, 2)
 
   @@map("ingredients")
+}
+
+// ============================================
+// Menu Catalog
+// ============================================
+
+model Menu {
+  id            Int              @id @default(autoincrement())
+  nameEs        String           @map("name_es") @db.VarChar(200)
+  nameEn        String           @map("name_en") @db.VarChar(200)
+  descriptionEs String           @map("description_es") @db.Text
+  descriptionEn String           @map("description_en") @db.Text
+  bowlSize      Int              @map("bowl_size")
+  active        Boolean          @default(true)
+  displayOrder  Int?             @map("display_order")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  ingredients   MenuIngredient[]
+
+  @@map("menus")
+}
+
+model MenuIngredient {
+  id            Int        @id @default(autoincrement())
+  menuId        Int        @map("menu_id")
+  ingredientId  Int        @map("ingredient_id")
+  quantityGrams Decimal    @map("quantity_grams") @db.Decimal(7, 2)
+  sequenceOrder Int        @map("sequence_order")
+  menu          Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@index([menuId])
+  @@map("menu_ingredients")
 }
 
 // ============================================

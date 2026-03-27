@@ -76,10 +76,12 @@ aristaeus/
 │   ├── .env.hosted.example            # Template for hosted backend URL
 │   ├── src/
 │   │   ├── routes/
-│   │   │   ├── +page.svelte           # Main bowl builder interface
+│   │   │   ├── +page.svelte           # Main bowl builder (3-view: landing/menu/builder)
 │   │   │   ├── +layout.svelte         # Layout wrapper
 │   │   │   ├── +layout.ts             # Static rendering config
-│   │   │   └── admin/orders/          # Testing interface
+│   │   │   ├── admin/orders/          # Admin orders list + status management
+│   │   │   ├── privacy/               # Law 1581 privacy policy
+│   │   │   └── privacy/delete/        # User data deletion request form
 │   │   ├── lib/
 │   │   │   ├── api/
 │   │   │   │   └── client.ts          # API client for AWS backend
@@ -111,8 +113,10 @@ aristaeus/
 │       ├── dev-server.ts              # Express dev server for local development
 │       ├── handlers/
 │       │   ├── ingredients.ts         # GET /api/ingredients
+│       │   ├── menus.ts               # GET /api/menus
 │       │   ├── orders.ts              # Order CRUD handlers
-│       │   └── robots.ts              # Robot API handlers
+│       │   ├── robots.ts              # Robot API handlers
+│       │   └── users.ts              # GET /api/users/check-phone, DELETE /api/users
 │       └── lib/
 │           ├── db.ts                  # Prisma client singleton
 │           ├── response.ts            # API response helpers
@@ -175,7 +179,7 @@ aristaeus/
 - Monorepo structure with npm workspaces
 - **Frontend bowl builder** - fully functional with API integration
   - Ingredient selection from database
-  - Bowl size selection (250g, 320g, 600g) with capacity enforcement
+  - Bowl size selection (250g, 450g, 600g) with capacity enforcement
   - Real-time nutritional summary calculation
   - Customer name input
   - Order submission to backend API
@@ -187,12 +191,28 @@ aristaeus/
   - Real-time refresh functionality
 - **Backend Lambda handlers** (fully deployed to AWS)
   - `GET /api/ingredients` - fetch available ingredients
+  - `GET /api/menus` - fetch pre-configured menus with ingredients
   - `GET /api/orders` - list all orders (admin)
   - `POST /api/orders` - create new order
   - `GET /api/orders/{id}` - get order details
   - `PUT /api/orders/{orderId}/status` - admin status update
   - `POST /api/orders/{orderId}/status` - robot status update
+  - `GET /api/users/check-phone` - returning customer lookup
+  - `DELETE /api/users` - delete user data (Law 1581 compliance)
   - Robot registration, heartbeat, and next-order endpoints
+- **Menu system** - pre-configured bowl selections
+  - `Menu` and `MenuIngredient` database models
+  - 5 seeded menus with full ingredient recipes and pricing
+  - `MenuView.svelte` component with nutrition preview
+- **Pricing logic** - fully implemented
+  - Per-ingredient `pricePerG` field on Ingredient model
+  - Bowl packaging base prices: 250g=1200 COP, 450g=1300 COP, 600g=1400 COP
+  - Total price = base price + sum(ingredient.pricePerG × quantityGrams)
+- **User & privacy features** (Law 1581 / Colombian data protection)
+  - Returning customer detection via phone lookup
+  - User data deletion endpoint + `/privacy/delete` page
+  - `/privacy` page with full policy text
+- **3-view frontend flow**: landing → (menu selection | bowl builder) → customer form
 - **Prisma database schema** with PostgreSQL
 - **Terraform infrastructure** for AWS deployment
 - **CI/CD Pipelines**
@@ -209,7 +229,6 @@ aristaeus/
 - Order modifications/cancellations
 - Allergen tracking
 - Multi-bowl orders
-- Pricing logic
 
 ---
 
@@ -224,7 +243,7 @@ aristaeus/
 
 ### Bowl Size Constraints
 
-- **Fixed bowl sizes:** 250g, 320g, 480g
+- **Fixed bowl sizes:** 250g, 450g, 600g
 - **User selection:** Must choose a bowl size before/during bowl building
 - **Capacity enforcement:** Total ingredient weight cannot exceed selected bowl size
 - **UI feedback:** Show remaining capacity, prevent exceeding limit
@@ -385,8 +404,11 @@ The `.env` files are auto-generated when running `npm run dev:local`, `dev:hybri
 ### User-Facing
 
 - `GET /api/ingredients` - Get available ingredients
+- `GET /api/menus` - Get pre-configured menus with ingredients
 - `POST /api/orders` - Create new order
 - `GET /api/orders/{id}` - Get order status
+- `GET /api/users/check-phone` - Check if phone number has a registered account
+- `DELETE /api/users` - Delete user account and data (Law 1581)
 
 ### Admin
 
@@ -412,7 +434,23 @@ Full API spec: See PROJECT_SPEC.md
 id, name, category,
 calories_per_100g, protein_g_per_100g, carbs_g_per_100g,
 fat_g_per_100g, fiber_g_per_100g,
+price_per_g,
 available, display_order
+```
+
+### Menus Table
+
+```sql
+id, name_es, name_en, description_es, description_en,
+bowl_size, active, display_order,
+created_at, updated_at
+```
+
+### Menu Ingredients Table (junction)
+
+```sql
+id, menu_id, ingredient_id,
+quantity_grams, sequence_order
 ```
 
 ### Orders Table
@@ -511,7 +549,6 @@ Full schema: See `backend/prisma/schema.prisma`
 - Order modifications/cancellations
 - Allergen tracking
 - Multi-bowl orders
-- Pricing logic (for now)
 
 ### Code Style & Patterns
 
@@ -530,22 +567,23 @@ npm run dev:backend
 
 # Terminal 2: Test endpoints
 curl http://localhost:3000/api/ingredients
-curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json" -d '{"bowlSize":320,"items":[{"ingredientId":1,"quantityGrams":100}]}'
+curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json" -d '{"bowlSize":450,"items":[{"ingredientId":1,"quantityGrams":100}]}'
 ```
 
 ---
 
 ## Version History
 
-| Date       | Version | Changes                                                                                     |
-| ---------- | ------- | ------------------------------------------------------------------------------------------- |
-| 2025-12-02 | 1.0     | Initial CLAUDE.md creation                                                                  |
-| 2025-12-14 | 1.1     | Converted to npm workspaces monorepo, added `@aristaeus/shared` package                     |
-| 2025-12-14 | 2.0     | Added serverless backend (Lambda + Prisma), GitHub Pages deployment                         |
-| 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                   |
-| 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed |
-| 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                     |
-| 2026-02-21 | 3.2     | Added deployment checklist, lessons learned from checkPhone endpoint deployment             |
+| Date       | Version | Changes                                                                                            |
+| ---------- | ------- | -------------------------------------------------------------------------------------------------- |
+| 2025-12-02 | 1.0     | Initial CLAUDE.md creation                                                                         |
+| 2025-12-14 | 1.1     | Converted to npm workspaces monorepo, added `@aristaeus/shared` package                            |
+| 2025-12-14 | 2.0     | Added serverless backend (Lambda + Prisma), GitHub Pages deployment                                |
+| 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                          |
+| 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed        |
+| 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                            |
+| 2026-02-21 | 3.2     | Added deployment checklist, lessons learned from checkPhone endpoint deployment                    |
+| 2026-03-26 | 3.3     | Menu system, pricing logic, Law 1581 compliance (users/privacy), 3-view UI, bowl sizes 250/450/600 |
 
 ---
 
@@ -605,6 +643,6 @@ When changing database operations (e.g., replacing `user.upsert` with `user.find
 
 ---
 
-**Last Updated:** 2026-02-21
-**Project Status:** MVP Complete
+**Last Updated:** 2026-03-26
+**Project Status:** MVP Complete + Menu System
 **Current Phase:** Production Ready (Robot integration pending)

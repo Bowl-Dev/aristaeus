@@ -13,7 +13,8 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "registerRobot",
     "getNextOrder",
     "updateOrderStatus",
-    "robotHeartbeat"
+    "robotHeartbeat",
+    "getMenus"
   ])
 
   name              = "/aws/lambda/${var.project_name}-${each.key}-${var.environment}"
@@ -290,6 +291,32 @@ resource "aws_lambda_function" "delete_user" {
   function_name = "${var.project_name}-deleteUser-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
   handler       = "handlers/users.deleteUser"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "get_menus" {
+  function_name = "${var.project_name}-getMenus-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/menus.getMenus"
   runtime       = "nodejs20.x"
   timeout       = 30
   memory_size   = 256

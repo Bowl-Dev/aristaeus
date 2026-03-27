@@ -52,6 +52,31 @@ export interface Ingredient {
 	pricePerG: number;
 }
 
+export interface MenuIngredientItem {
+	ingredientId: number;
+	ingredientName: string;
+	quantityGrams: number;
+	sequenceOrder: number;
+	caloriesPer100g: number;
+	proteinGPer100g: number;
+	carbsGPer100g: number;
+	fatGPer100g: number;
+	fiberGPer100g: number | null;
+	pricePerG: number;
+}
+
+export interface Menu {
+	id: number;
+	nameEs: string;
+	nameEn: string;
+	descriptionEs: string;
+	descriptionEn: string;
+	bowlSize: BowlSize;
+	active: boolean;
+	displayOrder: number | null;
+	ingredients: MenuIngredientItem[];
+}
+
 // Bowl size options (in grams)
 export type BowlSize = 250 | 450 | 600;
 export type BowlSizePrice = 1200 | 1300 | 1400; //Bowl packaging prices in COP

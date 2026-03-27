@@ -5,6 +5,7 @@
 
 import type {
 	Ingredient,
+	Menu,
 	CreateOrderRequest,
 	CreateOrderResponse,
 	OrderStatusResponse,
@@ -66,6 +67,14 @@ export class ApiError extends Error {
 export async function getIngredients(): Promise<Ingredient[]> {
 	const response = await apiFetch<{ ingredients: Ingredient[] }>('/api/ingredients');
 	return response.ingredients;
+}
+
+/**
+ * Fetch all active menus with their ingredients
+ */
+export async function getMenus(): Promise<Menu[]> {
+	const response = await apiFetch<{ menus: Menu[] }>('/api/menus');
+	return response.menus;
 }
 
 /**

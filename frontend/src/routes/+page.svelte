@@ -1,12 +1,13 @@
 <script lang="ts">
 	import {
 		type Ingredient,
+		type Menu,
 		type BowlSize,
 		BOWL_SIZE_PRICES,
 		DRESSING_CONTAINER_GRAMS
 	} from '$lib/types';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-	import { getIngredients, createOrder, ApiError } from '$lib/api/client';
+	import { getIngredients, getMenus, createOrder, ApiError } from '$lib/api/client';
 	import { fade } from 'svelte/transition';
 	import { _ } from 'svelte-i18n';
 
@@ -16,13 +17,13 @@
 	import OrderSummary from '$lib/components/OrderSummary.svelte';
 	import LandingView from '$lib/components/LandingView.svelte';
 	import MenuView from '$lib/components/MenuView.svelte';
-	import { type MenuItem } from '$lib/menuItems';
 
 	// View state
 	let view = $state<'landing' | 'menu' | 'builder'>('landing');
 
 	// State
 	let ingredients = $state<Ingredient[]>([]);
+	let menus = $state<Menu[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let submitting = $state(false);
@@ -67,12 +68,12 @@
 			department.trim().length >= 2
 	);
 
-	// Load ingredients
+	// Load ingredients and menus
 	async function loadIngredients() {
 		loading = true;
 		error = null;
 		try {
-			ingredients = await getIngredients();
+			[ingredients, menus] = await Promise.all([getIngredients(), getMenus()]);
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Failed to load ingredients';
 		} finally {
@@ -196,17 +197,13 @@
 	}
 
 	function handleMenuSelect(
-		_item: MenuItem,
-		size: BowlSize,
-		scaledItems: { ingredientName: string; quantityGrams: number }[]
+		menu: Menu,
+		scaledItems: { ingredientId: number; quantityGrams: number }[]
 	) {
 		clearAll();
-		selectedBowlSize = size;
-		scaledItems.forEach(({ ingredientName, quantityGrams }) => {
-			const ingredient = ingredients.find((i) => i.name === ingredientName);
-			if (ingredient) {
-				selectedItems.set(ingredient.id, quantityGrams);
-			}
+		selectedBowlSize = menu.bowlSize as BowlSize;
+		scaledItems.forEach(({ ingredientId, quantityGrams }) => {
+			selectedItems.set(ingredientId, quantityGrams);
 		});
 		view = 'builder';
 	}
@@ -337,7 +334,7 @@
 {#if view === 'landing'}
 	<LandingView onBuildOwn={() => (view = 'builder')} onViewMenu={() => (view = 'menu')} />
 {:else if view === 'menu'}
-	<MenuView {ingredients} onSelect={handleMenuSelect} onBack={handleBack} />
+	<MenuView {ingredients} {menus} onSelect={handleMenuSelect} onBack={handleBack} />
 {:else}
 	<div class="min-h-screen bg-gray-50 font-sans">
 		<div class="flex min-h-screen">

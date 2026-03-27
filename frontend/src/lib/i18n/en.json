@@ -60,28 +60,6 @@
 				"large": "Large · 600g"
 			}
 		},
-		"menuItems": {
-			"buenoBonitoAlGramo": {
-				"title": "Good, Pretty & Precise",
-				"description": "White rice with grilled chicken, grated carrot, avocado, sweet corn and fresh cucumber, with teriyaki sauce."
-			},
-			"hoyEmpiezoLaDieta": {
-				"title": "Diet Starts Today",
-				"description": "Low calorie. Quinoa with grilled chicken, cherry tomatoes, mango and fresh vegetables, with olive oil and balsamic vinaigrette."
-			},
-			"altoEnProteina": {
-				"title": "High Protein",
-				"description": "White rice with grilled chicken, cherry tomatoes, mango and red onion, avocado, corn, mozzarella and crunchy peanuts, with teriyaki sauce."
-			},
-			"verdeYSabroso": {
-				"title": "Green & Tasty",
-				"description": "100% vegetarian. White rice, sautéed mushrooms, cherry tomatoes and mango, grated carrot, avocado and cucumber, with honey mustard dressing."
-			},
-			"premiumDeSalmon": {
-				"title": "Salmon Premium",
-				"description": "Quinoa with grilled salmon, sautéed mushrooms, cherry tomatoes and mango, with carrot, avocado and chive, finished with a touch of balsamic vinaigrette."
-			}
-		},
 		"customerInfo": {
 			"title": "Contact Information"
 		},

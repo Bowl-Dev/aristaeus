@@ -60,28 +60,6 @@
 				"large": "Grande · 600g"
 			}
 		},
-		"menuItems": {
-			"buenoBonitoAlGramo": {
-				"title": "Bueno, bonito y al gramo",
-				"description": "Arroz blanco con pollo a la plancha, zanahoria rallada, aguacate, maíz dulce y pepino fresco, acompañado de salsa teriyaki."
-			},
-			"hoyEmpiezoLaDieta": {
-				"title": "Hoy empiezo la dieta",
-				"description": "Bajo en calorías. Quinua con pollo a la plancha, tomate cherry, mango y vegetales frescos, con vinagreta de aceite de oliva y balsámico."
-			},
-			"altoEnProteina": {
-				"title": "Alto en proteína",
-				"description": "Arroz blanco con pollo a la plancha, tomate cherry, mango y trocitos de cebolla roja, acompañado de aguacate, maíz, mozzarella y maní crocante, con salsa teriyaki."
-			},
-			"verdeYSabroso": {
-				"title": "Verde y sabroso",
-				"description": "100% vegetariano. Arroz blanco, champiñones salteados, tomate cherry y mango, zanahoria rallada, aguacate y pepino, con aderezo de miel y mostaza."
-			},
-			"premiumDeSalmon": {
-				"title": "Premium de Salmón",
-				"description": "Quinua con salmón a la plancha, champiñones salteados, tomate cherry y trocitos de mango, acompañado de zanahoria, aguacate y cebollín, con toque de vinagreta de balsámico."
-			}
-		},
 		"customerInfo": {
 			"title": "Información de Contacto"
 		},

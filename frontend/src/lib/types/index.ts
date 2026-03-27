@@ -15,7 +15,9 @@ export type {
 	OrderStatusResponse,
 	ColombianAddress,
 	User,
-	CustomerInfo
+	CustomerInfo,
+	Menu,
+	MenuIngredientItem
 } from '@aristaeus/shared';
 
 export { BOWL_SIZES } from '@aristaeus/shared';

@@ -1,55 +1,37 @@
 <script lang="ts">
-	import type { Ingredient, BowlSize } from '$lib/types';
-	import type { MenuItem } from '$lib/menuItems';
-	import { MENU_ITEMS } from '$lib/menuItems';
-	import { _ } from 'svelte-i18n';
-
-	let {
-		ingredients,
-		onSelect,
-		onBack
-	}: {
-		ingredients: Ingredient[];
-		onSelect: (
-			item: MenuItem,
-			size: BowlSize,
-			scaledItems: { ingredientName: string; quantityGrams: number }[]
-		) => void;
-		onBack: () => void;
-	} = $props();
-
-	const selectedSize: BowlSize = 450;
+	import type { Menu } from '$lib/types';
+	import { _, locale } from 'svelte-i18n';
 
 	const BOWL_BASE_PRICE: Record<number, number> = { 250: 1200, 450: 1300, 600: 1400 };
 
-	function scaleQty(qty: number, factor: number): number {
-		return Math.max(5, Math.round((qty * factor) / 5) * 5);
-	}
+	let {
+		menus,
+		onSelect,
+		onBack
+	}: {
+		menus: Menu[];
+		onSelect: (menu: Menu, scaledItems: { ingredientId: number; quantityGrams: number }[]) => void;
+		onBack: () => void;
+	} = $props();
 
 	const menuCardsData = $derived.by(() => {
-		return MENU_ITEMS.map((item) => {
-			const scaleFactor = selectedSize / item.bowlSize;
+		return menus.map((menu) => {
 			let calories = 0;
 			let protein = 0;
-			let price = BOWL_BASE_PRICE[selectedSize] ?? 1300;
+			let price = BOWL_BASE_PRICE[menu.bowlSize] ?? 1300;
 
-			const scaledItems = item.items.flatMap(({ ingredientName, quantityGrams }) => {
-				const ingredient = ingredients.find((i) => i.name === ingredientName);
-				if (!ingredient) return [];
-				const scaledQty = scaleQty(quantityGrams, scaleFactor);
-				const mult = scaledQty / 100;
-				calories += ingredient.caloriesPer100g * mult;
-				protein += ingredient.proteinGPer100g * mult;
-				price += ingredient.pricePerG * scaledQty;
-				return [{ ingredient, quantityGrams: scaledQty }];
+			menu.ingredients.forEach((mi) => {
+				const mult = mi.quantityGrams / 100;
+				calories += mi.caloriesPer100g * mult;
+				protein += mi.proteinGPer100g * mult;
+				price += mi.pricePerG * mi.quantityGrams;
 			});
 
 			return {
-				item,
-				scaledItems,
+				menu,
 				calories: Math.round(calories),
 				protein: Math.round(protein),
-				price: Math.round(price)
+				price: Math.round(price / 100) * 100
 			};
 		});
 	});
@@ -58,16 +40,12 @@
 		return `$${price.toLocaleString('es-CO')}`;
 	}
 
-	function handleOrder(
-		item: MenuItem,
-		scaledItems: { ingredient: Ingredient; quantityGrams: number }[]
-	) {
+	function handleOrder(menu: Menu) {
 		onSelect(
-			item,
-			selectedSize,
-			scaledItems.map(({ ingredient, quantityGrams }) => ({
-				ingredientName: ingredient.name,
-				quantityGrams
+			menu,
+			menu.ingredients.map((mi) => ({
+				ingredientId: mi.ingredientId,
+				quantityGrams: mi.quantityGrams
 			}))
 		);
 	}
@@ -97,20 +75,24 @@
 
 		<!-- Menu Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-			{#each menuCardsData as { item, scaledItems, calories, protein, price } (item.id)}
+			{#each menuCardsData as { menu, calories, protein, price } (menu.id)}
 				<div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col">
 					<div class="flex-1">
-						<h2 class="text-xl font-semibold text-gray-900 mb-1">{$_(item.titleKey)}</h2>
-						<p class="text-gray-500 text-sm mb-4">{$_(item.descriptionKey)}</p>
+						<h2 class="text-xl font-semibold text-gray-900 mb-1">
+							{$locale === 'es' ? menu.nameEs : menu.nameEn}
+						</h2>
+						<p class="text-gray-500 text-sm mb-4">
+							{$locale === 'es' ? menu.descriptionEs : menu.descriptionEn}
+						</p>
 
 						<!-- Ingredient chips -->
 						<div class="flex flex-wrap gap-1.5 mb-5">
-							{#each scaledItems as { ingredient, quantityGrams } (ingredient.id)}
+							{#each menu.ingredients as mi (mi.ingredientId)}
 								<span
 									class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full"
 								>
-									{$_('ingredients.' + ingredient.name, { default: ingredient.name })}
-									<span class="text-gray-400">{quantityGrams}g</span>
+									{$_('ingredients.' + mi.ingredientName, { default: mi.ingredientName })}
+									<span class="text-gray-400">{mi.quantityGrams}g</span>
 								</span>
 							{/each}
 						</div>
@@ -133,7 +115,7 @@
 						<span class="text-xl font-bold text-gray-900">{formatPrice(price)}</span>
 						<button
 							class="bg-gray-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
-							onclick={() => handleOrder(item, scaledItems)}
+							onclick={() => handleOrder(menu)}
 						>
 							{$_('home.menu.orderButton')}
 						</button>

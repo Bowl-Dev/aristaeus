@@ -30,6 +30,7 @@ cd "$BACKEND_DIR"
 # Bundle each handler file separately (keeps the export structure)
 npx esbuild \
   src/handlers/ingredients.ts \
+  src/handlers/menus.ts \
   src/handlers/orders.ts \
   src/handlers/robots.ts \
   src/handlers/users.ts \
