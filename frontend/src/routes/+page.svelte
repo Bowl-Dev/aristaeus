@@ -334,12 +334,12 @@
 {#if view === 'landing'}
 	<LandingView onBuildOwn={() => (view = 'builder')} onViewMenu={() => (view = 'menu')} />
 {:else if view === 'menu'}
-	<MenuView {ingredients} {menus} onSelect={handleMenuSelect} onBack={handleBack} />
+	<MenuView {menus} onSelect={handleMenuSelect} onBack={handleBack} />
 {:else}
 	<div class="min-h-screen bg-gray-50 font-sans">
 		<div class="flex min-h-screen">
 			<!-- Left: Form and Ingredients -->
-			<main class="flex-1 lg:mr-[420px]">
+			<main class="flex-1 lg:mr-105">
 				<div class="max-w-2xl mx-auto px-6 py-8">
 					<!-- Header -->
 					<header class="mb-8">
