@@ -156,6 +156,10 @@
 			"ingredients": "Loading ingredients..."
 		}
 	},
+	"admin": {
+		"printLabel": "Print Label",
+		"generatingLabel": "Generating..."
+	},
 	"footer": {
 		"copyright": "al Gramo. {year}. All rights reserved.",
 		"privacyPolicy": "Privacy Policy",

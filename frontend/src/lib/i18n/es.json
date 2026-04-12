@@ -156,6 +156,10 @@
 			"ingredients": "Cargando ingredientes..."
 		}
 	},
+	"admin": {
+		"printLabel": "Imprimir Etiqueta",
+		"generatingLabel": "Generando..."
+	},
 	"footer": {
 		"copyright": "al Gramo. {year}. Todos los derechos reservados.",
 		"privacyPolicy": "Política de Privacidad",

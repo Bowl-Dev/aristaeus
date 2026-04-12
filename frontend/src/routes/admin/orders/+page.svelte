@@ -7,12 +7,15 @@
 		type AdminOrderItem
 	} from '$lib/api/client';
 	import { resolve } from '$app/paths';
+	import { generateLabel } from '$lib/utils/labelGenerator';
+	import { _ } from 'svelte-i18n';
 
 	// State
 	let orders = $state<AdminOrder[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let updatingOrderId = $state<number | null>(null);
+	let generatingLabelForOrderId = $state<number | null>(null);
 
 	// Pagination state
 	let currentPage = $state(1);
@@ -111,6 +114,18 @@
 			console.error('Status update failed:', e);
 		} finally {
 			updatingOrderId = null;
+		}
+	}
+
+	async function handleGenerateLabel(order: AdminOrder) {
+		generatingLabelForOrderId = order.id;
+		try {
+			await generateLabel(order);
+		} catch (e) {
+			console.error('Label generation failed:', e);
+			alert('Error al generar la etiqueta. Intente de nuevo.');
+		} finally {
+			generatingLabelForOrderId = null;
 		}
 	}
 
@@ -358,6 +373,34 @@
 								</div>
 							</div>
 						</div>
+
+						<!-- Label Generation -->
+						{#if order.status !== 'completed'}
+							<div class="px-4 sm:px-5 pb-3">
+								<button
+									class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+									disabled={generatingLabelForOrderId === order.id}
+									onclick={() => handleGenerateLabel(order)}
+								>
+									{#if generatingLabelForOrderId === order.id}
+										<span
+											class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+										></span>
+										{$_('admin.generatingLabel')}
+									{:else}
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+											/>
+										</svg>
+										{$_('admin.printLabel')}
+									{/if}
+								</button>
+							</div>
+						{/if}
 
 						<!-- Status Update -->
 						<div class="p-4 sm:p-5">
