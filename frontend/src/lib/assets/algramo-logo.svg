@@ -10,11 +10,11 @@
       }
 
       .st0, .st1 {
-        fill: #1c1c1c;
+        fill: #383838;
       }
 
       .st2 {
-        fill: #474747;
+        fill: #DADADA;
       }
     </style>
   </defs>
