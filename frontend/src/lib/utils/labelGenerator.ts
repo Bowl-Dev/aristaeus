@@ -1,5 +1,7 @@
 import type { AdminOrder, AdminOrderItem } from '$lib/api/client';
 import esTranslations from '$lib/i18n/es.json';
+// Bundled at build time — no runtime fetch, no base-path issues on any deployment
+import logoSvgRaw from '$lib/assets/algramo-logo.svg?raw';
 
 // Always render the label in Spanish, regardless of the app's current locale.
 const ingredientTranslations = esTranslations.ingredients as Record<string, string>;
@@ -24,16 +26,13 @@ function buildIngredientList(items: AdminOrderItem[]): string {
 	);
 	if (parts.length === 0) return '';
 	if (parts.length === 1) return parts[0] + '.';
-	const last = parts.pop();
+	const last = parts.pop()!;
 	return parts.join(', ') + ' y ' + last + '.';
 }
 
-// Rasterises an SVG URL onto a canvas and returns a high-DPI PNG data URL.
+// Rasterises a raw SVG string onto a canvas and returns a high-DPI PNG data URL.
 // jsPDF cannot embed SVG natively, so we draw through the browser's canvas.
-async function svgToDataUrl(src: string, widthPx: number, heightPx: number): Promise<string> {
-	const response = await fetch(src);
-	const svgText = await response.text();
-
+function svgRawToDataUrl(svgText: string, widthPx: number, heightPx: number): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const canvas = document.createElement('canvas');
 		const scale = 4; // 4× for crisp print output
@@ -93,8 +92,8 @@ export async function generateLabel(order: AdminOrder): Promise<void> {
 	try {
 		// Convert mm → px (96 dpi) for the canvas rasterisation size
 		const pxPerMm = 96 / 25.4;
-		const logoDataUrl = await svgToDataUrl(
-			'/algramo-logo.svg',
+		const logoDataUrl = await svgRawToDataUrl(
+			logoSvgRaw,
 			Math.round(logoW * pxPerMm),
 			Math.round(logoH * pxPerMm)
 		);
@@ -123,7 +122,7 @@ export async function generateLabel(order: AdminOrder): Promise<void> {
 	// Peso
 	doc.setFont('helvetica', 'bold');
 	doc.setFontSize(BODY_PT);
-	const pesoLabel = 'Peso: ';
+	const pesoLabel = 'Peso:';
 	doc.text(pesoLabel, leftX, leftY);
 	doc.setFont('helvetica', 'normal');
 	doc.text(` ${order.totalWeightG} g.`, leftX + doc.getTextWidth(pesoLabel), leftY);
@@ -160,7 +159,7 @@ export async function generateLabel(order: AdminOrder): Promise<void> {
 	// Precio
 	doc.setFont('helvetica', 'bold');
 	doc.setFontSize(BODY_PT);
-	const precioLabel = 'Precio: ';
+	const precioLabel = 'Precio:';
 	doc.text(precioLabel, leftX, leftY);
 	doc.setFont('helvetica', 'normal');
 	doc.text(` ${formatPrice(order.totalPrice)}.`, leftX + doc.getTextWidth(precioLabel), leftY);
