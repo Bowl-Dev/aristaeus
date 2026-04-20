@@ -65,7 +65,7 @@ export async function generateLabel(order: AdminOrder): Promise<void> {
 	const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
 	// ── Layout constants ──────────────────────────────────────────────
-	const margin = 13;
+	const margin = 6;
 
 	// Left column is wide enough for 30 pt "Ingredientes: X..." to start inline
 	const leftColW = 130;
@@ -87,7 +87,7 @@ export async function generateLabel(order: AdminOrder): Promise<void> {
 	const logoW = 46;
 	const logoH = 38;
 	const logoX = margin;
-	const logoY = 8;
+	const logoY = 4;
 
 	try {
 		// Convert mm → px (96 dpi) for the canvas rasterisation size
