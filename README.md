@@ -10,7 +10,8 @@ An automated bowl ordering system where users customize bowls through a web inte
 
 - **Bowl Builder Interface** - Select from 16+ ingredients across 5 categories (proteins, bases, vegetables, toppings, dressings)
 - **Real-time Nutritional Tracking** - See calories, protein, carbs, fat, and fiber update as you build
-- **Bowl Size Selection** - Choose from 250g, 320g, or 600g bowls with capacity enforcement
+- **Bowl Size Selection** - Choose from 250g, 450g, or 600g bowls with capacity enforcement
+- **Pre-configured Menus** - Select from 5 chef-curated bowl recipes with full nutritional info
 - **Order Management** - Submit orders and track status through completion
 - **Admin Dashboard** - View all orders and manage their status
 - **Robot API** - RESTful endpoints for kitchen robot integration
@@ -144,11 +145,14 @@ npm run format                 # Run Prettier
 
 ### User-Facing
 
-| Method | Endpoint           | Description               |
-| ------ | ------------------ | ------------------------- |
-| GET    | `/api/ingredients` | Get available ingredients |
-| POST   | `/api/orders`      | Create new order          |
-| GET    | `/api/orders/{id}` | Get order details         |
+| Method | Endpoint                 | Description                               |
+| ------ | ------------------------ | ----------------------------------------- |
+| GET    | `/api/ingredients`       | Get available ingredients                 |
+| GET    | `/api/menus`             | Get pre-configured menus with ingredients |
+| POST   | `/api/orders`            | Create new order                          |
+| GET    | `/api/orders/{id}`       | Get order details                         |
+| GET    | `/api/users/check-phone` | Check if phone number has an account      |
+| DELETE | `/api/users`             | Delete user data (Law 1581 compliance)    |
 
 ### Admin
 

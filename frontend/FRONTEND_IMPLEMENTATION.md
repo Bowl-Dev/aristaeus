@@ -75,14 +75,14 @@ frontend/
 
 ```typescript
 // Bowl size options
-export type BowlSize = 250 | 320 | 480;
+export type BowlSize = 250 | 450 | 600;
 
-export const BOWL_SIZES: BowlSize[] = [250, 320, 480];
+export const BOWL_SIZES: BowlSize[] = [250, 450, 600];
 
 export const BOWL_SIZE_LABELS: Record<BowlSize, string> = {
 	250: 'Small (250g)',
-	320: 'Medium (320g)',
-	480: 'Large (480g)'
+	450: 'Medium (450g)',
+	600: 'Large (600g)'
 };
 
 // Ingredient from database/API
@@ -784,7 +784,7 @@ VITE_API_URL=http://localhost:3000
 #### Bowl Size Validation
 
 1. **Required:** User must select a bowl size before submitting order
-2. **Valid sizes:** 250g, 320g, or 480g only
+2. **Valid sizes:** 250g, 450g, or 600g only
 
 #### Ingredient Validation
 

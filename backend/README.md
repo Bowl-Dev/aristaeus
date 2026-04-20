@@ -132,7 +132,7 @@ curl http://localhost:3000/api/ingredients
 curl -X POST http://localhost:3000/api/orders \
   -H "Content-Type: application/json" \
   -d '{
-    "bowlSize": 320,
+    "bowlSize": 450,
     "customerName": "Test User",
     "items": [
       {"ingredientId": 1, "quantityGrams": 150},

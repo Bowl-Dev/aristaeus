@@ -117,7 +117,7 @@ model Order {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Bowl configuration
-  bowlSize        Int       @map("bowl_size") // 250, 320, or 480 grams
+  bowlSize        Int       @map("bowl_size") // 250, 450, or 600 grams
 
   // Status lifecycle
   // pending -> queued -> assigned -> preparing -> ready -> completed

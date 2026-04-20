@@ -37,6 +37,9 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 
 - **Monorepo:** npm workspaces
 - **Frontend:** SvelteKit 2.0 + TypeScript + Svelte 5 runes
+- **Frontend UI:** TailwindCSS 4.x + Skeleton UI 4.x component library
+- **Frontend i18n:** svelte-i18n (English + Spanish)
+- **Frontend PDF:** jspdf (label generation)
 - **Frontend Deployment:** GitHub Pages (static adapter)
 - **Backend:** AWS Lambda + API Gateway (deployed via Terraform)
 - **Infrastructure:** Terraform
@@ -46,6 +49,7 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 - **Validation:** Zod
 - **Shared Types:** `@aristaeus/shared` package
 - **Linting:** ESLint + Prettier with Husky pre-commit hooks
+- **Node.js:** Backend CI uses Node 20; frontend CI uses Node 18 (both require >= 18)
 
 ---
 
@@ -66,6 +70,8 @@ aristaeus/
 ├── .gitignore                         # Root gitignore
 ├── CLAUDE.md                          # This file - AI assistant reference
 ├── PROJECT_SPEC.md                    # Complete technical specification
+├── docs/
+│   └── SDLC.md                        # Software development lifecycle guide
 │
 ├── frontend/                          # @aristaeus/frontend workspace
 │   ├── FRONTEND_IMPLEMENTATION.md     # Frontend architecture & implementation guide
@@ -85,10 +91,23 @@ aristaeus/
 │   │   ├── lib/
 │   │   │   ├── api/
 │   │   │   │   └── client.ts          # API client for AWS backend
-│   │   │   ├── components/            # Svelte components
+│   │   │   ├── components/
+│   │   │   │   ├── LandingView.svelte # Landing page (Build Bowl / Choose Menu buttons)
+│   │   │   │   ├── MenuView.svelte    # Pre-configured menu cards
+│   │   │   │   ├── BowlIngredients.svelte # Ingredient picker by category
+│   │   │   │   ├── OrderSummary.svelte    # Bowl review with quantity controls
+│   │   │   │   ├── CustomerForm.svelte    # Colombian address + contact form
+│   │   │   │   ├── Footer.svelte          # Footer component
+│   │   │   │   └── __tests__/             # Component unit tests
+│   │   │   ├── utils/
+│   │   │   │   ├── imperialConversion.ts  # Weight unit conversion helpers
+│   │   │   │   ├── labelGenerator.ts      # PDF label generation (jspdf)
+│   │   │   │   └── __tests__/             # Utility unit tests
 │   │   │   ├── types/                 # Frontend-specific types
-│   │   │   └── i18n/                  # Internationalization
+│   │   │   └── i18n/                  # Internationalization (en.json, es.json)
 │   │   └── app.d.ts
+│   ├── test/
+│   │   └── setup.ts                   # Vitest test setup
 │   └── static/
 │
 ├── backend/                           # @aristaeus/backend workspace
@@ -98,17 +117,19 @@ aristaeus/
 │   ├── .env.hosted.example            # Template for Aurora credentials
 │   ├── prisma/
 │   │   ├── schema.prisma              # Database schema
-│   │   └── seed.ts                    # Database seed script
+│   │   ├── seed.ts                    # Database seed script (ingredients + robots)
+│   │   └── seed-menus.ts              # Separate menus seed script (5 curated menus)
 │   ├── infra/                         # Terraform infrastructure
 │   │   ├── main.tf                    # Main Terraform config
-│   │   ├── lambda.tf                  # Lambda function definitions
-│   │   ├── api_gateway.tf             # API Gateway configuration
+│   │   ├── lambda.tf                  # Lambda function definitions (12 functions)
+│   │   ├── api_gateway.tf             # API Gateway configuration (12 routes)
 │   │   ├── iam.tf                     # IAM roles and policies
 │   │   ├── variables.tf               # Terraform variables
 │   │   ├── outputs.tf                 # Terraform outputs
-│   │   └── backend.tf                 # Terraform backend config
+│   │   └── backend.tf                 # Terraform backend config (S3 + DynamoDB)
 │   ├── scripts/
-│   │   └── build-lambda.js            # Lambda build script
+│   │   ├── build-lambda.js            # Lambda build script (local)
+│   │   └── build-lambda.sh            # Lambda build script (used by CI)
 │   └── src/
 │       ├── dev-server.ts              # Express dev server for local development
 │       ├── handlers/
@@ -116,7 +137,8 @@ aristaeus/
 │       │   ├── menus.ts               # GET /api/menus
 │       │   ├── orders.ts              # Order CRUD handlers
 │       │   ├── robots.ts              # Robot API handlers
-│       │   └── users.ts              # GET /api/users/check-phone, DELETE /api/users
+│       │   ├── users.ts               # GET /api/users/check-phone, DELETE /api/users
+│       │   └── __tests__/             # Handler unit tests
 │       └── lib/
 │           ├── db.ts                  # Prisma client singleton
 │           ├── response.ts            # API response helpers

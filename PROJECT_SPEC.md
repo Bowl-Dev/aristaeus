@@ -116,12 +116,57 @@ CREATE TABLE ingredients (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Registered users / customers
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) UNIQUE NOT NULL, -- Colombian format: +57XXXXXXXXXX
+    email VARCHAR(255),
+
+    -- Colombian address
+    street_address VARCHAR(200) NOT NULL,
+    neighborhood VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    postal_code VARCHAR(6),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Pre-configured menu recipes
+CREATE TABLE menus (
+    id SERIAL PRIMARY KEY,
+    name_es VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NOT NULL,
+    description_es TEXT NOT NULL,
+    description_en TEXT NOT NULL,
+    bowl_size INTEGER NOT NULL,   -- 250, 450, or 600
+    active BOOLEAN DEFAULT true,
+    display_order INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Menu ingredient quantities (junction table)
+CREATE TABLE menu_ingredients (
+    id SERIAL PRIMARY KEY,
+    menu_id INTEGER NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
+    ingredient_id INTEGER NOT NULL REFERENCES ingredients(id),
+    quantity_grams DECIMAL(7,2) NOT NULL,
+    sequence_order INTEGER NOT NULL
+);
+
 -- Order header
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
 
+    -- Customer reference
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
     -- Bowl configuration
     bowl_size INTEGER NOT NULL CHECK (bowl_size IN (250, 450, 600)), -- Bowl capacity in grams
+    include_cutlery BOOLEAN DEFAULT false, -- +300 COP when true
 
     -- Status lifecycle
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
@@ -264,6 +309,83 @@ Returns all available ingredients with nutritional data.
 }
 ```
 
+#### GET `/api/menus`
+
+Returns all active pre-configured menus with their ingredients.
+
+**Response:**
+
+```json
+{
+	"menus": [
+		{
+			"id": 1,
+			"nameEs": "Bueno, bonito y al gramo",
+			"nameEn": "Good, Pretty & Precise",
+			"descriptionEs": "...",
+			"descriptionEn": "...",
+			"bowlSize": 450,
+			"active": true,
+			"displayOrder": 1,
+			"ingredients": [
+				{
+					"ingredientId": 1,
+					"name": "Rice",
+					"category": "base",
+					"quantityGrams": 150,
+					"sequenceOrder": 1,
+					"calories_per_100g": 130,
+					"protein_g_per_100g": 2.7
+				}
+			]
+		}
+	]
+}
+```
+
+---
+
+#### GET `/api/users/check-phone`
+
+Checks if a phone number belongs to a registered user (returning customer lookup).
+
+**Query Params:** `?phone=+573001234567`
+
+**Response (found):**
+
+```json
+{
+	"exists": true,
+	"user": {
+		"id": "uuid",
+		"name": "María García",
+		"phone": "+573001234567",
+		"email": "maria@example.com",
+		"address": {
+			"streetAddress": "Calle 80 # 12-34",
+			"neighborhood": "Laureles",
+			"city": "Medellín",
+			"department": "Antioquia",
+			"postalCode": "050030"
+		}
+	}
+}
+```
+
+**Response (not found):** `{ "exists": false }`
+
+---
+
+#### DELETE `/api/users`
+
+Deletes a user's account and all associated data (Law 1581 / Colombian data protection compliance). Cascades to all orders.
+
+**Request body:** `{ "phone": "+573001234567" }`
+
+**Response:** `{ "success": true }`
+
+---
+
 #### POST `/api/orders`
 
 Creates a new bowl order.
@@ -272,7 +394,7 @@ Creates a new bowl order.
 
 ```json
 {
-	"bowl_size": 480,
+	"bowl_size": 450,
 	"items": [
 		{
 			"ingredient_id": 1,
@@ -326,7 +448,7 @@ Retrieves order details and current status.
 ```json
 {
   "id": 42,
-  "bowl_size": 480,
+  "bowl_size": 450,
   "status": "preparing",
   "items": [
     {
@@ -356,7 +478,7 @@ Returns all orders (admin view).
   "orders": [
     {
       "id": 42,
-      "bowlSize": 480,
+      "bowlSize": 450,
       "customerName": "John",
       "status": "preparing",
       "items": [...],
@@ -1085,12 +1207,13 @@ For implementation questions or clarifications:
 
 ## Document Revision History
 
-| Version | Date       | Changes                                                                                                | Author           |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------ | ---------------- |
-| 1.0     | 2025-11-13 | Initial specification                                                                                  | System Architect |
-| 1.1     | 2025-12-02 | Added bowl size constraints (250g/320g/480g), updated database schema, API specs, and validation rules | Claude Code      |
-| 2.0     | 2026-01-09 | Updated architecture (GitHub Pages + AWS Lambda), added admin APIs, MVP complete                       | Claude Code      |
-| 2.1     | 2026-02-03 | Updated bowl sizes (250/450/600g), added pricing model (packaging + ingredients + cutlery)             | Claude Code      |
+| Version | Date       | Changes                                                                                                                                                      | Author           |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| 1.0     | 2025-11-13 | Initial specification                                                                                                                                        | System Architect |
+| 1.1     | 2025-12-02 | Added bowl size constraints (250g/320g/480g), updated database schema, API specs, and validation rules                                                       | Claude Code      |
+| 2.0     | 2026-01-09 | Updated architecture (GitHub Pages + AWS Lambda), added admin APIs, MVP complete                                                                             | Claude Code      |
+| 2.1     | 2026-02-03 | Updated bowl sizes (250/450/600g), added pricing model (packaging + ingredients + cutlery)                                                                   | Claude Code      |
+| 3.0     | 2026-03-26 | Added menu system (GET /api/menus, Menu/MenuIngredient tables), user/Colombian address model, Law 1581 compliance (check-phone, delete-user), cutlery option | Claude Code      |
 
 ---
 
@@ -1111,7 +1234,7 @@ POST /api/orders
 Content-Type: application/json
 
 {
-  "bowl_size": 320,
+  "bowl_size": 450,
   "items": [
     {"ingredient_id": 1, "quantity_grams": 150, "sequence_order": 1},
     {"ingredient_id": 5, "quantity_grams": 100, "sequence_order": 2},
