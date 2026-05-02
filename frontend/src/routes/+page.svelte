@@ -1,31 +1,30 @@
 <script lang="ts">
 	import {
 		type Ingredient,
-		type Menu,
+		type Menu as MenuType,
 		type BowlSize,
 		BOWL_SIZE_PRICES,
 		DRESSING_CONTAINER_GRAMS
 	} from '$lib/types';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { getIngredients, getMenus, createOrder, ApiError } from '$lib/api/client';
-	import { fade } from 'svelte/transition';
-	import { _ } from 'svelte-i18n';
-
-	// Import components
-	import CustomerForm from '$lib/components/CustomerForm.svelte';
-	import BowlIngredients from '$lib/components/BowlIngredients.svelte';
-	import OrderSummary from '$lib/components/OrderSummary.svelte';
-	import LandingView from '$lib/components/LandingView.svelte';
-	import MenuView from '$lib/components/MenuView.svelte';
+	import Landing from '$lib/components/Landing.svelte';
+	import LandingModal from '$lib/components/LandingModal.svelte';
+	import Menu from '$lib/components/Menu.svelte';
+	import Size from '$lib/components/Size.svelte';
+	import ThnksModal from '$lib/components/ThnksModal.svelte';
 
 	// View state
-	let view = $state<'landing' | 'menu' | 'builder'>('landing');
+	let view = $state<'landing' | 'menu' | 'size' | 'builder'>('landing');
+	let showLandingModal = $state(false);
 
 	// State
 	let ingredients = $state<Ingredient[]>([]);
-	let menus = $state<Menu[]>([]);
+	let menus = $state<MenuType[]>([]);
 	let loading = $state(true);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	let error = $state<string | null>(null);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	let submitting = $state(false);
 	let orderSuccess = $state<{ orderId: number } | null>(null);
 
@@ -101,6 +100,7 @@
 		categoryOrder.filter((cat) => ingredientsByCategory[cat]?.length > 0)
 	);
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const selectedList = $derived.by(() => {
 		const list: { ingredient: Ingredient; quantity: number }[] = [];
 		selectedItems.forEach((qty, id) => {
@@ -137,6 +137,7 @@
 		return { calories, protein, weight, price };
 	});
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const capacityUsed = $derived(selectedBowlSize ? (totals.weight / selectedBowlSize) * 100 : 0);
 	const isOverCapacity = $derived(selectedBowlSize ? totals.weight > selectedBowlSize : false);
 
@@ -151,7 +152,8 @@
 			!isOverCapacity
 	);
 
-	// Actions
+	// Actions — used by the builder view (view = 'builder'), not yet wired to template
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function toggleCategory(cat: string) {
 		if (expandedCategories.has(cat)) {
 			expandedCategories.delete(cat);
@@ -160,6 +162,7 @@
 		}
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function addIngredient(id: number) {
 		const ingredient = ingredients.find((i) => i.id === id);
 		const increment = ingredient?.category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 10;
@@ -167,6 +170,7 @@
 		selectedItems.set(id, current + increment);
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function removeIngredient(id: number) {
 		const ingredient = ingredients.find((i) => i.id === id);
 		const decrement = ingredient?.category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 10;
@@ -178,6 +182,7 @@
 		}
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function setQuantity(id: number, qty: number) {
 		if (qty <= 0) {
 			selectedItems.delete(id);
@@ -186,6 +191,7 @@
 		}
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function getInitialQuantity(category: string): number {
 		return category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 50;
 	}
@@ -197,7 +203,7 @@
 	}
 
 	function handleMenuSelect(
-		menu: Menu,
+		menu: MenuType,
 		scaledItems: { ingredientId: number; quantityGrams: number }[]
 	) {
 		clearAll();
@@ -213,6 +219,7 @@
 		view = 'landing';
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function generateRandom() {
 		const size: BowlSize = selectedBowlSize ?? 450;
 		selectedBowlSize = size;
@@ -224,10 +231,8 @@
 					? { base: 140, protein: 100, vegetable: 50, topping: 30, dressing: 25 }
 					: { base: 180, protein: 120, vegetable: 70, topping: 40, dressing: 50 };
 
-		// Clear existing selections first
 		selectedItems.clear();
 
-		// Add random ingredients
 		sortedCategories.forEach((cat) => {
 			const catIngredients = ingredientsByCategory[cat];
 			if (catIngredients?.length) {
@@ -237,6 +242,7 @@
 		});
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	async function submitOrder() {
 		if (!canSubmit || !selectedBowlSize) return;
 
@@ -293,126 +299,85 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
-		href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+		href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..1000;1,9..40,300..1000&display=swap"
 		rel="stylesheet"
 	/>
 </svelte:head>
 
-<!-- Success Modal -->
-{#if orderSuccess}
-	<div
-		class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-		transition:fade={{ duration: 150 }}
-	>
-		<div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
-			<div
-				class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4"
-			>
-				<svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M5 13l4 4L19 7"
-					/>
-				</svg>
-			</div>
-			<h2 class="text-xl font-semibold text-gray-900 mb-1">{$_('home.success.title')}</h2>
-			<p class="text-gray-500 mb-6">
-				{$_('home.success.message', { values: { id: orderSuccess.orderId } })}
-			</p>
-			<button
-				class="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
-				onclick={() => (orderSuccess = null)}
-			>
-				{$_('home.success.newOrder')}
-			</button>
-		</div>
+{#if view === 'landing'}
+	<Landing onOrderNow={() => (showLandingModal = true)} />
+
+	{#if showLandingModal}
+		<LandingModal
+			onFromScratch={() => {
+				showLandingModal = false;
+				view = 'size';
+			}}
+			onMenu={() => {
+				showLandingModal = false;
+				view = 'menu';
+			}}
+			onCancel={() => (showLandingModal = false)}
+		/>
+	{/if}
+{:else if view === 'menu'}
+	<Menu
+		{menus}
+		{loading}
+		onBack={handleBack}
+		onCustomize={(menu) => {
+			handleMenuSelect(menu, menu.ingredients.map((i) => ({ ingredientId: i.ingredientId, quantityGrams: i.quantityGrams })));
+		}}
+	/>
+{:else if view === 'size'}
+	<Size
+		onBack={() => (view = 'landing')}
+		onSelect={(size) => {
+			selectedBowlSize = size;
+			view = 'builder';
+		}}
+	/>
+{:else if view === 'builder'}
+	<!-- Builder view coming soon -->
+	<div class="builder-placeholder">
+		<p>Builder — bowl size: {selectedBowlSize}g</p>
+		<button onclick={handleBack}>Volver</button>
+		<button onclick={() => (orderSuccess = { orderId: 0 })}>Simular pedido exitoso</button>
 	</div>
 {/if}
 
-{#if view === 'landing'}
-	<LandingView onBuildOwn={() => (view = 'builder')} onViewMenu={() => (view = 'menu')} />
-{:else if view === 'menu'}
-	<MenuView {menus} onSelect={handleMenuSelect} onBack={handleBack} />
-{:else}
-	<div class="min-h-screen bg-gray-50 font-sans">
-		<div class="flex min-h-screen">
-			<!-- Left: Form and Ingredients -->
-			<main class="flex-1 lg:mr-105">
-				<div class="max-w-2xl mx-auto px-6 py-8">
-					<!-- Header -->
-					<header class="mb-8">
-						<button
-							class="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors text-sm font-medium mb-4"
-							onclick={handleBack}
-						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M15 19l-7-7 7-7"
-								/>
-							</svg>
-							{$_('home.menu.back')}
-						</button>
-						<h1 class="text-3xl font-bold text-gray-900 tracking-tight">{$_('home.title')}</h1>
-						<p class="text-gray-500 mt-1">{$_('home.subtitle')}</p>
-					</header>
-
-					<!-- Bowl Ingredients Component -->
-					<BowlIngredients
-						{ingredients}
-						{loading}
-						{error}
-						bind:selectedBowlSize
-						bind:isCutlery
-						{selectedItems}
-						{expandedCategories}
-						onLoadIngredients={loadIngredients}
-						onAddIngredient={addIngredient}
-						onRemoveIngredient={removeIngredient}
-						onSetQuantity={setQuantity}
-						onClearAll={clearAll}
-						onGenerateRandom={generateRandom}
-						onToggleCategory={toggleCategory}
-						{getInitialQuantity}
-					/>
-
-					<!-- Customer Form Component -->
-					<CustomerForm
-						bind:customerName
-						bind:customerPhone
-						bind:customerEmail
-						bind:streetAddress
-						bind:neighborhood
-						bind:city
-						bind:department
-						bind:postalCode
-						bind:updateUserData
-					/>
-				</div>
-			</main>
-
-			<!-- Order Summary Component (Desktop sidebar + Mobile bar) -->
-			<OrderSummary
-				{customerName}
-				{selectedBowlSize}
-				{selectedList}
-				{totals}
-				{capacityUsed}
-				{isOverCapacity}
-				{canSubmit}
-				{submitting}
-				onSubmit={submitOrder}
-			/>
-		</div>
-	</div>
+{#if orderSuccess}
+	<ThnksModal
+		onDismiss={() => {
+			orderSuccess = null;
+			view = 'landing';
+		}}
+	/>
 {/if}
 
 <style>
 	:global(body) {
 		font-family: 'DM Sans', system-ui, sans-serif;
+	}
+
+	.builder-placeholder {
+		min-height: 100svh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		background: #f7f7f7;
+		color: #333;
+	}
+
+	.builder-placeholder button {
+		padding: 0.75rem 1.5rem;
+		background: #0d3b2e;
+		color: white;
+		border: none;
+		border-radius: 9999px;
+		cursor: pointer;
+		font-weight: 600;
 	}
 </style>

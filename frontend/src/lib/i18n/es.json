@@ -2,7 +2,48 @@
 	"common": {
 		"loading": "Cargando...",
 		"error": "Error",
-		"tryAgain": "Intentar de nuevo"
+		"tryAgain": "Intentar de nuevo",
+		"back": "Volver"
+	},
+	"landing": {
+		"subtitle": "Come exactamente como te gusta, hasta el último gramo.",
+		"cta": "Ordena ahora",
+		"modal": {
+			"title": "¿Cómo quieres tu bowl?",
+			"fromScratch": "Desde cero",
+			"menuIdeas": "Ideas para empezar",
+			"cancel": "Cancelar"
+		}
+	},
+	"menu": {
+		"title": "Menú sugerido",
+		"subtitle": "Bowls curados por chefs como base. Personalizalos a tu gusto.",
+		"empty": "No hay menús disponibles por ahora",
+		"card": {
+			"calories": "CALORÍAS",
+			"protein": "PROTEÍNAS",
+			"fat": "GRASAS",
+			"carbs": "CARBOS",
+			"customize": "Personalizar bowl"
+		}
+	},
+	"size": {
+		"title": "Tamaños",
+		"subtitle": "Selecciona la capacidad que mejor se adapte a tu apetito",
+		"small": "Pequeño",
+		"medium": "Mediano",
+		"large": "Grande",
+		"capacity": "Capacidad",
+		"pricePerG": {
+			"small": "+ $20/g de ingredientes",
+			"medium": "+ $30/g de ingredientes",
+			"large": "+ $40/g de ingredientes"
+		}
+	},
+	"thnks": {
+		"title": "¡Gracias por elegirnos!",
+		"message": "Ya estamos preparando tu bowl con mucho cuidado. En breve te escribiremos por WhatsApp para confirmar el precio final, incluyendo el costo de envío, y realizar el pago.",
+		"dismiss": "Entendido"
 	},
 	"customer": {
 		"returning": {

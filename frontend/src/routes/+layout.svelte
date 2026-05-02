@@ -4,8 +4,6 @@
 	import { locale, setLocale, waitForLocale } from '$lib/i18n';
 	import { isLoading } from 'svelte-i18n';
 	import { onMount } from 'svelte';
-	import Footer from '$lib/components/Footer.svelte';
-
 	let { children } = $props();
 	let ready = $state(false);
 
@@ -41,6 +39,5 @@
 		<div class="flex-1">
 			{@render children()}
 		</div>
-		<Footer />
 	</div>
 {/if}
