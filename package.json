@@ -57,5 +57,8 @@
 		"*.{json,md,yml,yaml}": [
 			"prettier --write"
 		]
+	},
+	"dependencies": {
+		"@sveltejs/adapter-static": "^3.0.10"
 	}
 }
