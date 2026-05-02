@@ -39,7 +39,7 @@
 <div class="menu-card">
 	<!-- Image -->
 	<div class="card-image">
-		<img src="/trazyn_placeholder.jpg" alt={name} />
+		<img src="/bowl_placeholder.png" alt={name} />
 	</div>
 
 	<!-- Body -->
@@ -95,7 +95,8 @@
 	.card-image img {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
+		image-rendering: pixelated;
 	}
 
 	.card-body {
@@ -123,12 +124,17 @@
 
 	.nutrition-row {
 		display: flex;
+		justify-content: center;
+		border-radius: 0.375rem;
 		gap: 0.375rem;
 		flex-wrap: wrap;
+		background: #1a1a1a;
+		align-self: flex-start;
+		width: fit-content;
+		margin: 0 auto;
 	}
 
 	.nutrition-pill {
-		background: #1a1a1a;
 		color: #ffffff;
 		border-radius: 0.375rem;
 		padding: 0.3rem 0.5rem;
@@ -140,7 +146,7 @@
 	}
 
 	.pill-label {
-		font-size: 0.55rem;
+		font-size: 0.7rem;
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -149,7 +155,7 @@
 	}
 
 	.pill-value {
-		font-size: 0.875rem;
+		font-size: 1rem;
 		font-weight: 700;
 		color: #ffffff;
 		line-height: 1;

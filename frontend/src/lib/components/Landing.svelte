@@ -7,7 +7,7 @@
 <div class="landing-root">
 	<!-- Hero background image -->
 	<div class="hero-bg">
-		<img src="/trazyn_placeholder.jpg" alt="Bowl de comida" class="hero-img" />
+		<img src="/LandingBackground.webp" alt="Bowl de comida" class="hero-img" />
 		<div class="hero-overlay"></div>
 	</div>
 

@@ -48,7 +48,7 @@
 		<!-- From scratch -->
 		<button class="option-card" onclick={onFromScratch}>
 			<div class="option-image">
-				<img src="/trazyn_placeholder.jpg" alt={$_('landing.modal.fromScratch')} />
+				<img src="/BuildBowl.png" alt={$_('landing.modal.fromScratch')} />
 			</div>
 			<span class="option-label">{$_('landing.modal.fromScratch')}</span>
 		</button>
@@ -56,7 +56,7 @@
 		<!-- Menu ideas -->
 		<button class="option-card" onclick={onMenu}>
 			<div class="option-image">
-				<img src="/trazyn_placeholder.jpg" alt={$_('landing.modal.menuIdeas')} />
+				<img src="/Menu.png" alt={$_('landing.modal.menuIdeas')} />
 			</div>
 			<span class="option-label">{$_('landing.modal.menuIdeas')}</span>
 		</button>
@@ -102,23 +102,39 @@
 	}
 
 	@keyframes slideUp {
-		from { transform: translateY(100%); }
-		to { transform: translateY(0); }
+		from {
+			transform: translateY(100%);
+		}
+		to {
+			transform: translateY(0);
+		}
 	}
 
 	@keyframes slideDown {
-		from { transform: translateY(0); }
-		to { transform: translateY(100%); }
+		from {
+			transform: translateY(0);
+		}
+		to {
+			transform: translateY(100%);
+		}
 	}
 
 	@keyframes fadeIn {
-		from { opacity: 0; }
-		to { opacity: 1; }
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
 	}
 
 	@keyframes fadeOut {
-		from { opacity: 1; }
-		to { opacity: 0; }
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+		}
 	}
 
 	.sheet-handle {
@@ -169,7 +185,8 @@
 	.option-image img {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
+		image-rendering: pixelated;
 	}
 
 	.option-label {
