@@ -17,7 +17,16 @@
 >
 	<!-- Checkmark circle -->
 	<div class="check-circle" aria-hidden="true">
-		<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0d3b2e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+		<svg
+			width="32"
+			height="32"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="#0d3b2e"
+			stroke-width="3"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
 			<polyline points="20 6 9 17 4 12" />
 		</svg>
 	</div>

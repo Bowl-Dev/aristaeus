@@ -12,11 +12,11 @@
 	import { _ } from 'svelte-i18n';
 
 	// Import components
-	import CustomerForm from "./_legacy/CustomerForm.svelte";
-	import BowlIngredients from "./_legacy/BowlIngredients.svelte";
-	import OrderSummary from "./_legacy/OrderSummary.svelte";
-	import LandingView from "./_legacy/LandingView.svelte";
-	import MenuView from "./_legacy/MenuView.svelte";
+	import CustomerForm from './_legacy/CustomerForm.svelte';
+	import BowlIngredients from './_legacy/BowlIngredients.svelte';
+	import OrderSummary from './_legacy/OrderSummary.svelte';
+	import LandingView from './_legacy/LandingView.svelte';
+	import MenuView from './_legacy/MenuView.svelte';
 
 	// View state
 	let view = $state<'landing' | 'menu' | 'builder'>('landing');

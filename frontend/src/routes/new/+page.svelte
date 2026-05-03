@@ -326,7 +326,13 @@
 		{loading}
 		onBack={handleBack}
 		onCustomize={(menu) => {
-			handleMenuSelect(menu, menu.ingredients.map((i) => ({ ingredientId: i.ingredientId, quantityGrams: i.quantityGrams })));
+			handleMenuSelect(
+				menu,
+				menu.ingredients.map((i) => ({
+					ingredientId: i.ingredientId,
+					quantityGrams: i.quantityGrams
+				}))
+			);
 		}}
 	/>
 {:else if view === 'size'}
