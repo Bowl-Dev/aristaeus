@@ -47,7 +47,6 @@
 		"lint-staged": "^15.5.2",
 		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.4.1",
-		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.54.0"
 	},
 	"lint-staged": {
@@ -58,8 +57,5 @@
 		"*.{json,md,yml,yaml}": [
 			"prettier --write"
 		]
-	},
-	"dependencies": {
-		"@sveltejs/adapter-static": "^3.0.10"
 	}
 }

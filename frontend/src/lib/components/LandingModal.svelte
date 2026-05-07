@@ -20,6 +20,31 @@
 	function handleAnimationEnd() {
 		if (closing) onCancel();
 	}
+
+	// Mirror the focus-trap pattern from the legacy OrderSummary drawer:
+	// focus the first action on mount, trap Tab inside the sheet, dismiss on Escape.
+	$effect(() => {
+		const sheet = document.querySelector<HTMLElement>('[data-landing-modal-sheet]');
+		if (!sheet) return;
+		const sel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+		const els = Array.from(sheet.querySelectorAll<HTMLElement>(sel));
+		els[0]?.focus();
+		function trap(e: KeyboardEvent) {
+			if (e.key === 'Escape') {
+				dismiss();
+				return;
+			}
+			if (e.key !== 'Tab' || els.length === 0) return;
+			const first = els[0];
+			const last = els[els.length - 1];
+			if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+				e.preventDefault();
+				(e.shiftKey ? last : first)?.focus();
+			}
+		}
+		document.addEventListener('keydown', trap);
+		return () => document.removeEventListener('keydown', trap);
+	});
 </script>
 
 <!-- Backdrop -->
@@ -35,6 +60,7 @@
 
 <!-- Bottom sheet -->
 <div
+	data-landing-modal-sheet
 	class="sheet fixed bottom-0 left-0 right-0 z-50 flex flex-col gap-5 rounded-t-[1.25rem] bg-white px-6 pb-10 pt-3 shadow-[0_-4px_32px_rgba(0,0,0,0.15)]"
 	class:closing
 	role="dialog"

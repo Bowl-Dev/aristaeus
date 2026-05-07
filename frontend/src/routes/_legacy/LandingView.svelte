@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
-	import Footer from '$lib/components/Footer.svelte';
 
 	let {
 		onBuildOwn,
@@ -78,5 +77,4 @@
 			</button>
 		</div>
 	</div>
-	<Footer />
 </div>

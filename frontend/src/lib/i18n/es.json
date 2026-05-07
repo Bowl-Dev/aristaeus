@@ -34,11 +34,7 @@
 		"medium": "Mediano",
 		"large": "Grande",
 		"capacity": "Capacidad",
-		"pricePerG": {
-			"small": "+ $20/g de ingredientes",
-			"medium": "+ $30/g de ingredientes",
-			"large": "+ $40/g de ingredientes"
-		}
+		"pricingNote": "Incluye empaque — los ingredientes se cobran aparte"
 	},
 	"thnks": {
 		"title": "¡Gracias por elegirnos!",

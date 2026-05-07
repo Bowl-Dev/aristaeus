@@ -2,6 +2,17 @@
 	import { _ } from 'svelte-i18n';
 
 	let { onDismiss }: { onDismiss: () => void } = $props();
+
+	// Single-action modal: focus the dismiss button on mount, dismiss on Escape.
+	$effect(() => {
+		const btn = document.querySelector<HTMLElement>('[data-thnks-dismiss]');
+		btn?.focus();
+		function onKey(e: KeyboardEvent) {
+			if (e.key === 'Escape') onDismiss();
+		}
+		document.addEventListener('keydown', onKey);
+		return () => document.removeEventListener('keydown', onKey);
+	});
 </script>
 
 <!-- Backdrop -->
@@ -43,6 +54,7 @@
 	</p>
 
 	<button
+		data-thnks-dismiss
 		class="mt-1 w-full cursor-pointer rounded-full border-none bg-[#d4e84a] px-6 py-4 text-sm font-bold uppercase tracking-[0.08em] text-[#0d3b2e] transition-all duration-200 hover:bg-[#c8dc3e] active:scale-[0.97]"
 		onclick={onDismiss}
 	>

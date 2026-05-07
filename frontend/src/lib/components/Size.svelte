@@ -16,7 +16,6 @@
 		labelKey: string;
 		capacity: string;
 		basePrice: number;
-		pricePerGKey: string;
 	}
 
 	const sizes: SizeOption[] = [
@@ -24,22 +23,19 @@
 			size: 250,
 			labelKey: 'size.small',
 			capacity: '250g',
-			basePrice: BOWL_SIZE_PRICES[0],
-			pricePerGKey: 'size.pricePerG.small'
+			basePrice: BOWL_SIZE_PRICES[0]
 		},
 		{
 			size: 450,
 			labelKey: 'size.medium',
 			capacity: '450g',
-			basePrice: BOWL_SIZE_PRICES[1],
-			pricePerGKey: 'size.pricePerG.medium'
+			basePrice: BOWL_SIZE_PRICES[1]
 		},
 		{
 			size: 600,
 			labelKey: 'size.large',
 			capacity: '600g',
-			basePrice: BOWL_SIZE_PRICES[2],
-			pricePerGKey: 'size.pricePerG.large'
+			basePrice: BOWL_SIZE_PRICES[2]
 		}
 	];
 
@@ -127,7 +123,7 @@
 				</div>
 				<div class="flex flex-col items-end gap-[0.2rem]">
 					<span class="text-xl font-bold text-[#0d3b2e]">{formatCOP(option.basePrice)}</span>
-					<span class="text-xs text-gray-400">{$_(option.pricePerGKey)}</span>
+					<span class="text-xs text-gray-400">{$_('size.pricingNote')}</span>
 				</div>
 			</button>
 		{/each}
