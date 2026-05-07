@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import type { Menu } from '$lib/types';
+	import Heading from './atoms/Heading.svelte';
+	import Button from './atoms/Button.svelte';
+	import NutritionalInfo from './molecules/NutritionalInfo.svelte';
 
 	let {
 		menu,
@@ -25,6 +28,8 @@
 
 	const imageUrl = $derived(menuImages[menu.nameEs] ?? '/bowl_placeholder.png');
 
+	let imageFailed = $state(false);
+
 	const nutrition = $derived.by(() => {
 		let calories = 0,
 			protein = 0,
@@ -47,71 +52,59 @@
 </script>
 
 <div
-	class="flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06),0_2px_12px_rgba(0,0,0,0.04)]"
+	class="flex flex-col overflow-hidden rounded-2xl bg-pure-white shadow-[0_1px_4px_rgba(0,0,0,0.06),0_2px_12px_rgba(0,0,0,0.04)]"
 >
 	<!-- Image -->
-	<div class="aspect-video w-full overflow-hidden bg-gray-100">
-		<img src={imageUrl} alt={name} class="h-full w-full object-cover" />
+	<div class="aspect-[2/1] w-full overflow-hidden bg-accent-gray">
+		{#if imageFailed}
+			<div class="flex h-full w-full items-center justify-center bg-accent-gray text-text-muted">
+				<svg
+					width="48"
+					height="48"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<rect x="3" y="3" width="18" height="18" rx="2" />
+					<circle cx="8.5" cy="8.5" r="1.5" />
+					<path d="M21 15l-5-5L5 21" />
+				</svg>
+			</div>
+		{:else}
+			<img
+				src={imageUrl}
+				alt={name}
+				class="h-full w-full object-cover"
+				onerror={() => (imageFailed = true)}
+			/>
+		{/if}
 	</div>
 
 	<!-- Body -->
-	<div class="flex flex-col gap-[0.625rem] px-4 pb-4 pt-[1.125rem]">
-		<h3 class="m-0 text-base font-bold uppercase tracking-[0.03em] text-[#1a1a1a]">
-			{name}
-		</h3>
-		<p class="m-0 text-sm leading-[1.45] text-[#555555]">{description}</p>
-
-		<!-- Nutrition pills -->
-		<div
-			class="mx-auto flex w-fit flex-wrap items-start justify-center self-start rounded-md bg-[#1a1a1a] gap-[0.375rem]"
-		>
-			<div
-				class="flex min-w-[3.25rem] flex-col items-center gap-[0.1rem] rounded-md px-2 py-[0.3rem] text-white"
-			>
-				<span
-					class="text-[0.7rem] font-semibold uppercase leading-none tracking-[0.06em] text-white/70"
-				>
-					{$_('menu.card.calories')}
-				</span>
-				<span class="text-base font-bold leading-none text-white">{nutrition.calories}</span>
-			</div>
-			<div
-				class="flex min-w-[3.25rem] flex-col items-center gap-[0.1rem] rounded-md px-2 py-[0.3rem] text-white"
-			>
-				<span
-					class="text-[0.7rem] font-semibold uppercase leading-none tracking-[0.06em] text-white/70"
-				>
-					{$_('menu.card.protein')}
-				</span>
-				<span class="text-base font-bold leading-none text-white">{nutrition.protein}g</span>
-			</div>
-			<div
-				class="flex min-w-[3.25rem] flex-col items-center gap-[0.1rem] rounded-md px-2 py-[0.3rem] text-white"
-			>
-				<span
-					class="text-[0.7rem] font-semibold uppercase leading-none tracking-[0.06em] text-white/70"
-				>
-					{$_('menu.card.fat')}
-				</span>
-				<span class="text-base font-bold leading-none text-white">{nutrition.fat}g</span>
-			</div>
-			<div
-				class="flex min-w-[3.25rem] flex-col items-center gap-[0.1rem] rounded-md px-2 py-[0.3rem] text-white"
-			>
-				<span
-					class="text-[0.7rem] font-semibold uppercase leading-none tracking-[0.06em] text-white/70"
-				>
-					{$_('menu.card.carbs')}
-				</span>
-				<span class="text-base font-bold leading-none text-white">{nutrition.carbs}g</span>
-			</div>
+	<div class="flex flex-col items-center justify-center gap-4 px-6 py-4">
+		<div class="flex flex-col items-start gap-4 self-stretch">
+			<Heading level={3} uppercase extraClass="text-[18px] tracking-[0.9px]">{name}</Heading>
+			<p class="m-0 text-base leading-[1.625] text-text-muted">{description}</p>
 		</div>
 
-		<button
-			class="mt-1 w-full cursor-pointer rounded-full border-none bg-[#0d3b2e] px-4 py-[0.875rem] text-[0.8125rem] font-bold uppercase tracking-[0.08em] text-[#d4e84a] transition-all duration-200 hover:bg-[#0a2e23] active:scale-[0.98]"
+		<NutritionalInfo
+			calories={nutrition.calories}
+			protein={nutrition.protein}
+			carbs={nutrition.carbs}
+			fat={nutrition.fat}
+		/>
+
+		<Button
+			variant="primary"
+			size="md"
+			extraClass="w-[264px] max-w-full"
 			onclick={() => onCustomize(menu)}
 		>
 			{$_('menu.card.customize')}
-		</button>
+		</Button>
 	</div>
 </div>

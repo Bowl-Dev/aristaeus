@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Inter font (Figma) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 /* Skeleton UI - must come after tailwindcss import */
 @import '@skeletonlabs/skeleton';
 @import '@skeletonlabs/skeleton/themes/cerberus';
@@ -10,7 +13,27 @@
 /* Tailwind forms plugin */
 @plugin '@tailwindcss/forms';
 
+/* Design tokens (Figma 49:4 / 49:58). Additive — does not alter Skeleton/Cerberus. */
+@theme {
+	--color-dark-green: #00483c;
+	--color-light-green: #e3e66d;
+	--color-white-green: #f8f9f4;
+	--color-pure-white: #ffffff;
+	--color-text-black: #0a0a0a;
+	--color-text-muted: #4a5565;
+	--color-grab-bar: #d1d5dc;
+	--color-accent-gray: #f3f4f6;
+	--color-strokes: #e5e7eb;
+
+	--font-sans: 'Inter', system-ui, sans-serif;
+
+	--radius-sheet: 24px;
+	--radius-card: 16px;
+	--radius-pill: 9999px;
+}
+
 /* Base body styling */
 body {
 	@apply bg-surface-50 dark:bg-surface-900 text-surface-900 dark:text-surface-50;
+	font-family: var(--font-sans);
 }

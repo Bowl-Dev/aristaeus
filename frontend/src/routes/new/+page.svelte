@@ -141,6 +141,9 @@
 	const capacityUsed = $derived(selectedBowlSize ? (totals.weight / selectedBowlSize) * 100 : 0);
 	const isOverCapacity = $derived(selectedBowlSize ? totals.weight > selectedBowlSize : false);
 
+	// Header cart count — single in-flight bowl, so a non-empty selection counts as 1.
+	const cartCount = $derived(selectedItems.size > 0 ? 1 : 0);
+
 	const canSubmit = $derived(
 		customerName.trim().length > 0 &&
 			isValidColombianPhone &&
@@ -295,15 +298,6 @@
 	}
 </script>
 
-<svelte:head>
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link
-		href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..1000;1,9..40,300..1000&display=swap"
-		rel="stylesheet"
-	/>
-</svelte:head>
-
 {#if view === 'landing'}
 	<Landing onOrderNow={() => (showLandingModal = true)} />
 
@@ -324,6 +318,7 @@
 	<Menu
 		{menus}
 		{loading}
+		{cartCount}
 		onBack={handleBack}
 		onCustomize={(menu) => {
 			handleMenuSelect(
@@ -337,6 +332,7 @@
 	/>
 {:else if view === 'size'}
 	<Size
+		{cartCount}
 		onBack={() => (view = 'landing')}
 		onSelect={(size) => {
 			selectedBowlSize = size;
@@ -362,10 +358,6 @@
 {/if}
 
 <style>
-	:global(body) {
-		font-family: 'DM Sans', system-ui, sans-serif;
-	}
-
 	.builder-placeholder {
 		min-height: 100svh;
 		display: flex;
@@ -379,7 +371,7 @@
 
 	.builder-placeholder button {
 		padding: 0.75rem 1.5rem;
-		background: #0d3b2e;
+		background: #00483c;
 		color: white;
 		border: none;
 		border-radius: 9999px;
