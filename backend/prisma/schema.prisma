@@ -17,7 +17,9 @@ datasource db {
 
 model Ingredient {
   id               Int      @id @default(autoincrement())
-  name             String   @db.VarChar(100)
+  name             String   @db.VarChar(100) // Stable internal identifier (English-based)
+  nameEs           String   @map("name_es") @db.VarChar(100)
+  nameEn           String   @map("name_en") @db.VarChar(100)
   category         String   @db.VarChar(50) // 'protein', 'base', 'vegetable', 'topping', 'dressing'
 
   // Nutritional values per 100g

@@ -161,6 +161,8 @@ export interface AdminOrderUser {
 
 export interface AdminOrderItem {
 	ingredientName: string;
+	ingredientNameEs: string;
+	ingredientNameEn: string;
 	ingredientCategory: string;
 	quantityGrams: number;
 	sequenceOrder: number;
@@ -220,6 +222,8 @@ export interface ApiOrderResponse {
 	status: string;
 	items: Array<{
 		ingredientName: string;
+		ingredientNameEs: string;
+		ingredientNameEn: string;
 		quantityGrams: number;
 		sequenceOrder: number;
 	}>;

@@ -91,7 +91,7 @@
 								<span
 									class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full"
 								>
-									{$_('ingredients.' + mi.ingredientName, { default: mi.ingredientName })}
+									{$locale === 'en' ? mi.ingredientNameEn : mi.ingredientNameEs}
 									<span class="text-gray-400">{mi.quantityGrams}g</span>
 								</span>
 							{/each}
