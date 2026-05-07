@@ -41,6 +41,8 @@ export type IngredientCategory = 'protein' | 'base' | 'vegetable' | 'topping' | 
 export interface Ingredient {
 	id: number;
 	name: string;
+	nameEs: string;
+	nameEn: string;
 	category: IngredientCategory;
 	caloriesPer100g: number;
 	proteinGPer100g: number;
@@ -55,6 +57,8 @@ export interface Ingredient {
 export interface MenuIngredientItem {
 	ingredientId: number;
 	ingredientName: string;
+	ingredientNameEs: string;
+	ingredientNameEn: string;
 	quantityGrams: number;
 	sequenceOrder: number;
 	caloriesPer100g: number;
@@ -200,6 +204,8 @@ export interface ListOrdersParams {
 // Admin order item with category info
 export interface AdminOrderItem {
 	ingredientName: string;
+	ingredientNameEs: string;
+	ingredientNameEn: string;
 	ingredientCategory: IngredientCategory;
 	quantityGrams: number;
 	sequenceOrder: number;

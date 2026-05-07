@@ -21,6 +21,8 @@ export const getIngredients: APIGatewayProxyHandler = async () => {
 			select: {
 				id: true,
 				name: true,
+				nameEs: true,
+				nameEn: true,
 				category: true,
 				caloriesPer100g: true,
 				proteinGPer100g: true,
@@ -37,6 +39,8 @@ export const getIngredients: APIGatewayProxyHandler = async () => {
 		const serializedIngredients = ingredients.map((ing) => ({
 			id: ing.id,
 			name: ing.name,
+			nameEs: ing.nameEs,
+			nameEn: ing.nameEn,
 			category: ing.category,
 			caloriesPer100g: ing.caloriesPer100g.toNumber(),
 			proteinGPer100g: ing.proteinGPer100g.toNumber(),

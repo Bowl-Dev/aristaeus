@@ -244,7 +244,7 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
 				items: {
 					include: {
 						ingredient: {
-							select: { name: true }
+							select: { name: true, nameEs: true, nameEn: true }
 						}
 					},
 					orderBy: { sequenceOrder: 'asc' }
@@ -275,6 +275,8 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
 			status: order.status,
 			items: order.items.map((item) => ({
 				ingredientName: item.ingredient.name,
+				ingredientNameEs: item.ingredient.nameEs,
+				ingredientNameEn: item.ingredient.nameEn,
 				quantityGrams: item.quantityGrams.toNumber(),
 				sequenceOrder: item.sequenceOrder
 			})),
@@ -324,7 +326,7 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 				items: {
 					include: {
 						ingredient: {
-							select: { name: true, category: true }
+							select: { name: true, nameEs: true, nameEn: true, category: true }
 						}
 					},
 					orderBy: { sequenceOrder: 'asc' }
@@ -356,6 +358,8 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 				status: order.status,
 				items: order.items.map((item) => ({
 					ingredientName: item.ingredient.name,
+					ingredientNameEs: item.ingredient.nameEs,
+					ingredientNameEn: item.ingredient.nameEn,
 					ingredientCategory: item.ingredient.category,
 					quantityGrams: item.quantityGrams.toNumber(),
 					sequenceOrder: item.sequenceOrder

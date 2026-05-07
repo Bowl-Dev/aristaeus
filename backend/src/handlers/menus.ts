@@ -36,6 +36,8 @@ export const getMenus: APIGatewayProxyHandler = async () => {
 			ingredients: menu.ingredients.map((mi) => ({
 				ingredientId: mi.ingredientId,
 				ingredientName: mi.ingredient.name,
+				ingredientNameEs: mi.ingredient.nameEs,
+				ingredientNameEn: mi.ingredient.nameEn,
 				quantityGrams: mi.quantityGrams.toNumber(),
 				sequenceOrder: mi.sequenceOrder,
 				caloriesPer100g: mi.ingredient.caloriesPer100g.toNumber(),

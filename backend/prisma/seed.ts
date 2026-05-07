@@ -25,6 +25,8 @@ async function main() {
 			// Proteins
 			{
 				name: 'Chicken',
+				nameEs: 'Pollo',
+				nameEn: 'Chicken',
 				category: 'protein',
 				caloriesPer100g: 165,
 				proteinGPer100g: 31,
@@ -37,6 +39,8 @@ async function main() {
 			},
 			{
 				name: 'Salmon',
+				nameEs: 'Salmón',
+				nameEn: 'Salmon',
 				category: 'protein',
 				caloriesPer100g: 208,
 				proteinGPer100g: 20,
@@ -49,6 +53,8 @@ async function main() {
 			},
 			{
 				name: 'Mushroom',
+				nameEs: 'Champiñón',
+				nameEn: 'Mushroom',
 				category: 'protein',
 				caloriesPer100g: 24,
 				proteinGPer100g: 3,
@@ -63,6 +69,8 @@ async function main() {
 			// Bases
 			{
 				name: 'Rice',
+				nameEs: 'Arroz',
+				nameEn: 'Rice',
 				category: 'base',
 				caloriesPer100g: 130,
 				proteinGPer100g: 2.6,
@@ -75,6 +83,8 @@ async function main() {
 			},
 			{
 				name: 'Quinoa',
+				nameEs: 'Quinoa',
+				nameEn: 'Quinoa',
 				category: 'base',
 				caloriesPer100g: 120,
 				proteinGPer100g: 4.3,
@@ -89,6 +99,8 @@ async function main() {
 			// Vegetables
 			{
 				name: 'Cherry Tomatoes',
+				nameEs: 'Tomates Cherry',
+				nameEn: 'Cherry Tomatoes',
 				category: 'vegetable',
 				caloriesPer100g: 18,
 				proteinGPer100g: 0.9,
@@ -101,6 +113,8 @@ async function main() {
 			},
 			{
 				name: 'Mango',
+				nameEs: 'Mango',
+				nameEn: 'Mango',
 				category: 'vegetable',
 				caloriesPer100g: 60,
 				proteinGPer100g: 0.5,
@@ -113,6 +127,8 @@ async function main() {
 			},
 			{
 				name: 'Carrot',
+				nameEs: 'Zanahoria',
+				nameEn: 'Carrot',
 				category: 'vegetable',
 				caloriesPer100g: 41,
 				proteinGPer100g: 0.9,
@@ -125,6 +141,8 @@ async function main() {
 			},
 			{
 				name: 'Onion',
+				nameEs: 'Cebolla',
+				nameEn: 'Onion',
 				category: 'vegetable',
 				caloriesPer100g: 40,
 				proteinGPer100g: 1.1,
@@ -137,6 +155,8 @@ async function main() {
 			},
 			{
 				name: 'Avocado',
+				nameEs: 'Aguacate',
+				nameEn: 'Avocado',
 				category: 'vegetable',
 				caloriesPer100g: 160,
 				proteinGPer100g: 2.0,
@@ -149,6 +169,8 @@ async function main() {
 			},
 			{
 				name: 'Corn',
+				nameEs: 'Maíz',
+				nameEn: 'Corn',
 				category: 'vegetable',
 				caloriesPer100g: 96,
 				proteinGPer100g: 3.2,
@@ -161,6 +183,8 @@ async function main() {
 			},
 			{
 				name: 'Cucumber',
+				nameEs: 'Pepino',
+				nameEn: 'Cucumber',
 				category: 'vegetable',
 				caloriesPer100g: 16,
 				proteinGPer100g: 0.7,
@@ -175,6 +199,8 @@ async function main() {
 			// Toppings
 			{
 				name: 'Mozzarella',
+				nameEs: 'Mozzarella',
+				nameEn: 'Mozzarella',
 				category: 'topping',
 				caloriesPer100g: 300,
 				proteinGPer100g: 20,
@@ -187,6 +213,8 @@ async function main() {
 			},
 			{
 				name: 'Green Onion',
+				nameEs: 'Cebollín',
+				nameEn: 'Green Onion',
 				category: 'topping',
 				caloriesPer100g: 32,
 				proteinGPer100g: 0.9,
@@ -199,6 +227,8 @@ async function main() {
 			},
 			{
 				name: 'Peanuts',
+				nameEs: 'Maní',
+				nameEn: 'Peanuts',
 				category: 'topping',
 				caloriesPer100g: 600,
 				proteinGPer100g: 25,
@@ -213,6 +243,8 @@ async function main() {
 			// Dressings
 			{
 				name: 'Teriyaki',
+				nameEs: 'Teriyaki',
+				nameEn: 'Teriyaki',
 				category: 'dressing',
 				caloriesPer100g: 89,
 				proteinGPer100g: 6,
@@ -225,6 +257,8 @@ async function main() {
 			},
 			{
 				name: 'Olive Oil Balsamic',
+				nameEs: 'Aceite de Oliva Balsámico',
+				nameEn: 'Olive Oil Balsamic',
 				category: 'dressing',
 				caloriesPer100g: 415,
 				proteinGPer100g: 0,
@@ -237,6 +271,8 @@ async function main() {
 			},
 			{
 				name: 'Honey Mustard',
+				nameEs: 'Miel Mostaza',
+				nameEn: 'Honey Mustard',
 				category: 'dressing',
 				caloriesPer100g: 260,
 				proteinGPer100g: 2,

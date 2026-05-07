@@ -339,7 +339,7 @@
 													<div
 														class="flex items-center justify-between py-1.5 px-2 bg-gray-50 rounded"
 													>
-														<span class="text-sm text-gray-900">{item.ingredientName}</span>
+														<span class="text-sm text-gray-900">{item.ingredientNameEs}</span>
 														<span class="text-sm text-gray-500 font-medium"
 															>{item.quantityGrams}g</span
 														>

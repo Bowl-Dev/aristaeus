@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { type Ingredient, type IngredientCategory, DRESSING_CONTAINER_GRAMS } from '$lib/types';
 	import { gramsToImperial } from '$lib/utils/imperialConversion';
+	import { ingredientName } from '$lib/utils/ingredientName';
 	import { slide } from 'svelte/transition';
 	import { _ } from 'svelte-i18n';
 
@@ -149,10 +150,6 @@
 		return `$${Math.round(cop / 100) * 100}`;
 	}
 
-	function getIngredientName(name: string): string {
-		return $_(`ingredients.${name}`) || name;
-	}
-
 	function formatImperial(quantity: string, unit: string): string {
 		const translatedUnit = $_(`home.ingredient.${unit}`, { values: { quantity } });
 		return `~${translatedUnit}`;
@@ -235,7 +232,7 @@
 							transition:slide={{ duration: 150 }}
 						>
 							<span class="text-sm font-medium text-gray-900 truncate"
-								>{getIngredientName(ingredient.name)}</span
+								>{ingredientName(ingredient)}</span
 							>
 							<span class="text-sm text-gray-500 ml-2 shrink-0">
 								{#if isDressing}
@@ -424,7 +421,7 @@
 							transition:slide={{ duration: 150 }}
 						>
 							<span class="text-sm font-medium text-gray-900 truncate">
-								{getIngredientName(ingredient.name)}
+								{ingredientName(ingredient)}
 							</span>
 							<span class="text-sm text-gray-500 ml-2 shrink-0">
 								{#if isDressing}

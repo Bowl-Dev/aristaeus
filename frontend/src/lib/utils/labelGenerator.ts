@@ -1,14 +1,6 @@
 import type { AdminOrder, AdminOrderItem } from '$lib/api/client';
-import esTranslations from '$lib/i18n/es.json';
 // Bundled at build time — no runtime fetch, no base-path issues on any deployment
 import logoSvgRaw from '$lib/assets/algramo-logo.svg?raw';
-
-// Always render the label in Spanish, regardless of the app's current locale.
-const ingredientTranslations = esTranslations.ingredients as Record<string, string>;
-
-function translateIngredient(name: string): string {
-	return ingredientTranslations[name] ?? name;
-}
 
 // Matches the price formatting used in MenuView.svelte
 function formatPrice(cop: number): string {
@@ -21,9 +13,7 @@ function formatNutrientValue(value: number): string {
 
 function buildIngredientList(items: AdminOrderItem[]): string {
 	const sorted = [...items].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
-	const parts = sorted.map(
-		(item) => `${translateIngredient(item.ingredientName)} ${item.quantityGrams}g`
-	);
+	const parts = sorted.map((item) => `${item.ingredientNameEs} ${item.quantityGrams}g`);
 	if (parts.length === 0) return '';
 	if (parts.length === 1) return parts[0] + '.';
 	const last = parts.pop()!;
