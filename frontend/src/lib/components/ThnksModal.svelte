@@ -5,18 +5,21 @@
 </script>
 
 <!-- Backdrop -->
-<div class="backdrop" role="presentation" aria-hidden="true"></div>
+<div class="fixed inset-0 z-40 bg-black/60" role="presentation" aria-hidden="true"></div>
 
 <!-- Modal -->
 <div
-	class="modal"
+	class="modal fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-5rem)] max-w-[18rem] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-4 rounded-3xl bg-[#0d3b2e] px-6 pb-7 pt-8 text-center"
 	role="dialog"
 	aria-modal="true"
 	aria-labelledby="thnks-title"
 	aria-describedby="thnks-desc"
 >
 	<!-- Checkmark circle -->
-	<div class="check-circle" aria-hidden="true">
+	<div
+		class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#d4e84a]"
+		aria-hidden="true"
+	>
 		<svg
 			width="32"
 			height="32"
@@ -31,40 +34,24 @@
 		</svg>
 	</div>
 
-	<h2 class="modal-title" id="thnks-title">{$_('thnks.title')}</h2>
+	<h2 class="m-0 text-[1.375rem] font-bold leading-tight text-[#d4e84a]" id="thnks-title">
+		{$_('thnks.title')}
+	</h2>
 
-	<p class="modal-message" id="thnks-desc">{$_('thnks.message')}</p>
+	<p class="m-0 text-[0.9375rem] leading-[1.55] text-white/85" id="thnks-desc">
+		{$_('thnks.message')}
+	</p>
 
-	<button class="dismiss-btn" onclick={onDismiss}>
+	<button
+		class="mt-1 w-full cursor-pointer rounded-full border-none bg-[#d4e84a] px-6 py-4 text-sm font-bold uppercase tracking-[0.08em] text-[#0d3b2e] transition-all duration-200 hover:bg-[#c8dc3e] active:scale-[0.97]"
+		onclick={onDismiss}
+	>
 		{$_('thnks.dismiss')}
 	</button>
 </div>
 
 <style>
-	.backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.6);
-		z-index: 40;
-	}
-
 	.modal {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		z-index: 50;
-		width: calc(100% - 5rem);
-		max-width: 18rem;
-		background: #0d3b2e;
-		border-radius: 1.5rem;
-		padding: 2rem 1.5rem 1.75rem;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 1rem;
-		text-align: center;
-
 		animation: popIn 0.25s ease-out;
 	}
 
@@ -77,57 +64,5 @@
 			opacity: 1;
 			transform: translate(-50%, -50%) scale(1);
 		}
-	}
-
-	.check-circle {
-		width: 4rem;
-		height: 4rem;
-		background: #d4e84a;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.modal-title {
-		font-size: 1.375rem;
-		font-weight: 700;
-		color: #d4e84a;
-		margin: 0;
-		line-height: 1.2;
-	}
-
-	.modal-message {
-		font-size: 0.9375rem;
-		color: rgba(255, 255, 255, 0.85);
-		margin: 0;
-		line-height: 1.55;
-	}
-
-	.dismiss-btn {
-		margin-top: 0.25rem;
-		width: 100%;
-		background: #d4e84a;
-		color: #0d3b2e;
-		font-weight: 700;
-		font-size: 0.875rem;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		padding: 1rem 1.5rem;
-		border-radius: 9999px;
-		border: none;
-		cursor: pointer;
-		transition:
-			background 0.2s,
-			transform 0.1s;
-	}
-
-	.dismiss-btn:hover {
-		background: #c8dc3e;
-	}
-
-	.dismiss-btn:active {
-		transform: scale(0.97);
 	}
 </style>

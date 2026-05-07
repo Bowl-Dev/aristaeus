@@ -17,10 +17,16 @@
 	} = $props();
 </script>
 
-<div class="menu-view">
+<div class="flex min-h-svh flex-col bg-gray-100">
 	<!-- Top bar -->
-	<header class="topbar">
-		<button class="back-btn" onclick={onBack} aria-label={$_('common.back')}>
+	<header
+		class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4"
+	>
+		<button
+			class="flex cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-1 text-[#1a1a1a] transition-colors duration-150 hover:bg-gray-100 [-webkit-tap-highlight-color:transparent]"
+			onclick={onBack}
+			aria-label={$_('common.back')}
+		>
 			<svg
 				width="20"
 				height="20"
@@ -35,9 +41,11 @@
 			</svg>
 		</button>
 
-		<span class="logo">alGramo.</span>
+		<span class="text-lg font-bold tracking-tight text-[#1a1a1a]" style="letter-spacing: -0.02em;">
+			alGramo.
+		</span>
 
-		<div class="cart-icon" aria-hidden="true">
+		<div class="p-1 text-[#1a1a1a] opacity-70" aria-hidden="true">
 			<svg
 				width="22"
 				height="22"
@@ -56,19 +64,24 @@
 	</header>
 
 	<!-- Heading -->
-	<div class="heading">
-		<h1 class="section-title">{$_('menu.title')}</h1>
-		<p class="section-subtitle">{$_('menu.subtitle')}</p>
+	<div class="px-5 pb-4 pt-6">
+		<h1
+			class="m-0 mb-[0.35rem] text-[1.625rem] font-extrabold uppercase tracking-tight text-[#1a1a1a]"
+			style="letter-spacing: -0.01em;"
+		>
+			{$_('menu.title')}
+		</h1>
+		<p class="m-0 text-[0.9rem] leading-snug text-gray-500">{$_('menu.subtitle')}</p>
 	</div>
 
 	<!-- Cards list -->
-	<div class="cards-list">
+	<div class="flex flex-1 flex-col gap-4 px-5 pb-8">
 		{#if loading}
-			<div class="loading-state">
+			<div class="flex items-center justify-center px-4 py-12 text-[0.9375rem] text-gray-400">
 				<p>{$_('common.loading')}</p>
 			</div>
 		{:else if menus.length === 0}
-			<div class="empty-state">
+			<div class="flex items-center justify-center px-4 py-12 text-[0.9375rem] text-gray-400">
 				<p>{$_('menu.empty')}</p>
 			</div>
 		{:else}
@@ -78,93 +91,3 @@
 		{/if}
 	</div>
 </div>
-
-<style>
-	.menu-view {
-		min-height: 100svh;
-		background: #f7f7f7;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.topbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1rem 1.25rem;
-		background: #ffffff;
-		border-bottom: 1px solid #f0f0f0;
-		position: sticky;
-		top: 0;
-		z-index: 10;
-	}
-
-	.back-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: none;
-		border: none;
-		cursor: pointer;
-		color: #1a1a1a;
-		padding: 0.25rem;
-		border-radius: 0.5rem;
-		transition: background 0.15s;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	.back-btn:hover {
-		background: #f0f0f0;
-	}
-
-	.logo {
-		font-size: 1.125rem;
-		font-weight: 700;
-		color: #1a1a1a;
-		letter-spacing: -0.02em;
-	}
-
-	.cart-icon {
-		color: #1a1a1a;
-		opacity: 0.7;
-		padding: 0.25rem;
-	}
-
-	.heading {
-		padding: 1.5rem 1.25rem 1rem;
-	}
-
-	.section-title {
-		font-size: 1.625rem;
-		font-weight: 800;
-		color: #1a1a1a;
-		margin: 0 0 0.35rem;
-		letter-spacing: -0.01em;
-		text-transform: uppercase;
-	}
-
-	.section-subtitle {
-		font-size: 0.9rem;
-		color: #666666;
-		margin: 0;
-		line-height: 1.4;
-	}
-
-	.cards-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		padding: 0 1.25rem 2rem;
-		flex: 1;
-	}
-
-	.loading-state,
-	.empty-state {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 3rem 1rem;
-		color: #999999;
-		font-size: 0.9375rem;
-	}
-</style>

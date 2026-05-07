@@ -53,10 +53,16 @@
 	}
 </script>
 
-<div class="size-view">
+<div class="flex min-h-svh flex-col bg-gray-100">
 	<!-- Top bar -->
-	<header class="topbar">
-		<button class="back-btn" onclick={onBack} aria-label={$_('common.back')}>
+	<header
+		class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4"
+	>
+		<button
+			class="flex cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-1 text-[#1a1a1a] transition-colors duration-150 hover:bg-gray-100 [-webkit-tap-highlight-color:transparent]"
+			onclick={onBack}
+			aria-label={$_('common.back')}
+		>
 			<svg
 				width="20"
 				height="20"
@@ -71,9 +77,11 @@
 			</svg>
 		</button>
 
-		<span class="logo">alGramo.</span>
+		<span class="text-lg font-bold text-[#1a1a1a]" style="letter-spacing: -0.02em;">
+			alGramo.
+		</span>
 
-		<div class="cart-icon" aria-hidden="true">
+		<div class="p-1 text-[#1a1a1a] opacity-70" aria-hidden="true">
 			<svg
 				width="22"
 				height="22"
@@ -92,166 +100,36 @@
 	</header>
 
 	<!-- Heading -->
-	<div class="heading">
-		<h1 class="section-title">{$_('size.title')}</h1>
-		<p class="section-subtitle">{$_('size.subtitle')}</p>
+	<div class="px-5 pb-4 pt-6">
+		<h1
+			class="m-0 mb-[0.35rem] text-[1.625rem] font-extrabold uppercase text-[#1a1a1a]"
+			style="letter-spacing: -0.01em;"
+		>
+			{$_('size.title')}
+		</h1>
+		<p class="m-0 text-[0.9rem] leading-snug text-gray-500">{$_('size.subtitle')}</p>
 	</div>
 
 	<!-- Size options -->
-	<div class="size-list">
+	<div class="flex flex-col gap-0 px-5 pb-8">
 		{#each sizes as option (option.size)}
-			<button class="size-row" onclick={() => onSelect(option.size)}>
-				<div class="size-info">
-					<span class="size-name">{$_(option.labelKey)}</span>
-					<span class="size-capacity">{$_('size.capacity')}: {option.capacity}</span>
+			<button
+				class="mt-3 flex w-full cursor-pointer items-center justify-between rounded-xl border-none border-b border-gray-100 bg-white px-4 py-5 text-left transition-colors duration-150 hover:bg-gray-50 active:bg-gray-100 [-webkit-tap-highlight-color:transparent]"
+				onclick={() => onSelect(option.size)}
+			>
+				<div class="flex flex-col gap-1">
+					<span class="text-base font-bold uppercase tracking-[0.04em] text-[#1a1a1a]">
+						{$_(option.labelKey)}
+					</span>
+					<span class="text-sm text-gray-500">
+						{$_('size.capacity')}: {option.capacity}
+					</span>
 				</div>
-				<div class="size-price-block">
-					<span class="size-price">{formatCOP(option.basePrice)}</span>
-					<span class="size-price-note">{$_(option.pricePerGKey)}</span>
+				<div class="flex flex-col items-end gap-[0.2rem]">
+					<span class="text-xl font-bold text-[#0d3b2e]">{formatCOP(option.basePrice)}</span>
+					<span class="text-xs text-gray-400">{$_(option.pricePerGKey)}</span>
 				</div>
 			</button>
 		{/each}
 	</div>
 </div>
-
-<style>
-	.size-view {
-		min-height: 100svh;
-		background: #f7f7f7;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.topbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1rem 1.25rem;
-		background: #ffffff;
-		border-bottom: 1px solid #f0f0f0;
-		position: sticky;
-		top: 0;
-		z-index: 10;
-	}
-
-	.back-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: none;
-		border: none;
-		cursor: pointer;
-		color: #1a1a1a;
-		padding: 0.25rem;
-		border-radius: 0.5rem;
-		transition: background 0.15s;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	.back-btn:hover {
-		background: #f0f0f0;
-	}
-
-	.logo {
-		font-size: 1.125rem;
-		font-weight: 700;
-		color: #1a1a1a;
-		letter-spacing: -0.02em;
-	}
-
-	.cart-icon {
-		color: #1a1a1a;
-		opacity: 0.7;
-		padding: 0.25rem;
-	}
-
-	.heading {
-		padding: 1.5rem 1.25rem 1rem;
-	}
-
-	.section-title {
-		font-size: 1.625rem;
-		font-weight: 800;
-		color: #1a1a1a;
-		margin: 0 0 0.35rem;
-		letter-spacing: -0.01em;
-		text-transform: uppercase;
-	}
-
-	.section-subtitle {
-		font-size: 0.9rem;
-		color: #666666;
-		margin: 0;
-		line-height: 1.4;
-	}
-
-	.size-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0;
-		padding: 0 1.25rem 2rem;
-	}
-
-	.size-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		background: #ffffff;
-		border: none;
-		border-bottom: 1px solid #f0f0f0;
-		padding: 1.25rem 1rem;
-		cursor: pointer;
-		text-align: left;
-		width: 100%;
-		transition: background 0.15s;
-		border-radius: 0;
-		-webkit-tap-highlight-color: transparent;
-		margin-top: 0.75rem;
-		border-radius: 0.75rem;
-	}
-
-	.size-row:hover {
-		background: #f9f9f9;
-	}
-
-	.size-row:active {
-		background: #f2f2f2;
-	}
-
-	.size-info {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.size-name {
-		font-size: 1rem;
-		font-weight: 700;
-		color: #1a1a1a;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-	}
-
-	.size-capacity {
-		font-size: 0.875rem;
-		color: #777777;
-	}
-
-	.size-price-block {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.2rem;
-	}
-
-	.size-price {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: #0d3b2e;
-	}
-
-	.size-price-note {
-		font-size: 0.75rem;
-		color: #999999;
-	}
-</style>
