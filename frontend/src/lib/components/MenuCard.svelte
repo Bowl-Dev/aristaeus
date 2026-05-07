@@ -15,6 +15,16 @@
 	const name = $derived(locale === 'es' ? menu.nameEs : menu.nameEn);
 	const description = $derived(locale === 'es' ? menu.descriptionEs : menu.descriptionEn);
 
+	const menuImages: Record<string, string> = {
+		'Bueno, bonito y al gramo': '/menu_imgs/BuenoBonito.png',
+		'Hoy empiezo la dieta': '/menu_imgs/HoyDieta.png',
+		'Alto en proteína': '/menu_imgs/AltoProteina.png',
+		'Verde y sabroso': '/menu_imgs/IMG_1872.png',
+		'Premium de Salmón': '/menu_imgs/PremiumSalmon.png'
+	};
+
+	const imageUrl = $derived(menuImages[menu.nameEs] ?? '/bowl_placeholder.png');
+
 	const nutrition = $derived.by(() => {
 		let calories = 0,
 			protein = 0,
@@ -39,7 +49,7 @@
 <div class="menu-card">
 	<!-- Image -->
 	<div class="card-image">
-		<img src="/bowl_placeholder.png" alt={name} />
+		<img src={imageUrl} alt={name} />
 	</div>
 
 	<!-- Body -->
@@ -95,8 +105,7 @@
 	.card-image img {
 		width: 100%;
 		height: 100%;
-		object-fit: contain;
-		image-rendering: pixelated;
+		object-fit: cover;
 	}
 
 	.card-body {
