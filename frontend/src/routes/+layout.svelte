@@ -4,10 +4,16 @@
 	import { locale, setLocale, waitForLocale } from '$lib/i18n';
 	import { isLoading } from 'svelte-i18n';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import Footer from '$lib/components/Footer.svelte';
 
 	let { children } = $props();
 	let ready = $state(false);
+
+	// /new/* is the in-progress next-gen frontend; it ships its own footer treatment.
+	// Every other route (legacy /, /admin/orders, /privacy, /privacy/delete) needs the
+	// Privacy Policy link in the global Footer for Law 1581 compliance.
+	const showFooter = $derived(!($page.route.id?.startsWith('/new') ?? false));
 
 	onMount(async () => {
 		await waitForLocale();
@@ -41,6 +47,8 @@
 		<div class="flex-1">
 			{@render children()}
 		</div>
-		<Footer />
+		{#if showFooter}
+			<Footer />
+		{/if}
 	</div>
 {/if}

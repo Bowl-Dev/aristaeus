@@ -2,7 +2,44 @@
 	"common": {
 		"loading": "Loading...",
 		"error": "Error",
-		"tryAgain": "Try again"
+		"tryAgain": "Try again",
+		"back": "Back"
+	},
+	"landing": {
+		"subtitle": "Eat exactly how you like it, down to the last gram.",
+		"cta": "Order now",
+		"modal": {
+			"title": "How would you like your bowl?",
+			"fromScratch": "From scratch",
+			"menuIdeas": "Ideas to start",
+			"cancel": "Cancel"
+		}
+	},
+	"menu": {
+		"title": "Suggested Menu",
+		"subtitle": "Bowls curated by chefs as a base. Customize them to your taste.",
+		"empty": "No menus available right now",
+		"card": {
+			"calories": "CALORIES",
+			"protein": "PROTEIN",
+			"fat": "FAT",
+			"carbs": "CARBS",
+			"customize": "Customize bowl"
+		}
+	},
+	"size": {
+		"title": "Sizes",
+		"subtitle": "Select the capacity that best fits your appetite",
+		"small": "Small",
+		"medium": "Medium",
+		"large": "Large",
+		"capacity": "Capacity",
+		"pricingNote": "Includes packaging — ingredients priced separately"
+	},
+	"thnks": {
+		"title": "Thank you for choosing us!",
+		"message": "We're already preparing your bowl with great care. We'll message you on WhatsApp shortly to confirm the final price, including shipping, and process payment.",
+		"dismiss": "Got it"
 	},
 	"customer": {
 		"returning": {
