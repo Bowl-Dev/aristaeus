@@ -49,7 +49,7 @@ Aristaeus is an automated bowl ordering system where users customize bowls throu
 - **Validation:** Zod
 - **Shared Types:** `@aristaeus/shared` package
 - **Linting:** ESLint + Prettier with Husky pre-commit hooks
-- **Node.js:** Backend CI uses Node 20; frontend CI uses Node 18 (both require >= 18)
+- **Node.js:** Both backend and frontend CI use Node 20 (vite 8 + tailwind v4 oxide require Node >= 20)
 
 ---
 
