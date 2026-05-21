@@ -32,7 +32,7 @@
 </svelte:head>
 
 {#if !ready || $isLoading}
-	<div class="flex items-center justify-center h-screen">
+	<div class="flex items-center justify-center h-dvh">
 		<p class="text-xl text-surface-500">Loading...</p>
 	</div>
 {:else}

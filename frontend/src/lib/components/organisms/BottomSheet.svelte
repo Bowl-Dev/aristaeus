@@ -58,20 +58,23 @@
 	onkeydown={(e) => e.key === 'Escape' && dismiss()}
 ></div>
 
-<!-- Sheet -->
-<div
-	bind:this={sheetEl}
-	class="sheet fixed bottom-0 left-0 right-0 z-50 flex flex-col gap-5 rounded-t-[var(--radius-sheet)] bg-pure-white px-6 pb-10 pt-3 shadow-[0_-4px_32px_rgba(0,0,0,0.15)] sm:left-1/2 sm:right-auto sm:w-full sm:max-w-md sm:-translate-x-1/2"
-	class:closing
-	role="dialog"
-	aria-modal="true"
-	aria-label={ariaLabel}
-	onanimationend={handleAnimationEnd}
->
-	<div class="mb-2">
-		<GrabBar />
+<!-- Sheet wrapper: handles positioning (flex centers on desktop, full-width on mobile) -->
+<div class="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center">
+	<!-- Inner sheet: only animates translateY so the slide transform never clobbers positioning -->
+	<div
+		bind:this={sheetEl}
+		class="sheet pointer-events-auto flex w-full flex-col gap-5 rounded-t-[var(--radius-sheet)] bg-pure-white px-6 pb-10 pt-3 shadow-[0_-4px_32px_rgba(0,0,0,0.15)] sm:max-w-md"
+		class:closing
+		role="dialog"
+		aria-modal="true"
+		aria-label={ariaLabel}
+		onanimationend={handleAnimationEnd}
+	>
+		<div class="mb-2">
+			<GrabBar />
+		</div>
+		{@render children(dismiss)}
 	</div>
-	{@render children(dismiss)}
 </div>
 
 <style>

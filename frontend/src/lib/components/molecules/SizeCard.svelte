@@ -26,10 +26,10 @@
 		</span>
 		<span class="text-2xl font-bold text-dark-green">{price}</span>
 	</div>
-	<div class="flex items-center justify-between gap-2">
+	<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 		<span class="text-sm text-text-muted">
 			{capacityLabel}: <span class="font-semibold text-text-muted">{capacity}</span>
 		</span>
-		<span class="text-xs text-text-muted">{pricingNote}</span>
+		<span class="mt-2 text-right text-xs text-text-muted sm:mt-0">{pricingNote}</span>
 	</div>
 </button>

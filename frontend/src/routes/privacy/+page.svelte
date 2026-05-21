@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 </script>
 
-<main class="min-h-screen bg-gray-50 py-8 px-4">
+<main class="min-h-dvh bg-gray-50 py-8 px-4">
 	<div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-8">
 		<h1 class="text-3xl font-bold text-gray-900 mb-2">{$_('privacy.title')}</h1>
 		<p class="text-sm text-gray-500 mb-8">

@@ -10,7 +10,7 @@
 	} = $props();
 </script>
 
-<div class="min-h-screen bg-gray-50 flex flex-col font-sans">
+<div class="flex-1 bg-gray-50 flex flex-col font-sans">
 	<div class="flex-1 flex flex-col items-center justify-center px-6 py-16">
 		<div class="text-center mb-12">
 			<h1 class="text-4xl font-bold text-gray-900 tracking-tight mb-3">{$_('home.title')}</h1>

@@ -336,8 +336,8 @@
 {:else if view === 'menu'}
 	<MenuView {menus} onSelect={handleMenuSelect} onBack={handleBack} />
 {:else}
-	<div class="min-h-screen bg-gray-50 font-sans">
-		<div class="flex min-h-screen">
+	<div class="min-h-dvh bg-gray-50 font-sans">
+		<div class="flex min-h-dvh">
 			<!-- Left: Form and Ingredients -->
 			<main class="flex-1 lg:mr-105">
 				<div class="max-w-2xl mx-auto px-6 py-8">
