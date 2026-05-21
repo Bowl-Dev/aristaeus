@@ -13,7 +13,8 @@
 	// /new/* is the in-progress next-gen frontend; it ships its own footer treatment.
 	// Every other route (legacy /, /admin/orders, /privacy, /privacy/delete) needs the
 	// Privacy Policy link in the global Footer for Law 1581 compliance.
-	const showFooter = $derived(!($page.route.id?.startsWith('/new') ?? false));
+	const isNewRoute = $derived($page.route.id?.startsWith('/new') ?? false);
+	const showFooter = $derived(!isNewRoute);
 
 	onMount(async () => {
 		await waitForLocale();
@@ -36,14 +37,16 @@
 	</div>
 {:else}
 	<div class="min-h-screen flex flex-col">
-		<div class="fixed top-4 right-4 z-50">
-			<button
-				onclick={toggleLocale}
-				class="btn bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md"
-			>
-				{$locale === 'es' ? 'EN' : 'ES'}
-			</button>
-		</div>
+		{#if !isNewRoute}
+			<div class="fixed top-4 right-4 z-50">
+				<button
+					onclick={toggleLocale}
+					class="btn bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md"
+				>
+					{$locale === 'es' ? 'EN' : 'ES'}
+				</button>
+			</div>
+		{/if}
 		<div class="flex-1">
 			{@render children()}
 		</div>
