@@ -42,7 +42,7 @@
 	}
 </script>
 
-<main class="min-h-screen bg-gray-50 py-8 px-4">
+<main class="min-h-dvh bg-gray-50 py-8 px-4">
 	<div class="max-w-xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-8">
 		{#if success}
 			<!-- Success State -->

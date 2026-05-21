@@ -31,11 +31,11 @@
 </svelte:head>
 
 {#if !ready || $isLoading}
-	<div class="flex items-center justify-center h-screen">
+	<div class="flex items-center justify-center h-dvh">
 		<p class="text-xl text-surface-500">Loading...</p>
 	</div>
 {:else}
-	<div class="min-h-screen flex flex-col">
+	<div class="min-h-dvh flex flex-col">
 		<div class="fixed top-4 right-4 z-50">
 			<button
 				onclick={toggleLocale}

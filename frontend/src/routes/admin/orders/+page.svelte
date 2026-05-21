@@ -174,7 +174,7 @@
 	}
 </script>
 
-<main class="min-h-screen bg-gray-50 p-4 md:p-8">
+<main class="min-h-dvh bg-gray-50 p-4 md:p-8">
 	<div class="max-w-7xl mx-auto">
 		<!-- Header -->
 		<header class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 mb-6">
