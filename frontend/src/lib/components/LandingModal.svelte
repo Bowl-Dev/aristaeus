@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
+	import { base } from '$app/paths';
 	import BottomSheet from './organisms/BottomSheet.svelte';
 	import OptionCard from './molecules/OptionCard.svelte';
 	import Button from './atoms/Button.svelte';
@@ -19,14 +20,14 @@
 	{#snippet children(dismiss: () => void)}
 		<div class="grid grid-cols-2 gap-[0.875rem]">
 			<OptionCard
-				iconSrc="/BuildBowl.png"
+				iconSrc={`${base}/BuildBowl.png`}
 				iconAlt={$_('landing.modal.fromScratch')}
 				label={$_('landing.modal.fromScratch')}
 				pixelated
 				onclick={onFromScratch}
 			/>
 			<OptionCard
-				iconSrc="/Menu.png"
+				iconSrc={`${base}/Menu.png`}
 				iconAlt={$_('landing.modal.menuIdeas')}
 				label={$_('landing.modal.menuIdeas')}
 				pixelated
