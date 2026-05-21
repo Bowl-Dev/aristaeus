@@ -51,7 +51,7 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50 font-sans">
+<div class="flex-1 bg-gray-50 font-sans">
 	<div class="max-w-3xl mx-auto px-6 py-8">
 		<!-- Header -->
 		<div class="mb-6">
