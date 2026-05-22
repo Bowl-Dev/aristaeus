@@ -108,9 +108,9 @@
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const capacityUsed = $derived(selectedBowlSize ? (totals.weight / selectedBowlSize) * 100 : 0);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const isOverCapacity = $derived(selectedBowlSize ? totals.weight > selectedBowlSize : false);
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const cartCount = $derived(bowls.length);
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
