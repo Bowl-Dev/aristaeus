@@ -16,9 +16,7 @@
 	let { ingredient, quantity, remaining, onAdd, onIncrease, onDecrease, onRemove }: Props =
 		$props();
 
-	const displayName = $derived(
-		$locale?.startsWith('es') ? ingredient.nameEs : ingredient.nameEn
-	);
+	const displayName = $derived($locale?.startsWith('es') ? ingredient.nameEs : ingredient.nameEn);
 	const imageSrc = $derived(`/ingredients/${toSlug(ingredient.name)}.jpg`);
 
 	const isSelected = $derived(quantity > 0);
