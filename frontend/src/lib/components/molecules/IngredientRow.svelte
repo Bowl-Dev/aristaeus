@@ -11,7 +11,8 @@
 		onRemove: () => void;
 	}
 
-	let { ingredient, quantity, remaining, onAdd, onIncrease, onDecrease, onRemove }: Props = $props();
+	let { ingredient, quantity, remaining, onAdd, onIncrease, onDecrease, onRemove }: Props =
+		$props();
 
 	const isSelected = $derived(quantity > 0);
 	const step = $derived(
@@ -65,10 +66,7 @@
 	let imgError = $state(false);
 </script>
 
-<div
-	class="flex items-center gap-3 rounded-2xl bg-pure-white p-3"
-	role="listitem"
->
+<div class="flex items-center gap-3 rounded-2xl bg-pure-white p-3" role="listitem">
 	<!-- Ingredient image with SVG fallback -->
 	<div
 		class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-accent-gray text-text-muted"
@@ -121,10 +119,20 @@
 					aria-label={`Disminuir ${ingredient.nameEs}`}
 				>
 					<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-						<line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+						<line
+							x1="2"
+							y1="6"
+							x2="10"
+							y2="6"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
 					</svg>
 				</button>
-				<span class="min-w-[3rem] text-center text-sm font-bold text-text-black">{quantityLabel}</span>
+				<span class="min-w-[3rem] text-center text-sm font-bold text-text-black"
+					>{quantityLabel}</span
+				>
 				<button
 					class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-colors duration-150 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
 					onclick={onIncrease}
@@ -132,8 +140,24 @@
 					aria-label={`Aumentar ${ingredient.nameEs}`}
 				>
 					<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-						<line x1="6" y1="2" x2="6" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-						<line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+						<line
+							x1="6"
+							y1="2"
+							x2="6"
+							y2="10"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
+						<line
+							x1="2"
+							y1="6"
+							x2="10"
+							y2="6"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -149,8 +173,24 @@
 			aria-label={`Agregar ${ingredient.nameEs}`}
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-				<line x1="8" y1="3" x2="8" y2="13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
-				<line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+				<line
+					x1="8"
+					y1="3"
+					x2="8"
+					y2="13"
+					stroke="currentColor"
+					stroke-width="2.2"
+					stroke-linecap="round"
+				/>
+				<line
+					x1="3"
+					y1="8"
+					x2="13"
+					y2="8"
+					stroke="currentColor"
+					stroke-width="2.2"
+					stroke-linecap="round"
+				/>
 			</svg>
 		</button>
 	{/if}

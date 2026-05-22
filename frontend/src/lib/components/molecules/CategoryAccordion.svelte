@@ -13,7 +13,16 @@
 		onRemove: (id: number) => void;
 	}
 
-	let { label, ingredients, selectedItems, remaining, onAdd, onIncrease, onDecrease, onRemove }: Props = $props();
+	let {
+		label,
+		ingredients,
+		selectedItems,
+		remaining,
+		onAdd,
+		onIncrease,
+		onDecrease,
+		onRemove
+	}: Props = $props();
 
 	let isOpen = $state(false);
 

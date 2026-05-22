@@ -53,11 +53,7 @@
 	// Bowl size badge label
 	// ──────────────────────────────────────────────
 	const sizeBadgeLabel = $derived(
-		bowlSize === 250
-			? $_('size.small')
-			: bowlSize === 450
-				? $_('size.medium')
-				: $_('size.large')
+		bowlSize === 250 ? $_('size.small') : bowlSize === 450 ? $_('size.medium') : $_('size.large')
 	);
 
 	// ──────────────────────────────────────────────
@@ -260,12 +256,7 @@
 			<!-- Expanded nutritional details -->
 			{#if showDetails}
 				<div class="grid grid-cols-4 gap-2 px-5 pb-3">
-					{#each [
-						{ label: $_('menu.card.calories'), value: `${totals.calories}` },
-						{ label: $_('menu.card.protein'), value: `${totals.protein}g` },
-						{ label: $_('menu.card.carbs'), value: `${totals.carbs}g` },
-						{ label: $_('menu.card.fat'), value: `${totals.fat}g` }
-					] as col (col.label)}
+					{#each [{ label: $_('menu.card.calories'), value: `${totals.calories}` }, { label: $_('menu.card.protein'), value: `${totals.protein}g` }, { label: $_('menu.card.carbs'), value: `${totals.carbs}g` }, { label: $_('menu.card.fat'), value: `${totals.fat}g` }] as col (col.label)}
 						<div class="flex flex-col items-center rounded-xl bg-pure-white/10 py-2">
 							<span class="text-[9px] font-medium uppercase tracking-[0.6px] text-pure-white/60">
 								{col.label}
