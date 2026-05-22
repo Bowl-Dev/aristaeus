@@ -210,6 +210,25 @@
 			"error": "No se pudo realizar el pedido. Intenta de nuevo."
 		}
 	},
+	"delivery": {
+		"title": "Información de Entrega",
+		"subtitle": "Completa tus datos para recibir tu pedido",
+		"form": {
+			"name": { "label": "Nombre Completo", "placeholder": "Ingresa tu nombre" },
+			"phone": { "label": "Teléfono", "placeholder": "+57 300 123 4567" },
+			"address": { "label": "Dirección de Entrega", "placeholder": "Calle, número, apto" },
+			"neighborhood": { "label": "Barrio", "placeholder": "Laureles" },
+			"city": { "label": "Ciudad", "placeholder": "Medellín" },
+			"instructions": {
+				"label": "Instrucciones de Entrega (Opcional)",
+				"placeholder": "Referencias adicionales, indicaciones especiales..."
+			}
+		},
+		"summary": { "title": "Resumen del Pedido" },
+		"confirm": "Confirmar Pedido — {price}",
+		"confirming": "Enviando...",
+		"error": "No se pudo realizar el pedido. Intenta de nuevo."
+	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",
 		"generatingLabel": "Generando..."

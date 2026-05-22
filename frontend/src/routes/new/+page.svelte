@@ -14,10 +14,13 @@
 	import Size from '$lib/components/Size.svelte';
 	import Builder from '$lib/components/Builder.svelte';
 	import Cart from '$lib/components/Cart.svelte';
+	import Delivery from '$lib/components/Delivery.svelte';
+	import ThnksModal from '$lib/components/ThnksModal.svelte';
 
 	// View state
-	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart'>('landing');
+	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'delivery'>('landing');
 	let showLandingModal = $state(false);
+	let showThnks = $state(false);
 
 	// State
 	let ingredients = $state<Ingredient[]>([]);
@@ -203,6 +206,10 @@
 	}
 </script>
 
+{#if showThnks}
+	<ThnksModal onDismiss={() => (showThnks = false)} />
+{/if}
+
 {#if showLandingModal}
 	<LandingModal
 		onFromScratch={() => {
@@ -290,9 +297,7 @@
 		{bowls}
 		{cartCount}
 		onBack={() => (view = 'builder')}
-		onProceedToDelivery={() => {
-			/* delivery screen — coming in next branch */
-		}}
+		onProceedToDelivery={() => (view = 'delivery')}
 		onCreateAnother={() => (showLandingModal = true)}
 		onRemoveBowl={(index) => {
 			bowls = bowls.filter((_, i) => i !== index);
@@ -309,6 +314,18 @@
 			} else {
 				bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity - 1 } : b));
 			}
+		}}
+	/>
+{:else if view === 'delivery'}
+	<Delivery
+		{ingredients}
+		{bowls}
+		{cartCount}
+		onBack={() => (view = 'cart')}
+		onOrderSuccess={() => {
+			showThnks = true;
+			bowls = [];
+			view = 'landing';
 		}}
 	/>
 {/if}
