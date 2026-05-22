@@ -7,16 +7,16 @@
 		DRESSING_CONTAINER_GRAMS
 	} from '$lib/types';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-	import { getIngredients, getMenus, createOrder, ApiError } from '$lib/api/client';
+	import { getIngredients, getMenus, ApiError } from '$lib/api/client';
 	import Landing from '$lib/components/Landing.svelte';
 	import LandingModal from '$lib/components/LandingModal.svelte';
 	import Menu from '$lib/components/Menu.svelte';
 	import Size from '$lib/components/Size.svelte';
 	import Builder from '$lib/components/Builder.svelte';
-	import ThnksModal from '$lib/components/ThnksModal.svelte';
+	import Cart from '$lib/components/Cart.svelte';
 
 	// View state
-	let view = $state<'landing' | 'menu' | 'size' | 'builder'>('landing');
+	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart'>('landing');
 	let showLandingModal = $state(false);
 
 	// State
@@ -25,21 +25,6 @@
 	let loading = $state(true);
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	let error = $state<string | null>(null);
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	let submitting = $state(false);
-	let orderSuccess = $state<{ orderId: number } | null>(null);
-
-	// Form state - Customer info
-	let customerName = $state('');
-	let customerPhone = $state('');
-	let customerEmail = $state('');
-
-	// Form state - Colombian address
-	let streetAddress = $state('');
-	let neighborhood = $state('');
-	let city = $state('Bogotá');
-	let department = $state('Bogotá D.C.');
-	let postalCode = $state('');
 
 	// Form state - Bowl
 	let selectedBowlSize = $state<BowlSize | null>(null);
@@ -47,25 +32,9 @@
 	let expandedCategories = new SvelteSet<string>(['base']);
 	let isCutlery = $state(false);
 
-	// Returning customer state
-	let updateUserData = $state(false);
-
-	// Validation helpers
-	const isValidColombianPhone = $derived(
-		/^(\+57)?[0-9]{10}$/.test(customerPhone.replace(/\s/g, ''))
-	);
-
-	const isValidEmail = $derived(
-		customerEmail.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)
-	);
-
-	const isValidPostalCode = $derived(postalCode.length === 0 || /^[0-9]{6}$/.test(postalCode));
-
-	const isAddressComplete = $derived(
-		streetAddress.trim().length >= 5 &&
-			neighborhood.trim().length >= 2 &&
-			city.trim().length >= 2 &&
-			department.trim().length >= 2
+	// Cart: saved bowl snapshots with quantity multiplier
+	let bowls = $state<Array<{ bowlSize: BowlSize; items: Map<number, number>; quantity: number }>>(
+		[]
 	);
 
 	// Load ingredients and menus
@@ -117,7 +86,6 @@
 			weight = 0,
 			price = 0;
 
-		// Bowl base price
 		if (selectedBowlSize === 250) price = BOWL_SIZE_PRICES[0];
 		else if (selectedBowlSize === 450) price = BOWL_SIZE_PRICES[1];
 		else if (selectedBowlSize === 600) price = BOWL_SIZE_PRICES[2];
@@ -142,21 +110,9 @@
 	const capacityUsed = $derived(selectedBowlSize ? (totals.weight / selectedBowlSize) * 100 : 0);
 	const isOverCapacity = $derived(selectedBowlSize ? totals.weight > selectedBowlSize : false);
 
-	// Header cart count — single in-flight bowl, so a non-empty selection counts as 1.
-	const cartCount = $derived(selectedItems.size > 0 ? 1 : 0);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const cartCount = $derived(bowls.length);
 
-	const canSubmit = $derived(
-		customerName.trim().length > 0 &&
-			isValidColombianPhone &&
-			isAddressComplete &&
-			isValidEmail &&
-			isValidPostalCode &&
-			selectedBowlSize !== null &&
-			selectedItems.size > 0 &&
-			!isOverCapacity
-	);
-
-	// Actions — used by the builder view (view = 'builder'), not yet wired to template
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function toggleCategory(cat: string) {
 		if (expandedCategories.has(cat)) {
@@ -245,81 +201,40 @@
 			}
 		});
 	}
+</script>
 
-	async function submitOrder() {
-		if (!canSubmit || !selectedBowlSize) return;
-
-		submitting = true;
-		try {
-			const items = Array.from(selectedItems.entries()).map(([ingredientId, quantityGrams]) => ({
-				ingredientId,
-				quantityGrams
-			}));
-
-			const response = await createOrder({
-				bowlSize: selectedBowlSize,
-				customer: {
-					name: customerName,
-					phone: customerPhone,
-					email: customerEmail || undefined,
-					address: {
-						streetAddress,
-						neighborhood,
-						city,
-						department,
-						postalCode: postalCode || undefined
-					}
-				},
-				items,
-				includeCutlery: isCutlery,
-				updateUserData
-			});
-
-			orderSuccess = { orderId: response.orderId };
-
-			// Reset form
-			customerName = '';
-			customerPhone = '';
-			customerEmail = '';
-			streetAddress = '';
-			neighborhood = '';
-			city = '';
-			department = '';
-			postalCode = '';
+{#if showLandingModal}
+	<LandingModal
+		onFromScratch={() => {
+			showLandingModal = false;
 			selectedBowlSize = null;
 			selectedItems.clear();
-			isCutlery = false;
-			updateUserData = false;
-		} catch (e) {
-			alert(e instanceof ApiError ? e.message : 'Failed to submit order');
-		} finally {
-			submitting = false;
-		}
-	}
-</script>
+			view = 'size';
+		}}
+		onMenu={() => {
+			showLandingModal = false;
+			selectedBowlSize = null;
+			selectedItems.clear();
+			view = 'menu';
+		}}
+		onCancel={() => (showLandingModal = false)}
+	/>
+{/if}
 
 {#if view === 'landing'}
 	<Landing onOrderNow={() => (showLandingModal = true)} />
-
-	{#if showLandingModal}
-		<LandingModal
-			onFromScratch={() => {
-				showLandingModal = false;
-				view = 'size';
-			}}
-			onMenu={() => {
-				showLandingModal = false;
-				view = 'menu';
-			}}
-			onCancel={() => (showLandingModal = false)}
-		/>
-	{/if}
 {:else if view === 'menu'}
 	<Menu
 		{menus}
 		{loading}
 		{cartCount}
-		onBack={handleBack}
+		onBack={() => {
+			if (bowls.length > 0) {
+				view = 'cart';
+			} else {
+				handleBack();
+			}
+		}}
 		onCustomize={(menu) => {
 			handleMenuSelect(
 				menu,
@@ -333,7 +248,13 @@
 {:else if view === 'size'}
 	<Size
 		{cartCount}
-		onBack={() => (view = 'landing')}
+		onBack={() => {
+			if (bowls.length > 0) {
+				view = 'cart';
+			} else {
+				view = 'landing';
+			}
+		}}
 		onSelect={(size) => {
 			selectedBowlSize = size;
 			view = 'builder';
@@ -346,18 +267,48 @@
 		bowlSize={selectedBowlSize ?? 450}
 		{selectedItems}
 		{cartCount}
-		onBack={handleBack}
+		onBack={() => {
+			if (bowls.length > 0) {
+				view = 'cart';
+			} else {
+				handleBack();
+			}
+		}}
 		onAddToCart={() => {
-			submitOrder();
+			bowls = [
+				...bowls,
+				{ bowlSize: selectedBowlSize ?? 450, items: new Map(selectedItems), quantity: 1 }
+			];
+			selectedItems.clear();
+			selectedBowlSize = null;
+			view = 'cart';
 		}}
 	/>
-{/if}
-
-{#if orderSuccess}
-	<ThnksModal
-		onDismiss={() => {
-			orderSuccess = null;
-			view = 'landing';
+{:else if view === 'cart'}
+	<Cart
+		{ingredients}
+		{bowls}
+		{cartCount}
+		onBack={() => (view = 'builder')}
+		onProceedToDelivery={() => {
+			/* delivery screen — coming in next branch */
+		}}
+		onCreateAnother={() => (showLandingModal = true)}
+		onRemoveBowl={(index) => {
+			bowls = bowls.filter((_, i) => i !== index);
+			if (bowls.length === 0) view = 'landing';
+		}}
+		onIncreaseBowl={(index) => {
+			bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity + 1 } : b));
+		}}
+		onDecreaseBowl={(index) => {
+			const current = bowls[index].quantity;
+			if (current <= 1) {
+				bowls = bowls.filter((_, i) => i !== index);
+				if (bowls.length === 0) view = 'landing';
+			} else {
+				bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity - 1 } : b));
+			}
 		}}
 	/>
 {/if}

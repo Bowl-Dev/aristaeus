@@ -183,6 +183,33 @@
 		"overCapacity": "Exceeds capacity by {amount}g",
 		"remaining": "{amount}g remaining"
 	},
+	"cart": {
+		"title": "Your cart",
+		"subtitle": "{count} bowl in your cart",
+		"bowl": {
+			"title": "Bowl 1 - {size}",
+			"remove": "Remove bowl",
+			"nutrition": "Nutritional summary",
+			"decrease": "Decrease quantity",
+			"increase": "Increase quantity"
+		},
+		"total": {
+			"label": "Total",
+			"weight": "{weight}g total"
+		},
+		"actions": {
+			"createAnother": "Create another bowl",
+			"proceedToDelivery": "Continue to delivery — {price}"
+		},
+		"delivery": {
+			"title": "Delivery",
+			"subtitle": "Where should we bring your bowl?",
+			"checking": "Checking...",
+			"submit": "Place order",
+			"submitting": "Placing order...",
+			"error": "Failed to place order. Please try again."
+		}
+	},
 	"admin": {
 		"printLabel": "Print Label",
 		"generatingLabel": "Generating..."

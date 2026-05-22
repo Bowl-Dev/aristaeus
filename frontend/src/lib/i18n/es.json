@@ -183,6 +183,33 @@
 		"overCapacity": "Excede la capacidad por {amount}g",
 		"remaining": "{amount}g disponibles"
 	},
+	"cart": {
+		"title": "Tu carrito",
+		"subtitle": "{count} bowl en tu carrito",
+		"bowl": {
+			"title": "Bowl 1 - {size}",
+			"remove": "Eliminar bowl",
+			"nutrition": "Resumen nutricional",
+			"decrease": "Disminuir cantidad",
+			"increase": "Aumentar cantidad"
+		},
+		"total": {
+			"label": "Total",
+			"weight": "{weight}g totales"
+		},
+		"actions": {
+			"createAnother": "Crear otro bowl",
+			"proceedToDelivery": "Continuar a entrega — {price}"
+		},
+		"delivery": {
+			"title": "Entrega",
+			"subtitle": "¿Dónde te llevamos tu bowl?",
+			"checking": "Verificando...",
+			"submit": "Hacer pedido",
+			"submitting": "Enviando pedido...",
+			"error": "No se pudo realizar el pedido. Intenta de nuevo."
+		}
+	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",
 		"generatingLabel": "Generando..."
