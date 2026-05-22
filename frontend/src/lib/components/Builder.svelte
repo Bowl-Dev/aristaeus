@@ -28,14 +28,6 @@
 	// ──────────────────────────────────────────────
 	const categoryOrder = ['base', 'protein', 'vegetable', 'topping', 'dressing'];
 
-	const categoryLabels: Record<string, { es: string; en: string }> = {
-		base: { es: 'Base', en: 'Base' },
-		protein: { es: 'Proteína', en: 'Protein' },
-		vegetable: { es: 'Vegetales', en: 'Vegetables' },
-		topping: { es: 'Toppings', en: 'Toppings' },
-		dressing: { es: 'Aderezo', en: 'Dressing' }
-	};
-
 	const ingredientsByCategory = $derived.by(() => {
 		const grouped: Record<string, Ingredient[]> = {};
 		ingredients.forEach((ing) => {
@@ -199,12 +191,13 @@
 				{$_('common.loading')}
 			</div>
 		{:else}
-			{#each sortedCategories as cat (cat)}
+			{#each sortedCategories as cat, i (cat)}
 				<CategoryAccordion
-					label={categoryLabels[cat]?.es ?? cat}
+					label={$_(`category.${cat}`)}
 					ingredients={ingredientsByCategory[cat] ?? []}
 					{selectedItems}
 					{remaining}
+					defaultOpen={i === 0}
 					onAdd={handleAdd}
 					onIncrease={handleIncrease}
 					onDecrease={handleDecrease}
@@ -215,7 +208,7 @@
 	</div>
 
 	<!-- Sticky bottom bar -->
-	{#if hasItems || !loading}
+	{#if hasItems}
 		<div
 			class="fixed bottom-0 left-0 right-0 z-20 flex flex-col rounded-t-[24px] bg-text-black shadow-[0_-4px_32px_rgba(0,0,0,0.18)]"
 		>

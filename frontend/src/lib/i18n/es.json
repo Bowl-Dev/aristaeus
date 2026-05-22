@@ -181,7 +181,19 @@
 		"price": "Precio: {price}",
 		"addToCart": "Agregar al carrito — {price}",
 		"overCapacity": "Excede la capacidad por {amount}g",
-		"remaining": "{amount}g disponibles"
+		"remaining": "{amount}g disponibles",
+		"ingredient": {
+			"add": "Agregar {name}",
+			"increase": "Aumentar {name}",
+			"decrease": "Disminuir {name}"
+		}
+	},
+	"category": {
+		"base": "Base",
+		"protein": "Proteína",
+		"vegetable": "Vegetales",
+		"topping": "Toppings",
+		"dressing": "Aderezo"
 	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",

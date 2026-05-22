@@ -181,7 +181,19 @@
 		"price": "Price: {price}",
 		"addToCart": "Add to cart — {price}",
 		"overCapacity": "Exceeds capacity by {amount}g",
-		"remaining": "{amount}g remaining"
+		"remaining": "{amount}g remaining",
+		"ingredient": {
+			"add": "Add {name}",
+			"increase": "Increase {name}",
+			"decrease": "Decrease {name}"
+		}
+	},
+	"category": {
+		"base": "Base",
+		"protein": "Protein",
+		"vegetable": "Vegetables",
+		"topping": "Toppings",
+		"dressing": "Dressing"
 	},
 	"admin": {
 		"printLabel": "Print Label",

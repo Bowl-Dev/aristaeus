@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { Ingredient } from '$lib/types';
 	import IngredientRow from './IngredientRow.svelte';
 
 	interface Props {
 		label: string;
 		ingredients: Ingredient[];
-		selectedItems: Map<number, number>;
+		selectedItems: ReadonlyMap<number, number>;
 		remaining: number;
+		defaultOpen?: boolean;
 		onAdd: (id: number) => void;
 		onIncrease: (id: number) => void;
 		onDecrease: (id: number) => void;
@@ -18,19 +20,14 @@
 		ingredients,
 		selectedItems,
 		remaining,
+		defaultOpen = false,
 		onAdd,
 		onIncrease,
 		onDecrease,
 		onRemove
 	}: Props = $props();
 
-	let isOpen = $state(false);
-
-	// Auto-open when something in this category gets selected
-	$effect(() => {
-		const hasSelection = ingredients.some((i) => (selectedItems.get(i.id) ?? 0) > 0);
-		if (hasSelection && !isOpen) isOpen = true;
-	});
+	let isOpen = $state(untrack(() => defaultOpen));
 
 	function toggle() {
 		isOpen = !isOpen;

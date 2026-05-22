@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Ingredient } from '$lib/types';
+	import { _, locale } from 'svelte-i18n';
+	import { toSlug } from '$lib/utils/slug';
 
 	interface Props {
 		ingredient: Ingredient;
@@ -13,6 +15,11 @@
 
 	let { ingredient, quantity, remaining, onAdd, onIncrease, onDecrease, onRemove }: Props =
 		$props();
+
+	const displayName = $derived(
+		$locale?.startsWith('es') ? ingredient.nameEs : ingredient.nameEn
+	);
+	const imageSrc = $derived(`/ingredients/${toSlug(ingredient.name)}.jpg`);
 
 	const isSelected = $derived(quantity > 0);
 	const step = $derived(
@@ -74,8 +81,8 @@
 	>
 		{#if !imgError}
 			<img
-				src="/Ingridients/{ingredient.name}.png"
-				alt={ingredient.nameEs}
+				src={imageSrc}
+				alt={displayName}
 				class="h-full w-full object-cover"
 				onerror={() => (imgError = true)}
 			/>
@@ -99,7 +106,7 @@
 
 	<!-- Name + nutritional chips -->
 	<div class="flex min-w-0 flex-1 flex-col gap-1">
-		<span class="truncate text-sm font-semibold text-text-black">{ingredient.nameEs}</span>
+		<span class="truncate text-sm font-semibold text-text-black">{displayName}</span>
 		<div class="flex flex-wrap gap-1">
 			{#each chips as chip (chip)}
 				<span class="text-xs text-text-muted">{chip}</span>
@@ -116,7 +123,7 @@
 					onpointerup={cancelLongPress}
 					onpointerleave={cancelLongPress}
 					onpointercancel={cancelLongPress}
-					aria-label={`Disminuir ${ingredient.nameEs}`}
+					aria-label={$_('builder.ingredient.decrease', { values: { name: displayName } })}
 				>
 					<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
 						<line
@@ -137,7 +144,7 @@
 					class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-colors duration-150 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
 					onclick={onIncrease}
 					disabled={increaseDisabled}
-					aria-label={`Aumentar ${ingredient.nameEs}`}
+					aria-label={$_('builder.ingredient.increase', { values: { name: displayName } })}
 				>
 					<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
 						<line
@@ -170,7 +177,7 @@
 			class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-colors duration-150 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
 			onclick={onAdd}
 			disabled={addDisabled}
-			aria-label={`Agregar ${ingredient.nameEs}`}
+			aria-label={$_('builder.ingredient.add', { values: { name: displayName } })}
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 				<line
