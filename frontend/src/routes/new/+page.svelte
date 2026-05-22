@@ -12,6 +12,7 @@
 	import LandingModal from '$lib/components/LandingModal.svelte';
 	import Menu from '$lib/components/Menu.svelte';
 	import Size from '$lib/components/Size.svelte';
+	import Builder from '$lib/components/Builder.svelte';
 	import ThnksModal from '$lib/components/ThnksModal.svelte';
 
 	// View state
@@ -245,7 +246,6 @@
 		});
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	async function submitOrder() {
 		if (!canSubmit || !selectedBowlSize) return;
 
@@ -340,12 +340,17 @@
 		}}
 	/>
 {:else if view === 'builder'}
-	<!-- Builder view coming soon -->
-	<div class="builder-placeholder">
-		<p>Builder — bowl size: {selectedBowlSize}g</p>
-		<button onclick={handleBack}>Volver</button>
-		<button onclick={() => (orderSuccess = { orderId: 0 })}>Simular pedido exitoso</button>
-	</div>
+	<Builder
+		{ingredients}
+		{loading}
+		bowlSize={selectedBowlSize ?? 450}
+		{selectedItems}
+		{cartCount}
+		onBack={handleBack}
+		onAddToCart={() => {
+			submitOrder();
+		}}
+	/>
 {/if}
 
 {#if orderSuccess}
@@ -356,26 +361,3 @@
 		}}
 	/>
 {/if}
-
-<style>
-	.builder-placeholder {
-		min-height: 100svh;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-		background: #f7f7f7;
-		color: #333;
-	}
-
-	.builder-placeholder button {
-		padding: 0.75rem 1.5rem;
-		background: #00483c;
-		color: white;
-		border: none;
-		border-radius: 9999px;
-		cursor: pointer;
-		font-weight: 600;
-	}
-</style>

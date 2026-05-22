@@ -173,6 +173,16 @@
 			"ingredients": "Loading ingredients..."
 		}
 	},
+	"builder": {
+		"subtitle": "Select ingredients and adjust quantities",
+		"nutritionNote": "Nutritional values shown are per 100g of ingredient",
+		"viewDetails": "View details",
+		"weight": "Weight: {used}g / {total}g",
+		"price": "Price: {price}",
+		"addToCart": "Add to cart — {price}",
+		"overCapacity": "Exceeds capacity by {amount}g",
+		"remaining": "{amount}g remaining"
+	},
 	"admin": {
 		"printLabel": "Print Label",
 		"generatingLabel": "Generating..."
