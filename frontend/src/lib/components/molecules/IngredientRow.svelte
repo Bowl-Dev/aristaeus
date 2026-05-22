@@ -71,10 +71,13 @@
 	let imgError = $state(false);
 </script>
 
-<div class="flex items-center gap-3 rounded-2xl bg-pure-white p-3" role="listitem">
-	<!-- Ingredient image with SVG fallback -->
+<div
+	class="flex items-stretch overflow-hidden rounded-2xl bg-white-green shadow-sm"
+	role="listitem"
+>
+	<!-- Left: 112x112 image square -->
 	<div
-		class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-accent-gray text-text-muted"
+		class="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden bg-accent-gray text-text-muted"
 		aria-hidden="true"
 	>
 		{#if !imgError}
@@ -86,8 +89,8 @@
 			/>
 		{:else}
 			<svg
-				width="28"
-				height="28"
+				width="44"
+				height="44"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
@@ -102,20 +105,28 @@
 		{/if}
 	</div>
 
-	<!-- Name + nutritional chips -->
-	<div class="flex min-w-0 flex-1 flex-col gap-1">
-		<span class="truncate text-sm font-semibold text-text-black">{displayName}</span>
-		<div class="flex flex-wrap gap-1">
-			{#each chips as chip (chip)}
-				<span class="text-xs text-text-muted">{chip}</span>
-			{/each}
+	<!-- Right: name + chips + action row -->
+	<div
+		class="flex min-w-0 flex-1 flex-col justify-between gap-3 p-4 transition-colors duration-200"
+		class:bg-pure-white={!isSelected}
+		class:bg-warm-beige={isSelected}
+	>
+		<div class="flex min-w-0 flex-col gap-1.5">
+			<span class="truncate text-sm font-bold tracking-[0.28px] text-text-black">{displayName}</span
+			>
+			<div class="flex gap-3">
+				{#each chips as chip (chip)}
+					<span class="text-xs text-text-gray">{chip}</span>
+				{/each}
+			</div>
 		</div>
 
 		{#if isSelected}
 			<!-- Stepper row -->
-			<div class="mt-1 flex items-center gap-3">
+			<div class="flex items-center gap-3">
 				<button
-					class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-strokes bg-pure-white text-text-black transition-colors duration-150 hover:bg-accent-gray active:scale-95 [-webkit-tap-highlight-color:transparent]"
+					type="button"
+					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-pure-white text-text-black transition-transform duration-150 active:scale-95 [-webkit-tap-highlight-color:transparent]"
 					onclick={handleDecreaseClick}
 					onpointerdown={startLongPress}
 					onpointerup={cancelLongPress}
@@ -123,7 +134,7 @@
 					onpointercancel={cancelLongPress}
 					aria-label={$_('builder.ingredient.decrease', { values: { name: displayName } })}
 				>
-					<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+					<svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
 						<line
 							x1="2"
 							y1="6"
@@ -135,16 +146,15 @@
 						/>
 					</svg>
 				</button>
-				<span class="min-w-[3rem] text-center text-sm font-bold text-text-black"
-					>{quantityLabel}</span
-				>
+				<span class="flex-1 text-center text-base font-bold text-text-black">{quantityLabel}</span>
 				<button
-					class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-colors duration-150 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
+					type="button"
+					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
 					onclick={onIncrease}
 					disabled={increaseDisabled}
 					aria-label={$_('builder.ingredient.increase', { values: { name: displayName } })}
 				>
-					<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+					<svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
 						<line
 							x1="6"
 							y1="2"
@@ -166,37 +176,37 @@
 					</svg>
 				</button>
 			</div>
+		{:else}
+			<div class="flex justify-end">
+				<button
+					type="button"
+					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
+					onclick={onAdd}
+					disabled={addDisabled}
+					aria-label={$_('builder.ingredient.add', { values: { name: displayName } })}
+				>
+					<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<line
+							x1="8"
+							y1="3"
+							x2="8"
+							y2="13"
+							stroke="currentColor"
+							stroke-width="2.2"
+							stroke-linecap="round"
+						/>
+						<line
+							x1="3"
+							y1="8"
+							x2="13"
+							y2="8"
+							stroke="currentColor"
+							stroke-width="2.2"
+							stroke-linecap="round"
+						/>
+					</svg>
+				</button>
+			</div>
 		{/if}
 	</div>
-
-	{#if !isSelected}
-		<!-- Add button -->
-		<button
-			class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-colors duration-150 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
-			onclick={onAdd}
-			disabled={addDisabled}
-			aria-label={$_('builder.ingredient.add', { values: { name: displayName } })}
-		>
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-				<line
-					x1="8"
-					y1="3"
-					x2="8"
-					y2="13"
-					stroke="currentColor"
-					stroke-width="2.2"
-					stroke-linecap="round"
-				/>
-				<line
-					x1="3"
-					y1="8"
-					x2="13"
-					y2="8"
-					stroke="currentColor"
-					stroke-width="2.2"
-					stroke-linecap="round"
-				/>
-			</svg>
-		</button>
-	{/if}
 </div>

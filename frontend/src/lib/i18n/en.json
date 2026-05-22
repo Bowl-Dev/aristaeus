@@ -186,7 +186,11 @@
 			"add": "Add {name}",
 			"increase": "Increase {name}",
 			"decrease": "Decrease {name}"
-		}
+		},
+		"macros": "Macronutrients",
+		"selectedIngredients": "Selected ingredients",
+		"sheet": "Bowl summary",
+		"closeSheet": "Close summary"
 	},
 	"category": {
 		"base": "Base",

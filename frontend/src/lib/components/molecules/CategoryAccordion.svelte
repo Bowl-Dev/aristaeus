@@ -34,17 +34,17 @@
 	}
 </script>
 
-<div class="overflow-hidden rounded-2xl bg-pure-white">
+<div class="overflow-hidden rounded-2xl border border-strokes bg-pure-white">
 	<!-- Header row -->
 	<button
-		class="flex w-full cursor-pointer items-center justify-between border-none bg-pure-white px-5 py-4 text-left [-webkit-tap-highlight-color:transparent]"
+		class="flex w-full cursor-pointer items-center justify-between border-none bg-pure-white px-6 py-5 text-left [-webkit-tap-highlight-color:transparent]"
 		onclick={toggle}
 		aria-expanded={isOpen}
 	>
-		<span class="text-sm font-bold uppercase tracking-[0.9px] text-text-black">{label}</span>
+		<span class="text-lg font-bold leading-7 text-text-black">{label}</span>
 		<svg
-			width="18"
-			height="18"
+			width="20"
+			height="20"
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
@@ -60,7 +60,7 @@
 	</button>
 
 	{#if isOpen}
-		<div class="flex flex-col gap-2 px-3 pb-3" role="list">
+		<div class="flex flex-col gap-3 px-3 pb-8" role="list">
 			{#each ingredients as ingredient (ingredient.id)}
 				<IngredientRow
 					{ingredient}

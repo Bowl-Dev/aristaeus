@@ -186,7 +186,11 @@
 			"add": "Agregar {name}",
 			"increase": "Aumentar {name}",
 			"decrease": "Disminuir {name}"
-		}
+		},
+		"macros": "Macronutrientes",
+		"selectedIngredients": "Ingredientes seleccionados",
+		"sheet": "Resumen del bowl",
+		"closeSheet": "Cerrar resumen"
 	},
 	"category": {
 		"base": "Base",

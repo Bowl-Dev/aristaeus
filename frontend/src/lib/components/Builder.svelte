@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { _ } from 'svelte-i18n';
+	import { _, locale } from 'svelte-i18n';
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { Ingredient, BowlSize } from '$lib/types';
 	import AppHeader from './organisms/AppHeader.svelte';
@@ -95,10 +95,39 @@
 		}).format(totals.price)
 	);
 
+	// Selected ingredients (for the expanded sheet list), in assembly order
+	const selectedList = $derived.by(() => {
+		const list: { id: number; name: string; quantity: number }[] = [];
+		const isEs = $locale?.startsWith('es') ?? true;
+		categoryOrder.forEach((cat) => {
+			(ingredientsByCategory[cat] ?? []).forEach((ing) => {
+				const qty = selectedItems.get(ing.id);
+				if (qty !== undefined && qty > 0) {
+					list.push({ id: ing.id, name: isEs ? ing.nameEs : ing.nameEn, quantity: qty });
+				}
+			});
+		});
+		return list;
+	});
+
 	// ──────────────────────────────────────────────
-	// Bottom sheet: "Ver detalles" toggle
+	// Bottom sheet: "Ver detalles" toggle (acts as a modal)
 	// ──────────────────────────────────────────────
 	let showDetails = $state(false);
+
+	$effect(() => {
+		if (showDetails) {
+			const prev = document.body.style.overflow;
+			document.body.style.overflow = 'hidden';
+			return () => {
+				document.body.style.overflow = prev;
+			};
+		}
+	});
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && showDetails) showDetails = false;
+	}
 
 	// ──────────────────────────────────────────────
 	// Ingredient actions
@@ -143,6 +172,8 @@
 	}
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="flex min-h-svh flex-col bg-white-green">
 	<!-- Sticky header -->
 	<AppHeader {onBack} {cartCount} />
@@ -162,11 +193,11 @@
 	</div>
 
 	<!-- Nutritional info disclaimer -->
-	<div class="mx-5 mb-5 flex items-start gap-2 rounded-2xl bg-light-green/30 px-4 py-3">
+	<div class="mx-5 mb-5 flex items-center gap-3 rounded-[14px] bg-light-green px-3 py-3">
 		<svg
-			class="mt-0.5 shrink-0 text-dark-green"
-			width="16"
-			height="16"
+			class="shrink-0 text-dark-green"
+			width="20"
+			height="20"
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
@@ -179,13 +210,13 @@
 			<line x1="12" y1="8" x2="12" y2="12" />
 			<line x1="12" y1="16" x2="12.01" y2="16" />
 		</svg>
-		<p class="m-0 text-xs leading-relaxed text-dark-green">
+		<p class="m-0 text-sm font-semibold leading-5 text-dark-green">
 			{$_('builder.nutritionNote')}
 		</p>
 	</div>
 
 	<!-- Category accordions -->
-	<div class="flex flex-1 flex-col gap-3 px-5 pb-40">
+	<div class="flex flex-1 flex-col gap-3 px-5 pb-56">
 		{#if loading}
 			<div class="flex items-center justify-center py-12 text-sm text-text-muted">
 				{$_('common.loading')}
@@ -207,26 +238,42 @@
 		{/if}
 	</div>
 
-	<!-- Sticky bottom bar -->
+	<!-- Bottom sheet (collapsed + expanded modal) -->
 	{#if hasItems}
+		<!-- Backdrop when expanded -->
+		{#if showDetails}
+			<div
+				class="fixed inset-0 z-30 bg-black/50"
+				role="presentation"
+				onclick={() => (showDetails = false)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') showDetails = false;
+				}}
+				tabindex="-1"
+			></div>
+		{/if}
+
+		<!-- Sheet container -->
 		<div
-			class="fixed bottom-0 left-0 right-0 z-20 flex flex-col rounded-t-[24px] bg-text-black shadow-[0_-4px_32px_rgba(0,0,0,0.18)]"
+			class="fixed bottom-0 left-0 right-0 flex flex-col gap-3 px-4 pb-6 pt-2"
+			class:z-20={!showDetails}
+			class:z-40={showDetails}
+			role={showDetails ? 'dialog' : undefined}
+			aria-modal={showDetails ? 'true' : undefined}
+			aria-labelledby={showDetails ? 'bowl-summary-title' : undefined}
 		>
-			<!-- "Ver detalles" toggle row -->
-			<button
-				class="flex cursor-pointer items-center justify-between border-none bg-transparent px-5 py-3 text-pure-white [-webkit-tap-highlight-color:transparent]"
-				onclick={() => (showDetails = !showDetails)}
-				aria-expanded={showDetails}
-			>
-				<span class="text-xs font-semibold text-pure-white/70">
-					{$_('builder.viewDetails')}
-				</span>
-				<div class="flex items-center gap-4">
-					<span class="text-sm text-pure-white/70">
-						{$_('builder.weight', { values: { used: totals.weight, total: bowlSize } })}
-					</span>
-					<span class="text-sm font-bold text-pure-white">
-						{$_('builder.price', { values: { price: formattedPrice } })}
+			<!-- Black status card (Ver detalles row + optional expanded content) -->
+			<div class="flex flex-col gap-3 rounded-[16px] bg-sheet-black py-6">
+				<!-- Ver detalles toggle row -->
+				<button
+					type="button"
+					class="flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 [-webkit-tap-highlight-color:transparent]"
+					onclick={() => (showDetails = !showDetails)}
+					aria-expanded={showDetails}
+					aria-controls="bowl-summary-content"
+				>
+					<span class="text-xs text-light-green">
+						{showDetails ? $_('builder.closeSheet') : $_('builder.viewDetails')}
 					</span>
 					<svg
 						width="16"
@@ -237,64 +284,97 @@
 						stroke-width="2.5"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						class="shrink-0 text-pure-white/70 transition-transform duration-200"
+						class="shrink-0 text-light-green transition-transform duration-200"
 						style={showDetails ? 'transform: rotate(180deg)' : ''}
 						aria-hidden="true"
 					>
 						<polyline points="6 9 12 15 18 9" />
 					</svg>
-				</div>
-			</button>
+				</button>
 
-			<!-- Expanded nutritional details -->
-			{#if showDetails}
-				<div class="grid grid-cols-4 gap-2 px-5 pb-3">
-					{#each [{ label: $_('menu.card.calories'), value: `${totals.calories}` }, { label: $_('menu.card.protein'), value: `${totals.protein}g` }, { label: $_('menu.card.carbs'), value: `${totals.carbs}g` }, { label: $_('menu.card.fat'), value: `${totals.fat}g` }] as col (col.label)}
-						<div class="flex flex-col items-center rounded-xl bg-pure-white/10 py-2">
-							<span class="text-[9px] font-medium uppercase tracking-[0.6px] text-pure-white/60">
-								{col.label}
-							</span>
-							<span class="text-sm font-bold text-pure-white">{col.value}</span>
-						</div>
-					{/each}
+				<!-- Weight + price row -->
+				<div class="flex items-center justify-between px-4 text-sm text-pure-white/70">
+					<p class="m-0">
+						{$_('builder.weight', { values: { used: totals.weight, total: bowlSize } })}
+					</p>
+					<p class="m-0 text-right font-bold text-light-green">
+						{$_('builder.price', { values: { price: formattedPrice } })}
+					</p>
 				</div>
 
 				{#if isOverCapacity}
-					<p class="mx-5 mb-3 text-center text-xs font-semibold text-red-400">
+					<p class="m-0 px-4 text-center text-xs font-semibold text-red-400">
 						{$_('builder.overCapacity', { values: { amount: totals.weight - bowlSize } })}
 					</p>
-				{:else}
-					<p class="mx-5 mb-3 text-center text-xs text-pure-white/50">
-						{$_('builder.remaining', { values: { amount: remaining } })}
-					</p>
 				{/if}
+			</div>
+
+			<!-- Expanded sheet body (macros + selected ingredients) -->
+			{#if showDetails}
+				<div
+					id="bowl-summary-content"
+					class="flex flex-col gap-4 rounded-[16px] bg-sheet-black p-4 text-pure-white"
+				>
+					<p
+						id="bowl-summary-title"
+						class="m-0 text-xs font-bold uppercase tracking-[0.6px] text-pure-white"
+					>
+						{$_('builder.macros')}
+					</p>
+					<div class="grid grid-cols-4 gap-3" role="list">
+						{#each [{ label: $_('menu.card.calories'), value: `${totals.calories}` }, { label: $_('menu.card.protein'), value: `${totals.protein}g` }, { label: $_('menu.card.carbs'), value: `${totals.carbs}g` }, { label: $_('menu.card.fat'), value: `${totals.fat}g` }] as col (col.label)}
+							<div class="flex flex-col items-center gap-0.5" role="listitem">
+								<span class="text-[10px] font-medium uppercase tracking-[0.6px] text-pure-white">
+									{col.label}
+								</span>
+								<span class="text-base font-semibold text-pure-white">{col.value}</span>
+							</div>
+						{/each}
+					</div>
+
+					<p class="m-0 mt-2 text-xs font-bold uppercase tracking-[0.6px] text-pure-white">
+						{$_('builder.selectedIngredients')}
+					</p>
+					<div class="flex flex-col gap-2" role="list">
+						{#each selectedList as item (item.id)}
+							<div
+								class="flex items-center justify-between rounded-[14px] bg-sheet-card px-3 py-3 text-xs text-pure-white"
+								role="listitem"
+							>
+								<span>{item.name}</span>
+								<span class="font-bold">{item.quantity}g</span>
+							</div>
+						{/each}
+					</div>
+				</div>
 			{/if}
 
-			<!-- CTA button -->
-			<div class="px-5 pb-8 pt-1">
-				<button
-					class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border-none bg-light-green px-6 py-4 text-sm font-bold uppercase tracking-[0.08em] text-dark-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
-					disabled={!hasItems || isOverCapacity}
-					onclick={onAddToCart}
-				>
+			<!-- CTA pill -->
+			<button
+				type="button"
+				class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-full border-none bg-dark-green px-16 py-4 text-base font-semibold tracking-[0.8px] text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
+				disabled={!hasItems || isOverCapacity}
+				onclick={onAddToCart}
+			>
+				<span class="flex-1 text-center">
 					{$_('builder.addToCart', { values: { price: formattedPrice } })}
-					<svg
-						width="18"
-						height="18"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<circle cx="9" cy="21" r="1" />
-						<circle cx="20" cy="21" r="1" />
-						<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-					</svg>
-				</button>
-			</div>
+				</span>
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<circle cx="9" cy="21" r="1" />
+					<circle cx="20" cy="21" r="1" />
+					<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+				</svg>
+			</button>
 		</div>
 	{/if}
 </div>
