@@ -173,6 +173,32 @@
 			"ingredients": "Cargando ingredientes..."
 		}
 	},
+	"builder": {
+		"subtitle": "Selecciona ingredientes y ajusta las cantidades",
+		"nutritionNote": "Los valores nutricionales mostrados son por cada 100g de ingrediente",
+		"viewDetails": "Ver detalles",
+		"weight": "Peso: {used}g / {total}g",
+		"price": "Precio: {price}",
+		"addToCart": "Agregar al carrito — {price}",
+		"overCapacity": "Excede la capacidad por {amount}g",
+		"remaining": "{amount}g disponibles",
+		"ingredient": {
+			"add": "Agregar {name}",
+			"increase": "Aumentar {name}",
+			"decrease": "Disminuir {name}"
+		},
+		"macros": "Macronutrientes",
+		"selectedIngredients": "Ingredientes seleccionados",
+		"sheet": "Resumen del bowl",
+		"closeSheet": "Cerrar resumen"
+	},
+	"category": {
+		"base": "Base",
+		"protein": "Proteína",
+		"vegetable": "Vegetales",
+		"topping": "Toppings",
+		"dressing": "Aderezo"
+	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",
 		"generatingLabel": "Generando..."

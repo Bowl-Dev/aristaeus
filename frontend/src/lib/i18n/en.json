@@ -173,6 +173,32 @@
 			"ingredients": "Loading ingredients..."
 		}
 	},
+	"builder": {
+		"subtitle": "Select ingredients and adjust quantities",
+		"nutritionNote": "Nutritional values shown are per 100g of ingredient",
+		"viewDetails": "View details",
+		"weight": "Weight: {used}g / {total}g",
+		"price": "Price: {price}",
+		"addToCart": "Add to cart — {price}",
+		"overCapacity": "Exceeds capacity by {amount}g",
+		"remaining": "{amount}g remaining",
+		"ingredient": {
+			"add": "Add {name}",
+			"increase": "Increase {name}",
+			"decrease": "Decrease {name}"
+		},
+		"macros": "Macronutrients",
+		"selectedIngredients": "Selected ingredients",
+		"sheet": "Bowl summary",
+		"closeSheet": "Close summary"
+	},
+	"category": {
+		"base": "Base",
+		"protein": "Protein",
+		"vegetable": "Vegetables",
+		"topping": "Toppings",
+		"dressing": "Dressing"
+	},
 	"admin": {
 		"printLabel": "Print Label",
 		"generatingLabel": "Generating..."
