@@ -7,10 +7,12 @@
 
 	let {
 		onBack,
+		onCart,
 		onSelect,
 		cartCount
 	}: {
 		onBack: () => void;
+		onCart?: () => void;
 		onSelect: (size: BowlSize) => void;
 		cartCount?: number;
 	} = $props();
@@ -38,7 +40,7 @@
 	}
 </script>
 
-<AppScreen {onBack} {cartCount} title={$_('size.title')} subtitle={$_('size.subtitle')}>
+<AppScreen {onBack} {onCart} {cartCount} title={$_('size.title')} subtitle={$_('size.subtitle')}>
 	<div class="flex flex-col gap-4 px-5 pb-8">
 		{#each sizes as option (option.size)}
 			<SizeCard

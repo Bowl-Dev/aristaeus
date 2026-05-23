@@ -12,6 +12,7 @@
 		selectedItems,
 		cartCount,
 		onBack,
+		onCart,
 		onAddToCart
 	}: {
 		ingredients: Ingredient[];
@@ -20,6 +21,7 @@
 		selectedItems: SvelteMap<number, number>;
 		cartCount?: number;
 		onBack: () => void;
+		onCart?: () => void;
 		onAddToCart: () => void;
 	} = $props();
 
@@ -176,7 +178,7 @@
 
 <div class="flex min-h-svh flex-col bg-white-green">
 	<!-- Sticky header -->
-	<AppHeader {onBack} {cartCount} />
+	<AppHeader {onBack} {onCart} {cartCount} />
 
 	<!-- Screen heading + size badge -->
 	<div class="flex items-start justify-between gap-3 px-5 pb-4 pt-6">

@@ -77,7 +77,7 @@
 >
 	<!-- Left: 112x112 image square -->
 	<div
-		class="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden bg-accent-gray text-text-muted"
+		class="flex min-h-28 w-28 shrink-0 items-center justify-center self-stretch overflow-hidden bg-accent-gray text-text-muted"
 		aria-hidden="true"
 	>
 		{#if !imgError}
