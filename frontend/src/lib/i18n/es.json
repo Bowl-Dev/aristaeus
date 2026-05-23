@@ -181,7 +181,11 @@
 		"price": "Precio: {price}",
 		"addToCart": "Agregar al carrito — {price}",
 		"overCapacity": "Excede la capacidad por {amount}g",
-		"remaining": "{amount}g disponibles"
+		"remaining": "{amount}g disponibles",
+		"macronutrients": "Macronutrientes",
+		"selectedIngredients": "Ingredientes seleccionados",
+		"weightLabel": "Peso:",
+		"priceLabel": "Precio:"
 	},
 	"cart": {
 		"title": "Tu carrito",

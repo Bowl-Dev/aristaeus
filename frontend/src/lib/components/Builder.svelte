@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
+	import { slide, fade } from 'svelte/transition';
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { Ingredient, BowlSize } from '$lib/types';
 	import AppHeader from './organisms/AppHeader.svelte';
@@ -214,73 +215,125 @@
 		{/if}
 	</div>
 
+	<!-- Dim overlay when summary is expanded -->
+	{#if showDetails}
+		<div
+			class="fixed inset-0 z-10 bg-black/50"
+			onclick={() => (showDetails = false)}
+			aria-hidden="true"
+		></div>
+	{/if}
+
 	<!-- Sticky bottom bar -->
 	{#if hasItems || !loading}
-		<div
-			class="fixed bottom-0 left-0 right-0 z-20 flex flex-col rounded-t-[24px] bg-text-black shadow-[0_-4px_32px_rgba(0,0,0,0.18)]"
-		>
-			<!-- "Ver detalles" toggle row -->
-			<button
-				class="flex cursor-pointer items-center justify-between border-none bg-transparent px-5 py-3 text-pure-white [-webkit-tap-highlight-color:transparent]"
-				onclick={() => (showDetails = !showDetails)}
-				aria-expanded={showDetails}
+		<div class="fixed bottom-0 left-0 right-0 z-20 flex flex-col">
+			<!-- BOX 1: toggle row + weight/price only -->
+			<div
+				class="mx-4 mt-3 mb-2 flex flex-col rounded-[24px] bg-text-black shadow-[0_-4px_32px_rgba(0,0,0,0.22)]"
 			>
-				<span class="text-xs font-semibold text-pure-white/70">
-					{$_('builder.viewDetails')}
-				</span>
-				<div class="flex items-center gap-4">
-					<span class="text-sm text-pure-white/70">
-						{$_('builder.weight', { values: { used: totals.weight, total: bowlSize } })}
-					</span>
-					<span class="text-sm font-bold text-pure-white">
-						{$_('builder.price', { values: { price: formattedPrice } })}
+				<!-- Toggle row: "Ver detalles" + chevron -->
+				<button
+					class="flex cursor-pointer items-center justify-between border-none bg-transparent px-5 pb-1 pt-3 [-webkit-tap-highlight-color:transparent]"
+					onclick={() => (showDetails = !showDetails)}
+					aria-expanded={showDetails}
+				>
+					<span class="text-xs font-semibold text-light-green">
+						{$_('builder.viewDetails')}
 					</span>
 					<svg
-						width="16"
-						height="16"
+						width="14"
+						height="14"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2.5"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						class="shrink-0 text-pure-white/70 transition-transform duration-200"
+						class="shrink-0 text-light-green transition-transform duration-200"
 						style={showDetails ? 'transform: rotate(180deg)' : ''}
 						aria-hidden="true"
 					>
-						<polyline points="6 9 12 15 18 9" />
+						<polyline points="18 15 12 9 6 15" />
 					</svg>
-				</div>
-			</button>
+				</button>
 
-			<!-- Expanded nutritional details -->
+				<!-- Info row: always visible — Peso left | Precio right -->
+				<div class="flex items-center justify-between px-5 pb-3">
+					<span class="text-sm text-pure-white/50">
+						{$_('builder.weightLabel')}<span class="font-bold text-pure-white">
+							{totals.weight}g / {bowlSize}g</span
+						>
+					</span>
+					<span class="text-sm text-pure-white/50">
+						{$_('builder.priceLabel')}<span class="font-bold text-light-green">
+							{formattedPrice}</span
+						>
+					</span>
+				</div>
+			</div>
+
+			<!-- BOX 2: macronutrients + selected ingredients (only when expanded, slides up) -->
 			{#if showDetails}
-				<div class="grid grid-cols-4 gap-2 px-5 pb-3">
-					{#each [{ label: $_('menu.card.calories'), value: `${totals.calories}` }, { label: $_('menu.card.protein'), value: `${totals.protein}g` }, { label: $_('menu.card.carbs'), value: `${totals.carbs}g` }, { label: $_('menu.card.fat'), value: `${totals.fat}g` }] as col (col.label)}
-						<div class="flex flex-col items-center rounded-xl bg-pure-white/10 py-2">
-							<span class="text-[9px] font-medium uppercase tracking-[0.6px] text-pure-white/60">
-								{col.label}
-							</span>
-							<span class="text-sm font-bold text-pure-white">{col.value}</span>
-						</div>
-					{/each}
-				</div>
+				<div
+					transition:slide={{ duration: 250 }}
+					class="mx-4 mb-2 flex flex-col rounded-[24px] bg-text-black shadow-[0_-4px_32px_rgba(0,0,0,0.22)]"
+				>
+					<!-- Macronutrients section -->
+					<p
+						class="mx-5 pt-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.8px] text-pure-white"
+					>
+						{$_('builder.macronutrients')}
+					</p>
 
-				{#if isOverCapacity}
-					<p class="mx-5 mb-3 text-center text-xs font-semibold text-red-400">
-						{$_('builder.overCapacity', { values: { amount: totals.weight - bowlSize } })}
+					<div class="grid grid-cols-4 gap-2 px-5 pb-3">
+						{#each [{ label: $_('menu.card.calories'), value: `${totals.calories}` }, { label: $_('menu.card.protein'), value: `${totals.protein}g` }, { label: $_('menu.card.carbs'), value: `${totals.carbs}g` }, { label: $_('menu.card.fat'), value: `${totals.fat}g` }] as col (col.label)}
+							<div class="flex flex-col items-center py-2">
+								<span class="text-[9px] font-medium uppercase tracking-[0.6px] text-pure-white/60">
+									{col.label}
+								</span>
+								<span class="text-sm font-bold text-pure-white">{col.value}</span>
+							</div>
+						{/each}
+					</div>
+
+					{#if isOverCapacity}
+						<p class="mx-5 mb-3 text-center text-xs font-semibold text-red-400">
+							{$_('builder.overCapacity', { values: { amount: totals.weight - bowlSize } })}
+						</p>
+					{/if}
+
+					<!-- Ingredients section -->
+					<p class="mx-5 mb-1.5 text-[10px] font-bold uppercase tracking-[0.8px] text-pure-white">
+						{$_('builder.selectedIngredients')}
 					</p>
-				{:else}
-					<p class="mx-5 mb-3 text-center text-xs text-pure-white/50">
-						{$_('builder.remaining', { values: { amount: remaining } })}
-					</p>
-				{/if}
+
+					<div class="mx-5 pb-3 flex flex-col gap-2">
+						{#each [...selectedItems.entries()] as [id, qty] (id)}
+							{@const ing = ingredients.find((i) => i.id === id)}
+							{#if ing}
+								<div
+									class="flex items-center justify-between rounded-xl bg-pure-white/10 px-3 py-2"
+								>
+									<span class="text-sm text-pure-white/80">{ing.nameEs}</span>
+									<span class="text-sm font-bold text-pure-white">{qty}g</span>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				</div>
 			{/if}
 
-			<!-- CTA button -->
-			<div class="px-5 pb-8 pt-1">
+			<!-- CTA button: solid background so the interface behind is not visible -->
+			<div class="relative bg-white-green px-5 pb-6 pt-2">
+				{#if showDetails}
+					<div
+						transition:fade={{ duration: 200 }}
+						class="pointer-events-none absolute inset-0 bg-black/50"
+						aria-hidden="true"
+					></div>
+				{/if}
 				<button
-					class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border-none bg-light-green px-6 py-4 text-sm font-bold uppercase tracking-[0.08em] text-dark-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+					class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border-none bg-dark-green px-6 py-4 text-sm font-bold uppercase tracking-[0.08em] text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
 					disabled={!hasItems || isOverCapacity}
 					onclick={onAddToCart}
 				>

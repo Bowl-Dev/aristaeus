@@ -37,7 +37,7 @@
 	}
 </script>
 
-<div class="overflow-hidden rounded-2xl bg-pure-white">
+<div class="overflow-hidden rounded-2xl border border-strokes bg-pure-white">
 	<!-- Header row -->
 	<button
 		class="flex w-full cursor-pointer items-center justify-between border-none bg-pure-white px-5 py-4 text-left [-webkit-tap-highlight-color:transparent]"

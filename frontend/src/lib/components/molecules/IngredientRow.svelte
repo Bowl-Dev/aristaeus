@@ -66,10 +66,15 @@
 	let imgError = $state(false);
 </script>
 
-<div class="flex items-center gap-3 rounded-2xl bg-pure-white p-3" role="listitem">
-	<!-- Ingredient image with SVG fallback -->
+<div
+	class="flex items-stretch overflow-hidden rounded-2xl {isSelected
+		? 'bg-light-green/10'
+		: 'bg-accent-gray'}"
+	role="listitem"
+>
+	<!-- Ingredient image: fixed-width square panel, height driven by right content via items-stretch -->
 	<div
-		class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-accent-gray text-text-muted"
+		class="flex w-20 shrink-0 items-center justify-center overflow-hidden bg-pure-white text-text-muted"
 		aria-hidden="true"
 	>
 		{#if !imgError}
@@ -98,17 +103,17 @@
 	</div>
 
 	<!-- Name + nutritional chips -->
-	<div class="flex min-w-0 flex-1 flex-col gap-1">
+	<div class="flex min-w-0 flex-1 flex-col gap-1 p-3">
 		<span class="truncate text-sm font-semibold text-text-black">{ingredient.nameEs}</span>
-		<div class="flex flex-wrap gap-1">
+		<div class="flex justify-between">
 			{#each chips as chip (chip)}
 				<span class="text-xs text-text-muted">{chip}</span>
 			{/each}
 		</div>
 
 		{#if isSelected}
-			<!-- Stepper row -->
-			<div class="mt-1 flex items-center gap-3">
+			<!-- Stepper: below chips, fills full width -->
+			<div class="mt-1 flex items-center justify-between">
 				<button
 					class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-strokes bg-pure-white text-text-black transition-colors duration-150 hover:bg-accent-gray active:scale-95 [-webkit-tap-highlight-color:transparent]"
 					onclick={handleDecreaseClick}
@@ -161,37 +166,37 @@
 					</svg>
 				</button>
 			</div>
+		{:else}
+			<!-- Add button: below chips, right-aligned -->
+			<div class="mt-1 flex justify-end">
+				<button
+					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-colors duration-150 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
+					onclick={onAdd}
+					disabled={addDisabled}
+					aria-label={`Agregar ${ingredient.nameEs}`}
+				>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<line
+							x1="8"
+							y1="3"
+							x2="8"
+							y2="13"
+							stroke="currentColor"
+							stroke-width="2.2"
+							stroke-linecap="round"
+						/>
+						<line
+							x1="3"
+							y1="8"
+							x2="13"
+							y2="8"
+							stroke="currentColor"
+							stroke-width="2.2"
+							stroke-linecap="round"
+						/>
+					</svg>
+				</button>
+			</div>
 		{/if}
 	</div>
-
-	{#if !isSelected}
-		<!-- Add button -->
-		<button
-			class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-colors duration-150 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
-			onclick={onAdd}
-			disabled={addDisabled}
-			aria-label={`Agregar ${ingredient.nameEs}`}
-		>
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-				<line
-					x1="8"
-					y1="3"
-					x2="8"
-					y2="13"
-					stroke="currentColor"
-					stroke-width="2.2"
-					stroke-linecap="round"
-				/>
-				<line
-					x1="3"
-					y1="8"
-					x2="13"
-					y2="8"
-					stroke="currentColor"
-					stroke-width="2.2"
-					stroke-linecap="round"
-				/>
-			</svg>
-		</button>
-	{/if}
 </div>
