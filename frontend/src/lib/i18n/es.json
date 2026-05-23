@@ -192,6 +192,25 @@
 		"sheet": "Resumen del bowl",
 		"closeSheet": "Cerrar resumen"
 	},
+	"cart": {
+		"title": "Tu carrito",
+		"subtitle": "{count, plural, one {# bowl en tu carrito} other {# bowls en tu carrito}}",
+		"bowl": {
+			"title": "Bowl {n} - {size}",
+			"remove": "Eliminar bowl",
+			"nutrition": "Resumen nutricional",
+			"decrease": "Disminuir cantidad",
+			"increase": "Aumentar cantidad"
+		},
+		"total": {
+			"label": "Total",
+			"weight": "{weight}g totales"
+		},
+		"actions": {
+			"createAnother": "Crear otro bowl",
+			"proceedToDelivery": "Continuar a entrega — {price}"
+		}
+	},
 	"category": {
 		"base": "Base",
 		"protein": "Proteína",

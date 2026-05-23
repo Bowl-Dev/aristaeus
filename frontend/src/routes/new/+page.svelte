@@ -7,9 +7,16 @@
 	import Menu from '$lib/components/Menu.svelte';
 	import Size from '$lib/components/Size.svelte';
 	import Builder from '$lib/components/Builder.svelte';
+	import Cart from '$lib/components/Cart.svelte';
+
+	interface BowlSnapshot {
+		bowlSize: BowlSize;
+		items: Map<number, number>;
+		quantity: number;
+	}
 
 	// View state
-	let view = $state<'landing' | 'menu' | 'size' | 'builder'>('landing');
+	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart'>('landing');
 	let showLandingModal = $state(false);
 
 	// Data
@@ -21,6 +28,10 @@
 	// Bowl state
 	let selectedBowlSize = $state<BowlSize | null>(null);
 	let selectedItems = new SvelteMap<number, number>();
+
+	// Cart: saved bowl snapshots with quantity multiplier
+	let bowls = $state<BowlSnapshot[]>([]);
+	const cartCount = $derived(bowls.length);
 
 	async function loadIngredients() {
 		loading = true;
@@ -38,10 +49,7 @@
 		loadIngredients();
 	});
 
-	// Cart wiring lives in the follow-up PR (#18); no items can be in a cart yet.
-	const cartCount = 0;
-
-	function clearAll() {
+	function clearSelection() {
 		selectedItems.clear();
 		selectedBowlSize = null;
 	}
@@ -50,7 +58,7 @@
 		menu: MenuType,
 		scaledItems: { ingredientId: number; quantityGrams: number }[]
 	) {
-		clearAll();
+		clearSelection();
 		selectedBowlSize = menu.bowlSize as BowlSize;
 		scaledItems.forEach(({ ingredientId, quantityGrams }) => {
 			selectedItems.set(ingredientId, quantityGrams);
@@ -59,8 +67,25 @@
 	}
 
 	function handleBack() {
-		clearAll();
+		clearSelection();
 		view = 'landing';
+	}
+
+	function backToCartOrLanding() {
+		if (bowls.length > 0) {
+			view = 'cart';
+		} else {
+			handleBack();
+		}
+	}
+
+	function addCurrentBowlToCart() {
+		bowls = [
+			...bowls,
+			{ bowlSize: selectedBowlSize ?? 450, items: new Map(selectedItems), quantity: 1 }
+		];
+		clearSelection();
+		view = 'cart';
 	}
 </script>
 
@@ -89,7 +114,7 @@
 		{menus}
 		{loading}
 		{cartCount}
-		onBack={handleBack}
+		onBack={backToCartOrLanding}
 		onCustomize={(menu) => {
 			handleMenuSelect(
 				menu,
@@ -103,7 +128,7 @@
 {:else if view === 'size'}
 	<Size
 		{cartCount}
-		onBack={() => (view = 'landing')}
+		onBack={backToCartOrLanding}
 		onSelect={(size) => {
 			selectedBowlSize = size;
 			view = 'builder';
@@ -116,7 +141,36 @@
 		bowlSize={selectedBowlSize ?? 450}
 		{selectedItems}
 		{cartCount}
-		onBack={handleBack}
-		onAddToCart={handleBack}
+		onBack={backToCartOrLanding}
+		onAddToCart={addCurrentBowlToCart}
+	/>
+{:else if view === 'cart'}
+	<Cart
+		{ingredients}
+		{bowls}
+		{cartCount}
+		onBack={() => (view = 'builder')}
+		onProceedToDelivery={() => {
+			// Delivery flow is shipped in PR #19; clear cart and return to landing as a placeholder.
+			bowls = [];
+			view = 'landing';
+		}}
+		onCreateAnother={() => (showLandingModal = true)}
+		onRemoveBowl={(index) => {
+			bowls = bowls.filter((_, i) => i !== index);
+			if (bowls.length === 0) view = 'landing';
+		}}
+		onIncreaseBowl={(index) => {
+			bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity + 1 } : b));
+		}}
+		onDecreaseBowl={(index) => {
+			const current = bowls[index].quantity;
+			if (current <= 1) {
+				bowls = bowls.filter((_, i) => i !== index);
+				if (bowls.length === 0) view = 'landing';
+			} else {
+				bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity - 1 } : b));
+			}
+		}}
 	/>
 {/if}
