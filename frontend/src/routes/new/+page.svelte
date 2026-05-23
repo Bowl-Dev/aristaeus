@@ -71,12 +71,8 @@
 		view = 'landing';
 	}
 
-	function backToCartOrLanding() {
-		if (bowls.length > 0) {
-			view = 'cart';
-		} else {
-			handleBack();
-		}
+	function goToCart() {
+		if (bowls.length > 0) view = 'cart';
 	}
 
 	function addCurrentBowlToCart() {
@@ -95,26 +91,13 @@
 
 {#if view === 'landing'}
 	<Landing onOrderNow={() => (showLandingModal = true)} />
-
-	{#if showLandingModal}
-		<LandingModal
-			onFromScratch={() => {
-				showLandingModal = false;
-				view = 'size';
-			}}
-			onMenu={() => {
-				showLandingModal = false;
-				view = 'menu';
-			}}
-			onCancel={() => (showLandingModal = false)}
-		/>
-	{/if}
 {:else if view === 'menu'}
 	<Menu
 		{menus}
 		{loading}
 		{cartCount}
-		onBack={backToCartOrLanding}
+		onBack={handleBack}
+		onCart={goToCart}
 		onCustomize={(menu) => {
 			handleMenuSelect(
 				menu,
@@ -128,7 +111,8 @@
 {:else if view === 'size'}
 	<Size
 		{cartCount}
-		onBack={backToCartOrLanding}
+		onBack={handleBack}
+		onCart={goToCart}
 		onSelect={(size) => {
 			selectedBowlSize = size;
 			view = 'builder';
@@ -141,7 +125,8 @@
 		bowlSize={selectedBowlSize ?? 450}
 		{selectedItems}
 		{cartCount}
-		onBack={backToCartOrLanding}
+		onBack={handleBack}
+		onCart={goToCart}
 		onAddToCart={addCurrentBowlToCart}
 	/>
 {:else if view === 'cart'}
@@ -172,5 +157,21 @@
 				bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity - 1 } : b));
 			}
 		}}
+	/>
+{/if}
+
+{#if showLandingModal}
+	<LandingModal
+		onFromScratch={() => {
+			showLandingModal = false;
+			clearSelection();
+			view = 'size';
+		}}
+		onMenu={() => {
+			showLandingModal = false;
+			clearSelection();
+			view = 'menu';
+		}}
+		onCancel={() => (showLandingModal = false)}
 	/>
 {/if}

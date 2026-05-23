@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { _, locale } from 'svelte-i18n';
-	import { setLocale } from '$lib/i18n';
+	import { _ } from 'svelte-i18n';
 	import BackButton from '../atoms/BackButton.svelte';
 	import CartIconButton from '../atoms/CartIconButton.svelte';
 	import Logo from '../atoms/Logo.svelte';
@@ -14,10 +13,6 @@
 		onCart?: () => void;
 		cartCount?: number;
 	} = $props();
-
-	function toggleLocale() {
-		setLocale($locale === 'es' ? 'en' : 'es');
-	}
 </script>
 
 <header
@@ -27,15 +22,5 @@
 		<BackButton onclick={onBack} ariaLabel={$_('common.back')} />
 		<Logo size="sm" tone="dark" />
 	</div>
-	<div class="flex items-center gap-2">
-		<button
-			type="button"
-			onclick={toggleLocale}
-			aria-label="Toggle language"
-			class="flex h-10 min-w-[40px] items-center justify-center rounded-full border border-strokes bg-pure-white px-3 text-sm font-semibold"
-		>
-			{$locale === 'es' ? 'EN' : 'ES'}
-		</button>
-		<CartIconButton onclick={onCart} ariaLabel="Cart" count={cartCount} />
-	</div>
+	<CartIconButton onclick={onCart} ariaLabel="Cart" count={cartCount} />
 </header>

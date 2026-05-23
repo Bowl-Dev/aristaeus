@@ -7,10 +7,11 @@ register('en', () => import('./en.json'));
 
 // Get initial locale
 const getInitialLocale = () => {
-	if (browser) {
-		return localStorage.getItem('locale') || 'es';
-	}
-	return 'es';
+	if (!browser) return 'es';
+	const stored = localStorage.getItem('locale');
+	if (stored === 'es' || stored === 'en') return stored;
+	const nav = navigator.language?.toLowerCase() ?? '';
+	return nav.startsWith('en') ? 'en' : 'es';
 };
 
 // Initialize i18n with Spanish as the default locale
