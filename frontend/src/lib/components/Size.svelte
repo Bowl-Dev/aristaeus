@@ -2,6 +2,7 @@
 	import { _ } from 'svelte-i18n';
 	import type { BowlSize } from '$lib/types';
 	import { BOWL_SIZE_PRICES } from '$lib/types';
+	import { formatCOP } from '$lib/utils/bowl';
 	import AppScreen from './templates/AppScreen.svelte';
 	import SizeCard from './molecules/SizeCard.svelte';
 
@@ -30,14 +31,6 @@
 		{ size: 600, labelKey: 'size.large', capacity: '600g', basePrice: BOWL_SIZE_PRICES[2] }
 	];
 
-	function formatCOP(amount: number): string {
-		return new Intl.NumberFormat('es-CO', {
-			style: 'currency',
-			currency: 'COP',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(amount);
-	}
 </script>
 
 <AppScreen {onBack} {onCart} {cartCount} title={$_('size.title')} subtitle={$_('size.subtitle')}>

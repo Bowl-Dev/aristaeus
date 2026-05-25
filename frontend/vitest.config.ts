@@ -18,8 +18,8 @@ export default defineConfig({
 	resolve: {
 		conditions: ['browser'],
 		alias: {
-			$lib: '/src/lib',
-			$app: '/node_modules/@sveltejs/kit/src/runtime/app'
+			$lib: new URL('./src/lib', import.meta.url).pathname,
+			$app: new URL('../node_modules/@sveltejs/kit/src/runtime/app', import.meta.url).pathname
 		}
 	}
 });

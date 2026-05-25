@@ -1,7 +1,15 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { type Ingredient, type Menu as MenuType, type BowlSize } from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { getIngredients, getMenus, ApiError } from '$lib/api/client';
+	import {
+		addBowl,
+		removeAt,
+		incrementAt,
+		decrementAt,
+		type BowlSnapshot
+	} from '$lib/utils/cart';
 	import Landing from '$lib/components/Landing.svelte';
 	import LandingModal from '$lib/components/LandingModal.svelte';
 	import Menu from '$lib/components/Menu.svelte';
@@ -10,12 +18,6 @@
 	import Cart from '$lib/components/Cart.svelte';
 	import Delivery from '$lib/components/Delivery.svelte';
 	import ThnksModal from '$lib/components/ThnksModal.svelte';
-
-	interface BowlSnapshot {
-		bowlSize: BowlSize;
-		items: Map<number, number>;
-		quantity: number;
-	}
 
 	// View state
 	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'delivery'>('landing');
@@ -48,9 +50,7 @@
 		}
 	}
 
-	$effect(() => {
-		loadIngredients();
-	});
+	onMount(loadIngredients);
 
 	function clearSelection() {
 		selectedItems.clear();
@@ -62,7 +62,7 @@
 		scaledItems: { ingredientId: number; quantityGrams: number }[]
 	) {
 		clearSelection();
-		selectedBowlSize = menu.bowlSize as BowlSize;
+		selectedBowlSize = menu.bowlSize;
 		scaledItems.forEach(({ ingredientId, quantityGrams }) => {
 			selectedItems.set(ingredientId, quantityGrams);
 		});
@@ -79,12 +79,23 @@
 	}
 
 	function addCurrentBowlToCart() {
-		bowls = [
-			...bowls,
-			{ bowlSize: selectedBowlSize ?? 450, items: new Map(selectedItems), quantity: 1 }
-		];
+		bowls = addBowl(bowls, selectedBowlSize ?? 450, selectedItems);
 		clearSelection();
 		view = 'cart';
+	}
+
+	function handleRemoveBowl(index: number) {
+		bowls = removeAt(bowls, index);
+		if (bowls.length === 0) view = 'landing';
+	}
+
+	function handleIncreaseBowl(index: number) {
+		bowls = incrementAt(bowls, index);
+	}
+
+	function handleDecreaseBowl(index: number) {
+		bowls = decrementAt(bowls, index);
+		if (bowls.length === 0) view = 'landing';
 	}
 </script>
 
@@ -140,22 +151,9 @@
 		onBack={() => (view = 'builder')}
 		onProceedToDelivery={() => (view = 'delivery')}
 		onCreateAnother={() => (showLandingModal = true)}
-		onRemoveBowl={(index) => {
-			bowls = bowls.filter((_, i) => i !== index);
-			if (bowls.length === 0) view = 'landing';
-		}}
-		onIncreaseBowl={(index) => {
-			bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity + 1 } : b));
-		}}
-		onDecreaseBowl={(index) => {
-			const current = bowls[index].quantity;
-			if (current <= 1) {
-				bowls = bowls.filter((_, i) => i !== index);
-				if (bowls.length === 0) view = 'landing';
-			} else {
-				bowls = bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity - 1 } : b));
-			}
-		}}
+		onRemoveBowl={handleRemoveBowl}
+		onIncreaseBowl={handleIncreaseBowl}
+		onDecreaseBowl={handleDecreaseBowl}
 	/>
 {:else if view === 'delivery'}
 	<Delivery

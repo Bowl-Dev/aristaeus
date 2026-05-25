@@ -12,22 +12,31 @@
 		title,
 		subtitle,
 		bg = 'white-green',
+		fill = false,
+		heading,
 		children
 	}: {
 		onBack: () => void;
 		onCart?: () => void;
 		cartCount?: number;
-		title: string;
+		title?: string;
 		subtitle?: string;
 		bg?: Bg;
+		fill?: boolean;
+		heading?: Snippet;
 		children: Snippet;
 	} = $props();
 
 	const bgClass = $derived(bg === 'white' ? 'bg-pure-white' : 'bg-white-green');
+	const heightClass = $derived(fill ? 'h-svh' : 'min-h-svh');
 </script>
 
-<div class={`flex min-h-svh flex-col ${bgClass}`}>
+<div class={`flex flex-col ${heightClass} ${bgClass}`}>
 	<AppHeader {onBack} {onCart} {cartCount} />
-	<ScreenHeading {title} {subtitle} />
+	{#if heading}
+		{@render heading()}
+	{:else if title}
+		<ScreenHeading {title} {subtitle} />
+	{/if}
 	{@render children()}
 </div>

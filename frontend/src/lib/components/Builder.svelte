@@ -2,8 +2,10 @@
 	import { _, locale } from 'svelte-i18n';
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { Ingredient, BowlSize } from '$lib/types';
-	import AppHeader from './organisms/AppHeader.svelte';
+	import AppScreen from './templates/AppScreen.svelte';
 	import CategoryAccordion from './molecules/CategoryAccordion.svelte';
+	import NutritionChips from './molecules/NutritionChips.svelte';
+	import { computeBowlTotals, formatCOP } from '$lib/utils/bowl';
 
 	let {
 		ingredients,
@@ -51,51 +53,15 @@
 	);
 
 	// ──────────────────────────────────────────────
-	// Totals
+	// Totals (Builder shows ingredient-only price; bowl base is added at cart)
 	// ──────────────────────────────────────────────
-	const totals = $derived.by(() => {
-		let weight = 0;
-		let price = 0;
-		let calories = 0;
-		let protein = 0;
-		let carbs = 0;
-		let fat = 0;
-
-		selectedItems.forEach((qty, id) => {
-			const ing = ingredients.find((i) => i.id === id);
-			if (ing) {
-				const mult = qty / 100;
-				calories += ing.caloriesPer100g * mult;
-				protein += ing.proteinGPer100g * mult;
-				carbs += ing.carbsGPer100g * mult;
-				fat += ing.fatGPer100g * mult;
-				weight += qty;
-				price += ing.pricePerG * qty;
-			}
-		});
-
-		return {
-			weight,
-			price,
-			calories: Math.round(calories),
-			protein: Math.round(protein),
-			carbs: Math.round(carbs),
-			fat: Math.round(fat)
-		};
-	});
+	const totals = $derived(computeBowlTotals(selectedItems, ingredients));
 
 	const remaining = $derived(bowlSize - totals.weight);
 	const isOverCapacity = $derived(totals.weight > bowlSize);
 	const hasItems = $derived(selectedItems.size > 0);
 
-	const formattedPrice = $derived(
-		new Intl.NumberFormat('es-CO', {
-			style: 'currency',
-			currency: 'COP',
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 0
-		}).format(totals.price)
-	);
+	const formattedPrice = $derived(formatCOP(totals.ingredientsPrice));
 
 	// Selected ingredients (for the expanded sheet list), in assembly order
 	const selectedList = $derived.by(() => {
@@ -176,23 +142,21 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="flex min-h-svh flex-col bg-white-green">
-	<!-- Sticky header -->
-	<AppHeader {onBack} {onCart} {cartCount} />
-
-	<!-- Screen heading + size badge -->
-	<div class="flex items-start justify-between gap-3 px-5 pb-4 pt-6">
-		<div class="flex flex-col gap-1">
-			<p class="m-0 text-base leading-snug text-text-muted">
-				{$_('builder.subtitle')}
-			</p>
+<AppScreen {onBack} {onCart} {cartCount}>
+	{#snippet heading()}
+		<div class="flex items-start justify-between gap-3 px-5 pb-4 pt-6">
+			<div class="flex flex-col gap-1">
+				<p class="m-0 text-base leading-snug text-text-muted">
+					{$_('builder.subtitle')}
+				</p>
+			</div>
+			<span
+				class="shrink-0 rounded-full bg-light-green px-3 py-1 text-xs font-bold uppercase tracking-[0.7px] text-dark-green"
+			>
+				{sizeBadgeLabel}
+			</span>
 		</div>
-		<span
-			class="shrink-0 rounded-full bg-light-green px-3 py-1 text-xs font-bold uppercase tracking-[0.7px] text-dark-green"
-		>
-			{sizeBadgeLabel}
-		</span>
-	</div>
+	{/snippet}
 
 	<!-- Nutritional info disclaimer -->
 	<div class="mx-5 mb-5 flex items-center gap-3 rounded-[14px] bg-light-green px-3 py-3">
@@ -244,14 +208,11 @@
 	{#if hasItems}
 		<!-- Backdrop when expanded -->
 		{#if showDetails}
+			<!-- Click-only backdrop; keyboard users dismiss via Escape (wired on window above). -->
 			<div
 				class="fixed inset-0 z-30 bg-black/50"
 				role="presentation"
 				onclick={() => (showDetails = false)}
-				onkeydown={(e) => {
-					if (e.key === 'Enter' || e.key === ' ') showDetails = false;
-				}}
-				tabindex="-1"
 			></div>
 		{/if}
 
@@ -323,16 +284,13 @@
 					>
 						{$_('builder.macros')}
 					</p>
-					<div class="grid grid-cols-4 gap-3" role="list">
-						{#each [{ label: $_('menu.card.calories'), value: `${totals.calories}` }, { label: $_('menu.card.protein'), value: `${totals.protein}g` }, { label: $_('menu.card.carbs'), value: `${totals.carbs}g` }, { label: $_('menu.card.fat'), value: `${totals.fat}g` }] as col (col.label)}
-							<div class="flex flex-col items-center gap-0.5" role="listitem">
-								<span class="text-[10px] font-medium uppercase tracking-[0.6px] text-pure-white">
-									{col.label}
-								</span>
-								<span class="text-base font-semibold text-pure-white">{col.value}</span>
-							</div>
-						{/each}
-					</div>
+					<NutritionChips
+						calories={totals.calories}
+						protein={totals.protein}
+						carbs={totals.carbs}
+						fat={totals.fat}
+						surface="flush-dark"
+					/>
 
 					<p class="m-0 mt-2 text-xs font-bold uppercase tracking-[0.6px] text-pure-white">
 						{$_('builder.selectedIngredients')}
@@ -379,4 +337,4 @@
 			</button>
 		</div>
 	{/if}
-</div>
+</AppScreen>
