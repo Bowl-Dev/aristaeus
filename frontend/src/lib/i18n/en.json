@@ -218,6 +218,24 @@
 		"topping": "Toppings",
 		"dressing": "Dressing"
 	},
+	"delivery": {
+		"title": "Delivery Information",
+		"subtitle": "Complete your details to receive your order",
+		"form": {
+			"name": { "label": "Full Name", "placeholder": "Enter your name" },
+			"phone": { "label": "Phone", "placeholder": "+57 300 123 4567" },
+			"address": { "label": "Delivery Address", "placeholder": "Street, number, apt" },
+			"instructions": {
+				"label": "Delivery Instructions (Optional)",
+				"placeholder": "Additional references, special instructions..."
+			}
+		},
+		"summary": { "title": "Order Summary" },
+		"confirm": "Confirm Order — {price}",
+		"confirming": "Sending...",
+		"error": "Could not place order. Please try again.",
+		"partialError": "{failed} of {total} orders failed: {reason}"
+	},
 	"admin": {
 		"printLabel": "Print Label",
 		"generatingLabel": "Generating..."

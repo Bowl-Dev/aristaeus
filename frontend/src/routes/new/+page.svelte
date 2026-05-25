@@ -8,6 +8,8 @@
 	import Size from '$lib/components/Size.svelte';
 	import Builder from '$lib/components/Builder.svelte';
 	import Cart from '$lib/components/Cart.svelte';
+	import Delivery from '$lib/components/Delivery.svelte';
+	import ThnksModal from '$lib/components/ThnksModal.svelte';
 
 	interface BowlSnapshot {
 		bowlSize: BowlSize;
@@ -16,8 +18,9 @@
 	}
 
 	// View state
-	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart'>('landing');
+	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'delivery'>('landing');
 	let showLandingModal = $state(false);
+	let showThanks = $state(false);
 
 	// Data
 	let ingredients = $state<Ingredient[]>([]);
@@ -135,11 +138,7 @@
 		{bowls}
 		{cartCount}
 		onBack={() => (view = 'builder')}
-		onProceedToDelivery={() => {
-			// Delivery flow is shipped in PR #19; clear cart and return to landing as a placeholder.
-			bowls = [];
-			view = 'landing';
-		}}
+		onProceedToDelivery={() => (view = 'delivery')}
 		onCreateAnother={() => (showLandingModal = true)}
 		onRemoveBowl={(index) => {
 			bowls = bowls.filter((_, i) => i !== index);
@@ -158,6 +157,23 @@
 			}
 		}}
 	/>
+{:else if view === 'delivery'}
+	<Delivery
+		{ingredients}
+		{bowls}
+		{cartCount}
+		onBack={() => (view = 'cart')}
+		onOrderSuccess={() => {
+			bowls = [];
+			clearSelection();
+			showThanks = true;
+			view = 'landing';
+		}}
+	/>
+{/if}
+
+{#if showThanks}
+	<ThnksModal onDismiss={() => (showThanks = false)} />
 {/if}
 
 {#if showLandingModal}
