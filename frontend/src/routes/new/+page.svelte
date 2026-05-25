@@ -3,13 +3,7 @@
 	import { type Ingredient, type Menu as MenuType, type BowlSize } from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { getIngredients, getMenus, ApiError } from '$lib/api/client';
-	import {
-		addBowl,
-		removeAt,
-		incrementAt,
-		decrementAt,
-		type BowlSnapshot
-	} from '$lib/utils/cart';
+	import { addBowl, removeAt, incrementAt, decrementAt, type BowlSnapshot } from '$lib/utils/cart';
 	import Landing from '$lib/components/Landing.svelte';
 	import LandingModal from '$lib/components/LandingModal.svelte';
 	import Menu from '$lib/components/Menu.svelte';

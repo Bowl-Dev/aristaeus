@@ -30,7 +30,6 @@
 		{ size: 450, labelKey: 'size.medium', capacity: '450g', basePrice: BOWL_SIZE_PRICES[1] },
 		{ size: 600, labelKey: 'size.large', capacity: '600g', basePrice: BOWL_SIZE_PRICES[2] }
 	];
-
 </script>
 
 <AppScreen {onBack} {onCart} {cartCount} title={$_('size.title')} subtitle={$_('size.subtitle')}>

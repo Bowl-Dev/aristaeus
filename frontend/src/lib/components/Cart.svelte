@@ -213,9 +213,7 @@
 							</svg>
 						</IconButton>
 					</div>
-					<span class="text-base font-bold text-dark-green"
-						>{formatCOP(bowl.totalPrice)}</span
-					>
+					<span class="text-base font-bold text-dark-green">{formatCOP(bowl.totalPrice)}</span>
 				</div>
 			</Card>
 		{/each}

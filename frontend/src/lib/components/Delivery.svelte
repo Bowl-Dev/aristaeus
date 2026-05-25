@@ -193,9 +193,7 @@
 							× {bowl.quantity}
 						{/if}
 					</span>
-					<span class="text-sm font-semibold text-text-black"
-						>{formatCOP(bowl.totalPrice)}</span
-					>
+					<span class="text-sm font-semibold text-text-black">{formatCOP(bowl.totalPrice)}</span>
 				</div>
 			{/each}
 			<div class="mt-1 flex items-center justify-between border-t border-strokes pt-2">
