@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Ingredient } from '$lib/types';
 	import { _, locale } from 'svelte-i18n';
+	import { base } from '$app/paths';
 	import { toSlug } from '$lib/utils/slug';
 
 	interface Props {
@@ -17,7 +18,7 @@
 		$props();
 
 	const displayName = $derived($locale?.startsWith('es') ? ingredient.nameEs : ingredient.nameEn);
-	const imageSrc = $derived(`/ingredients/${toSlug(ingredient.name)}.jpg`);
+	const imageSrc = $derived(`${base}/ingredients/${toSlug(ingredient.name)}.jpg`);
 
 	const isSelected = $derived(quantity > 0);
 	const step = $derived(
