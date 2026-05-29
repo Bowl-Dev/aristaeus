@@ -31,7 +31,8 @@ export const getIngredients: APIGatewayProxyHandler = async () => {
 				fiberGPer100g: true,
 				available: true,
 				displayOrder: true,
-				pricePerG: true
+				pricePerG: true,
+				imageUrl: true
 			}
 		});
 
@@ -49,7 +50,8 @@ export const getIngredients: APIGatewayProxyHandler = async () => {
 			fiberGPer100g: ing.fiberGPer100g?.toNumber() ?? null,
 			available: ing.available,
 			displayOrder: ing.displayOrder,
-			pricePerG: ing.pricePerG.toNumber()
+			pricePerG: ing.pricePerG.toNumber(),
+			imageUrl: ing.imageUrl
 		}));
 
 		return success({ ingredients: serializedIngredients });

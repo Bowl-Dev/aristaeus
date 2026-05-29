@@ -19,15 +19,7 @@
 	const name = $derived(locale === 'es' ? menu.nameEs : menu.nameEn);
 	const description = $derived(locale === 'es' ? menu.descriptionEs : menu.descriptionEn);
 
-	const menuImages: Record<string, string> = {
-		'Bueno, bonito y al gramo': `${base}/menu_imgs/BuenoBonito.png`,
-		'Hoy empiezo la dieta': `${base}/menu_imgs/HoyDieta.png`,
-		'Alto en proteína': `${base}/menu_imgs/AltoProteina.png`,
-		'Verde y sabroso': `${base}/menu_imgs/IMG_1872.png`,
-		'Premium de Salmón': `${base}/menu_imgs/PremiumSalmon.png`
-	};
-
-	const imageUrl = $derived(menuImages[menu.nameEs] ?? `${base}/bowl_placeholder.png`);
+	const imageUrl = $derived(menu.imageUrl ?? `${base}/bowl_placeholder.png`);
 
 	let imageFailed = $state(false);
 
