@@ -55,9 +55,7 @@ describe('IngredientRow', () => {
 	it('uses the imageUrl from the ingredient as the image src', () => {
 		const { container } = render(IngredientRow, { props: makeProps() });
 		const img = container.querySelector('img') as HTMLImageElement;
-		expect(img.getAttribute('src')).toBe(
-			'https://cdn.example.com/ingredients/cherry-tomatoes.jpg'
-		);
+		expect(img.getAttribute('src')).toBe('https://cdn.example.com/ingredients/cherry-tomatoes.jpg');
 	});
 
 	it('falls back to the placeholder image when imageUrl is null', () => {
