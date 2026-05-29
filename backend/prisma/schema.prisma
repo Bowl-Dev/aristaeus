@@ -33,6 +33,9 @@ model Ingredient {
   available        Boolean  @default(true)
   displayOrder     Int?     @map("display_order")
 
+  // Product imagery (S3-hosted)
+  imageUrl         String?  @map("image_url")
+
   // Timestamps
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -60,6 +63,7 @@ model Menu {
   bowlSize      Int              @map("bowl_size")
   active        Boolean          @default(true)
   displayOrder  Int?             @map("display_order")
+  imageUrl      String?          @map("image_url")
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
   ingredients   MenuIngredient[]

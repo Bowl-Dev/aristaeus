@@ -10,6 +10,16 @@ output "api_gateway_id" {
   value       = aws_apigatewayv2_api.main.id
 }
 
+output "assets_bucket_name" {
+  description = "Name of the S3 bucket hosting public product imagery"
+  value       = aws_s3_bucket.assets.bucket
+}
+
+output "assets_base_url" {
+  description = "Public base URL for product imagery; combine with object key to form imageUrl values"
+  value       = "https://${aws_s3_bucket.assets.bucket}.s3.${var.aws_region}.amazonaws.com"
+}
+
 output "lambda_function_names" {
   description = "Names of the Lambda functions"
   value = {

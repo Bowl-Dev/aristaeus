@@ -52,6 +52,7 @@ export interface Ingredient {
 	available: boolean;
 	displayOrder: number | null;
 	pricePerG: number;
+	imageUrl?: string | null;
 }
 
 export interface MenuIngredientItem {
@@ -78,6 +79,7 @@ export interface Menu {
 	bowlSize: BowlSize;
 	active: boolean;
 	displayOrder: number | null;
+	imageUrl?: string | null;
 	ingredients: MenuIngredientItem[];
 }
 

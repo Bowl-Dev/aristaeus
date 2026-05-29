@@ -14,6 +14,36 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// S3 bucket hosting product imagery (see ENG-68)
+const ASSETS_BASE_URL = 'https://aristaeus-assets.s3.us-east-1.amazonaws.com';
+
+function toSlug(name: string): string {
+	return name
+		.normalize('NFD')
+		.replace(/[̀-ͯ]/g, '')
+		.toLowerCase()
+		.trim()
+		.replace(/\s+/g, '-')
+		.replace(/[^a-z0-9-]/g, '');
+}
+
+function ingredientImageUrl(englishName: string): string {
+	return `${ASSETS_BASE_URL}/ingredients/${toSlug(englishName)}.jpg`;
+}
+
+const MENU_IMAGE_FILES: Record<string, string> = {
+	'Bueno, bonito y al gramo': 'bueno-bonito.png',
+	'Hoy empiezo la dieta': 'hoy-dieta.png',
+	'Alto en proteína': 'alto-proteina.png',
+	'Verde y sabroso': 'verde-sabroso.png',
+	'Premium de Salmón': 'premium-salmon.png'
+};
+
+function menuImageUrl(nameEs: string): string | null {
+	const file = MENU_IMAGE_FILES[nameEs];
+	return file ? `${ASSETS_BASE_URL}/menus/${file}` : null;
+}
+
 // ---------------------------------------------------------------------------
 // Ingredient definitions (source of truth: seed.ts)
 // ---------------------------------------------------------------------------
@@ -392,7 +422,9 @@ async function main() {
 		// Reset the sequence to avoid conflicts with existing IDs
 		await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('ingredients', 'id'), COALESCE((SELECT MAX(id) FROM ingredients), 0))`;
 		for (const ing of missingIngredients) {
-			await prisma.ingredient.create({ data: ing });
+			await prisma.ingredient.create({
+				data: { ...ing, imageUrl: ingredientImageUrl(ing.name) }
+			});
 		}
 		console.log(`Ingredients: created ${missingIngredients.length} new ingredient(s).`);
 	}
@@ -447,7 +479,8 @@ async function main() {
 					descriptionEn: menuDef.descriptionEn,
 					bowlSize: menuDef.bowlSize,
 					active: menuDef.active,
-					displayOrder: menuDef.displayOrder
+					displayOrder: menuDef.displayOrder,
+					imageUrl: menuImageUrl(menuDef.nameEs)
 				}
 			});
 

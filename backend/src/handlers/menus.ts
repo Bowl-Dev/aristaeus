@@ -33,6 +33,7 @@ export const getMenus: APIGatewayProxyHandler = async () => {
 			bowlSize: menu.bowlSize,
 			active: menu.active,
 			displayOrder: menu.displayOrder,
+			imageUrl: menu.imageUrl,
 			ingredients: menu.ingredients.map((mi) => ({
 				ingredientId: mi.ingredientId,
 				ingredientName: mi.ingredient.name,

@@ -16,7 +16,8 @@ const baseIngredient: Ingredient = {
 	fiberGPer100g: 1,
 	available: true,
 	displayOrder: 1,
-	pricePerG: 5
+	pricePerG: 5,
+	imageUrl: 'https://cdn.example.com/ingredients/cherry-tomatoes.jpg'
 };
 
 const makeProps = (overrides: Record<string, unknown> = {}) => ({
@@ -51,10 +52,19 @@ describe('IngredientRow', () => {
 		expect(addBtn.disabled).toBe(true);
 	});
 
-	it('uses the slug-derived image src', () => {
+	it('uses the imageUrl from the ingredient as the image src', () => {
 		const { container } = render(IngredientRow, { props: makeProps() });
 		const img = container.querySelector('img') as HTMLImageElement;
-		expect(img.getAttribute('src')).toBe('/ingredients/cherry-tomatoes.jpg');
+		expect(img.getAttribute('src')).toBe('https://cdn.example.com/ingredients/cherry-tomatoes.jpg');
+	});
+
+	it('falls back to the placeholder image when imageUrl is null', () => {
+		const ingredient: Ingredient = { ...baseIngredient, imageUrl: null };
+		const { container } = render(IngredientRow, {
+			props: makeProps({ ingredient })
+		});
+		const img = container.querySelector('img') as HTMLImageElement;
+		expect(img.getAttribute('src')).toBe('/bowl_placeholder.png');
 	});
 
 	it('uses 5g step for dressing/topping and 10g for everything else', () => {
