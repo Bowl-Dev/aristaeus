@@ -6,6 +6,12 @@
 	import CategoryAccordion from './molecules/CategoryAccordion.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
 	import { computeBowlTotals, formatCOP } from '$lib/utils/bowl';
+	import {
+		getQuantityIncrement,
+		getInitialQuantity,
+		gramsToContainers,
+		formatContainerValue
+	} from '$lib/utils/ingredientQuantity';
 
 	let {
 		ingredients,
@@ -65,13 +71,18 @@
 
 	// Selected ingredients (for the expanded sheet list), in assembly order
 	const selectedList = $derived.by(() => {
-		const list: { id: number; name: string; quantity: number }[] = [];
+		const list: { id: number; name: string; quantity: number; category: string }[] = [];
 		const isEs = $locale?.startsWith('es') ?? true;
 		categoryOrder.forEach((cat) => {
 			(ingredientsByCategory[cat] ?? []).forEach((ing) => {
 				const qty = selectedItems.get(ing.id);
 				if (qty !== undefined && qty > 0) {
-					list.push({ id: ing.id, name: isEs ? ing.nameEs : ing.nameEn, quantity: qty });
+					list.push({
+						id: ing.id,
+						name: isEs ? ing.nameEs : ing.nameEn,
+						quantity: qty,
+						category: ing.category
+					});
 				}
 			});
 		});
@@ -102,18 +113,14 @@
 	// ──────────────────────────────────────────────
 	function getIncrement(id: number): number {
 		const ing = ingredients.find((i) => i.id === id);
-		return ing?.category === 'dressing' || ing?.category === 'topping' ? 5 : 10;
-	}
-
-	function getInitialQuantity(id: number): number {
-		const ing = ingredients.find((i) => i.id === id);
-		return ing?.category === 'dressing' || ing?.category === 'topping' ? 5 : 50;
+		return getQuantityIncrement(ing?.category ?? '');
 	}
 
 	function handleAdd(id: number) {
 		const step = getIncrement(id);
 		if (remaining < step) return;
-		const initial = getInitialQuantity(id);
+		const ing = ingredients.find((i) => i.id === id);
+		const initial = getInitialQuantity(ing?.category ?? '');
 		// Clamp to available capacity
 		selectedItems.set(id, Math.min(initial, remaining));
 	}
@@ -302,7 +309,17 @@
 								role="listitem"
 							>
 								<span>{item.name}</span>
-								<span class="font-bold">{item.quantity}g</span>
+								<span class="font-bold">
+									{#if item.category === 'dressing'}
+										{@const count = gramsToContainers(item.quantity)}
+										{$_(
+											count <= 1 ? 'builder.ingredient.container' : 'builder.ingredient.containers',
+											{ values: { value: formatContainerValue(count) } }
+										)}
+									{:else}
+										{item.quantity}g
+									{/if}
+								</span>
 							</div>
 						{/each}
 					</div>

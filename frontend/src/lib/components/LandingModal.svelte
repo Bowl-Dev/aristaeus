@@ -23,14 +23,12 @@
 				iconSrc={`${base}/BuildBowl.png`}
 				iconAlt={$_('landing.modal.fromScratch')}
 				label={$_('landing.modal.fromScratch')}
-				pixelated
 				onclick={onFromScratch}
 			/>
 			<OptionCard
 				iconSrc={`${base}/Menu.png`}
 				iconAlt={$_('landing.modal.menuIdeas')}
 				label={$_('landing.modal.menuIdeas')}
-				pixelated
 				onclick={onMenu}
 			/>
 		</div>

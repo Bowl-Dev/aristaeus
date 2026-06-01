@@ -2,6 +2,11 @@
 	import type { Ingredient } from '$lib/types';
 	import { _, locale } from 'svelte-i18n';
 	import { base } from '$app/paths';
+	import {
+		getQuantityIncrement,
+		gramsToContainers,
+		formatContainerValue
+	} from '$lib/utils/ingredientQuantity';
 
 	interface Props {
 		ingredient: Ingredient;
@@ -20,9 +25,7 @@
 	const imageSrc = $derived(ingredient.imageUrl ?? `${base}/bowl_placeholder.png`);
 
 	const isSelected = $derived(quantity > 0);
-	const step = $derived(
-		ingredient.category === 'dressing' || ingredient.category === 'topping' ? 5 : 10
-	);
+	const step = $derived(getQuantityIncrement(ingredient.category));
 
 	// Disable add when there isn't room for even the minimum quantity
 	const addDisabled = $derived(remaining < step);
@@ -37,7 +40,12 @@
 		`${Math.round(ingredient.fatGPer100g)}g G`
 	]);
 
-	const quantityLabel = $derived(`${quantity}g`);
+	const quantityLabel = $derived.by(() => {
+		if (ingredient.category !== 'dressing') return `${quantity}g`;
+		const count = gramsToContainers(quantity);
+		const key = count <= 1 ? 'builder.ingredient.container' : 'builder.ingredient.containers';
+		return $_(key, { values: { value: formatContainerValue(count) } });
+	});
 
 	// ── Long-press state for the − button ──
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;

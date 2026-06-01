@@ -185,7 +185,9 @@
 		"ingredient": {
 			"add": "Add {name}",
 			"increase": "Increase {name}",
-			"decrease": "Decrease {name}"
+			"decrease": "Decrease {name}",
+			"container": "{value} container",
+			"containers": "{value} containers"
 		},
 		"macros": "Macronutrients",
 		"selectedIngredients": "Selected ingredients",
