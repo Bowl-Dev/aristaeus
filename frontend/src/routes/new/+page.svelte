@@ -28,6 +28,11 @@
 	let selectedBowlSize = $state<BowlSize | null>(null);
 	let selectedItems = new SvelteMap<number, number>();
 
+	// Navigation breadcrumbs: track how the user entered Builder / Cart so the
+	// back button returns to the actual previous view instead of always Landing.
+	let builderEntry = $state<'size' | 'menu' | null>(null);
+	let cartEntry = $state<'menu' | 'size' | 'builder'>('builder');
+
 	// Cart: saved bowl snapshots with quantity multiplier
 	let bowls = $state<BowlSnapshot[]>([]);
 	const cartCount = $derived(bowls.length);
@@ -60,21 +65,42 @@
 		scaledItems.forEach(({ ingredientId, quantityGrams }) => {
 			selectedItems.set(ingredientId, quantityGrams);
 		});
+		builderEntry = 'menu';
 		view = 'builder';
 	}
 
-	function handleBack() {
+	// Menu and Size are reached directly from Landing, so their back goes there.
+	function backToLanding() {
 		clearSelection();
 		view = 'landing';
 	}
 
+	// Builder returns to whichever step opened it (Size or Menu). Ingredient
+	// progress and bowl size are intentionally discarded on Back (see ENG-63).
+	function handleBuilderBack() {
+		const target = builderEntry === 'menu' ? 'menu' : 'size';
+		clearSelection();
+		builderEntry = null;
+		view = target;
+	}
+
 	function goToCart() {
-		if (bowls.length > 0) view = 'cart';
+		if (bowls.length > 0) {
+			cartEntry = view as 'menu' | 'size' | 'builder';
+			view = 'cart';
+		}
+	}
+
+	// Cart returns to the view that opened it (header cart icon from Menu/Size/
+	// Builder, or add-to-cart from Builder), not unconditionally to Builder.
+	function handleCartBack() {
+		view = cartEntry;
 	}
 
 	function addCurrentBowlToCart() {
 		bowls = addBowl(bowls, selectedBowlSize ?? 450, selectedItems);
 		clearSelection();
+		cartEntry = 'builder';
 		view = 'cart';
 	}
 
@@ -104,7 +130,7 @@
 		{menus}
 		{loading}
 		{cartCount}
-		onBack={handleBack}
+		onBack={backToLanding}
 		onCart={goToCart}
 		onCustomize={(menu) => {
 			handleMenuSelect(
@@ -119,10 +145,11 @@
 {:else if view === 'size'}
 	<Size
 		{cartCount}
-		onBack={handleBack}
+		onBack={backToLanding}
 		onCart={goToCart}
 		onSelect={(size) => {
 			selectedBowlSize = size;
+			builderEntry = 'size';
 			view = 'builder';
 		}}
 	/>
@@ -133,7 +160,7 @@
 		bowlSize={selectedBowlSize ?? 450}
 		{selectedItems}
 		{cartCount}
-		onBack={handleBack}
+		onBack={handleBuilderBack}
 		onCart={goToCart}
 		onAddToCart={addCurrentBowlToCart}
 	/>
@@ -142,7 +169,7 @@
 		{ingredients}
 		{bowls}
 		{cartCount}
-		onBack={() => (view = 'builder')}
+		onBack={handleCartBack}
 		onProceedToDelivery={() => (view = 'delivery')}
 		onCreateAnother={() => (showLandingModal = true)}
 		onRemoveBowl={handleRemoveBowl}
