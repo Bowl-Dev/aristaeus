@@ -32,13 +32,20 @@
 	// Disable increase when there isn't room for another full step
 	const increaseDisabled = $derived(remaining < step);
 
-	// Nutritional chips — values shown are per 100g (as indicated by the info banner)
-	const chips = $derived([
-		`${Math.round(ingredient.caloriesPer100g)} cal`,
-		`${Math.round(ingredient.proteinGPer100g)}g P`,
-		`${Math.round(ingredient.carbsGPer100g)}g C`,
-		`${Math.round(ingredient.fatGPer100g)}g G`
-	]);
+	// Nutritional chips — per-100g reference values until the ingredient is
+	// added, then scaled to the selected quantity: (per100g * grams) / 100
+	// (matches the server-side nutrition calc). The reference (unadded) state is
+	// marked with a `/100g` micro-label in the template; once added it shows the
+	// macros actually in the bowl.
+	const chips = $derived.by(() => {
+		const factor = isSelected ? quantity / 100 : 1;
+		return [
+			`${Math.round(ingredient.caloriesPer100g * factor)} cal`,
+			`${Math.round(ingredient.proteinGPer100g * factor)}g P`,
+			`${Math.round(ingredient.carbsGPer100g * factor)}g C`,
+			`${Math.round(ingredient.fatGPer100g * factor)}g G`
+		];
+	});
 
 	const quantityLabel = $derived.by(() => {
 		if (ingredient.category !== 'dressing') return `${quantity}g`;
@@ -122,10 +129,13 @@
 		<div class="flex min-w-0 flex-col gap-1.5">
 			<span class="truncate text-sm font-bold tracking-[0.28px] text-text-black">{displayName}</span
 			>
-			<div class="flex gap-3">
+			<div class="flex items-center gap-3">
 				{#each chips as chip (chip)}
 					<span class="text-xs text-text-gray">{chip}</span>
 				{/each}
+				{#if !isSelected}
+					<span class="text-[10px] font-medium text-text-muted">/100g</span>
+				{/if}
 			</div>
 		</div>
 

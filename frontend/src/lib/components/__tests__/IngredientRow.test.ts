@@ -111,6 +111,53 @@ describe('IngredientRow', () => {
 		expect(container.textContent).not.toContain('36g');
 	});
 
+	it('shows per-100g reference values with a /100g label when quantity is 0', () => {
+		const ingredient: Ingredient = {
+			...baseIngredient,
+			caloriesPer100g: 250,
+			proteinGPer100g: 20,
+			carbsGPer100g: 30,
+			fatGPer100g: 10
+		};
+		const { container } = render(IngredientRow, { props: makeProps({ ingredient, quantity: 0 }) });
+		const text = container.textContent ?? '';
+		expect(text).toContain('250 cal');
+		expect(text).toContain('20g P');
+		expect(text).toContain('30g C');
+		expect(text).toContain('10g G');
+		expect(text).toContain('/100g');
+	});
+
+	it('scales chips to the selected quantity and hides the /100g label when added', () => {
+		const ingredient: Ingredient = {
+			...baseIngredient,
+			caloriesPer100g: 250,
+			proteinGPer100g: 20,
+			carbsGPer100g: 30,
+			fatGPer100g: 10
+		};
+		// 10g of a 250 cal/100g ingredient → 25 cal, 2g P, 3g C, 1g G
+		const { container } = render(IngredientRow, {
+			props: makeProps({ ingredient, quantity: 10 })
+		});
+		const text = container.textContent ?? '';
+		expect(text).toContain('25 cal');
+		expect(text).toContain('2g P');
+		expect(text).toContain('3g C');
+		expect(text).toContain('1g G');
+		expect(text).not.toContain('/100g');
+		expect(text).not.toContain('250 cal');
+	});
+
+	it('rounds scaled chip values to the nearest integer', () => {
+		const ingredient: Ingredient = { ...baseIngredient, caloriesPer100g: 18 };
+		// 50g of 18 cal/100g → 9 cal
+		const { container } = render(IngredientRow, {
+			props: makeProps({ ingredient, quantity: 50 })
+		});
+		expect(container.textContent ?? '').toContain('9 cal');
+	});
+
 	it('long-press on the − button triggers onRemove', async () => {
 		vi.useFakeTimers();
 		const onRemove = vi.fn();
