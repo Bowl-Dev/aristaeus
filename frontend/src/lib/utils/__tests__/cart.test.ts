@@ -59,11 +59,12 @@ describe('decrementAt', () => {
 		expect(after[0].quantity).toBe(2);
 	});
 
-	it('removes the bowl when its quantity would drop to 0', () => {
+	it('clamps at 1 and returns the array unchanged (never removes the bowl)', () => {
 		const before = [bowl(1), bowl(2)];
 		const after = decrementAt(before, 0);
-		expect(after).toHaveLength(1);
-		expect(after[0].quantity).toBe(2);
+		expect(after).toBe(before);
+		expect(after).toHaveLength(2);
+		expect(after[0].quantity).toBe(1);
 	});
 
 	it('is a no-op for an out-of-range index', () => {

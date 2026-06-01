@@ -204,6 +204,12 @@
 			"decrease": "Disminuir cantidad",
 			"increase": "Aumentar cantidad"
 		},
+		"removeConfirm": {
+			"title": "¿Eliminar este bowl?",
+			"message": "El bowl {n} se eliminará de tu carrito. Esta acción no se puede deshacer.",
+			"confirm": "Eliminar",
+			"cancel": "Cancelar"
+		},
 		"total": {
 			"label": "Total",
 			"weight": "{weight}g totales"

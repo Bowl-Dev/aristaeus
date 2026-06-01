@@ -88,8 +88,8 @@
 	}
 
 	function handleDecreaseBowl(index: number) {
+		// decrementAt clamps at 1, so this can never empty the cart.
 		bowls = decrementAt(bowls, index);
-		if (bowls.length === 0) view = 'landing';
 	}
 </script>
 
