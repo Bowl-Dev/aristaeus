@@ -119,7 +119,9 @@ describe('Cart (locale=es)', () => {
 
 	// ENG-66: the − button must clamp at 1, never delete.
 	it('disables the − button when quantity is 1', () => {
-		const { container } = render(Cart, { props: makeProps({ bowls: [makeBowl({ quantity: 1 })] }) });
+		const { container } = render(Cart, {
+			props: makeProps({ bowls: [makeBowl({ quantity: 1 })] })
+		});
 		const decBtn = container.querySelector(
 			'button[aria-label="Disminuir cantidad"]'
 		) as HTMLButtonElement;
@@ -127,7 +129,9 @@ describe('Cart (locale=es)', () => {
 	});
 
 	it('enables the − button when quantity is greater than 1', () => {
-		const { container } = render(Cart, { props: makeProps({ bowls: [makeBowl({ quantity: 2 })] }) });
+		const { container } = render(Cart, {
+			props: makeProps({ bowls: [makeBowl({ quantity: 2 })] })
+		});
 		const decBtn = container.querySelector(
 			'button[aria-label="Disminuir cantidad"]'
 		) as HTMLButtonElement;
