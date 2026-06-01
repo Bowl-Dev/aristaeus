@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeBowlTotals, bowlBasePrice, formatCOP } from '../bowl';
+import { computeBowlTotals, bowlBasePrice, roundToNearestCoin, formatCOP } from '../bowl';
 import type { Ingredient } from '$lib/types';
 
 const rice: Ingredient = {
@@ -87,6 +87,19 @@ describe('bowlBasePrice', () => {
 		expect(bowlBasePrice(250)).toBe(1200);
 		expect(bowlBasePrice(450)).toBe(1300);
 		expect(bowlBasePrice(600)).toBe(1400);
+	});
+});
+
+describe('roundToNearestCoin', () => {
+	it('rounds to the nearest 100 COP (smallest Colombian coin)', () => {
+		expect(roundToNearestCoin(1749)).toBe(1700);
+		expect(roundToNearestCoin(1750)).toBe(1800);
+		expect(roundToNearestCoin(1751)).toBe(1800);
+	});
+
+	it('leaves exact multiples of 100 unchanged', () => {
+		expect(roundToNearestCoin(1800)).toBe(1800);
+		expect(roundToNearestCoin(0)).toBe(0);
 	});
 });
 

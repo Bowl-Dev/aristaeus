@@ -43,6 +43,14 @@ export function computeBowlTotals(
 	};
 }
 
+/**
+ * Round a COP amount to the nearest 100, since 100 is the smallest coin
+ * in Colombian currency. Mirrors the legacy app's pricing behaviour.
+ */
+export function roundToNearestCoin(amount: number): number {
+	return Math.round(amount / 100) * 100;
+}
+
 export function bowlBasePrice(bowlSize: BowlSize): number {
 	switch (bowlSize) {
 		case 250:

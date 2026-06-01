@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
 	import type { Ingredient, BowlSize } from '$lib/types';
-	import { computeBowlTotals, bowlBasePrice, formatCOP } from '$lib/utils/bowl';
+	import { computeBowlTotals, bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
 	import AppScreen from './templates/AppScreen.svelte';
 	import Card from './molecules/Card.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
@@ -50,7 +50,7 @@
 		const totals = computeBowlTotals(bowl.items, ingredients);
 		return {
 			...totals,
-			unitPrice: bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice
+			unitPrice: roundToNearestCoin(bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice)
 		};
 	}
 

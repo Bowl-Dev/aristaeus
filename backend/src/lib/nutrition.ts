@@ -64,7 +64,8 @@ export function calculateNutrition(
 		totals.totalPrice += toNumber(ingredient.pricePerG) * (multiplier * 100);
 	}
 
-	// Round to 2 decimal places
+	// Round nutrition to 2 decimal places; round the price to the nearest 100
+	// COP, since 100 is the smallest coin in Colombian currency.
 	return {
 		totalCalories: round(totals.totalCalories),
 		totalProteinG: round(totals.totalProteinG),
@@ -72,8 +73,16 @@ export function calculateNutrition(
 		totalFatG: round(totals.totalFatG),
 		totalFiberG: round(totals.totalFiberG),
 		totalWeightG: round(totals.totalWeightG),
-		totalPrice: round(totals.totalPrice / 10000) * 10000
+		totalPrice: roundToNearestCoin(totals.totalPrice)
 	};
+}
+
+/**
+ * Round a COP amount to the nearest 100, since 100 is the smallest coin
+ * in Colombian currency.
+ */
+function roundToNearestCoin(value: number): number {
+	return Math.round(value / 100) * 100;
 }
 
 function toNumber(value: Decimal | number | null): number {
