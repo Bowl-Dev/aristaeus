@@ -148,4 +148,45 @@ describe('/new +page (view state machine)', () => {
 			expect(container.textContent).toContain('Selecciona ingredientes y ajusta las cantidades')
 		);
 	});
+
+	// ENG-63: Builder back must return to the step that opened it, not Landing.
+	it('Builder → Back returns to Size when entered from Size (not Landing)', async () => {
+		getIngredientsMock.mockResolvedValue([rice]);
+		getMenusMock.mockResolvedValue([]);
+		const { container } = render(Page);
+		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
+		await waitFor(() => expect(findButton(container, /Desde cero/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Desde cero/) as HTMLButtonElement);
+		await waitFor(() => expect(container.textContent).toContain('Tamaños'));
+		await fireEvent.click(findButton(container, /Mediano/) as HTMLButtonElement);
+		await waitFor(() =>
+			expect(container.textContent).toContain('Selecciona ingredientes y ajusta las cantidades')
+		);
+		// Back from Builder → Size, not Landing
+		const backBtn = container.querySelector('button[aria-label="Volver"]') as HTMLButtonElement;
+		await fireEvent.click(backBtn);
+		await waitFor(() => expect(container.textContent).toContain('Tamaños'));
+		expect(findButton(container, /Ordena ahora/)).toBeFalsy();
+	});
+
+	it('Builder → Back returns to Menu when entered from Menu (not Landing)', async () => {
+		getIngredientsMock.mockResolvedValue([rice]);
+		getMenusMock.mockResolvedValue([sampleMenu]);
+		const { container } = render(Page);
+		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
+		await waitFor(() => expect(findButton(container, /Ideas para empezar/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Ideas para empezar/) as HTMLButtonElement);
+		await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));
+		await fireEvent.click(findButton(container, /Personalizar bowl/) as HTMLButtonElement);
+		await waitFor(() =>
+			expect(container.textContent).toContain('Selecciona ingredientes y ajusta las cantidades')
+		);
+		// Back from Builder → Menu, not Landing
+		const backBtn = container.querySelector('button[aria-label="Volver"]') as HTMLButtonElement;
+		await fireEvent.click(backBtn);
+		await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));
+		expect(findButton(container, /Ordena ahora/)).toBeFalsy();
+	});
 });
