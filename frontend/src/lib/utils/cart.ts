@@ -22,10 +22,12 @@ export function incrementAt(bowls: BowlSnapshot[], index: number): BowlSnapshot[
 	return bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity + 1 } : b));
 }
 
-// Decrements the bowl at `index`; if its quantity would drop to 0, the bowl is removed.
+// Decrements the bowl at `index`, clamping at a minimum quantity of 1. Removal
+// is handled exclusively by the trash button (removeAt) so the `-` button can
+// never delete a bowl.
 export function decrementAt(bowls: BowlSnapshot[], index: number): BowlSnapshot[] {
 	const target = bowls[index];
 	if (!target) return bowls;
-	if (target.quantity <= 1) return removeAt(bowls, index);
+	if (target.quantity <= 1) return bowls;
 	return bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity - 1 } : b));
 }

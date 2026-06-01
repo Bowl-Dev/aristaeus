@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { render, fireEvent } from '@testing-library/svelte';
 import { locale, waitLocale } from 'svelte-i18n';
 import Cart from '../Cart.svelte';
 import type { Ingredient, BowlSize } from '$lib/types';
@@ -115,6 +115,63 @@ describe('Cart (locale=es)', () => {
 		expect(container.textContent).toContain('Arroz Blanco');
 		expect(container.textContent).toContain('Aguacate');
 		expect(container.textContent).not.toContain('White Rice');
+	});
+
+	// ENG-66: the − button must clamp at 1, never delete.
+	it('disables the − button when quantity is 1', () => {
+		const { container } = render(Cart, {
+			props: makeProps({ bowls: [makeBowl({ quantity: 1 })] })
+		});
+		const decBtn = container.querySelector(
+			'button[aria-label="Disminuir cantidad"]'
+		) as HTMLButtonElement;
+		expect(decBtn.disabled).toBe(true);
+	});
+
+	it('enables the − button when quantity is greater than 1', () => {
+		const { container } = render(Cart, {
+			props: makeProps({ bowls: [makeBowl({ quantity: 2 })] })
+		});
+		const decBtn = container.querySelector(
+			'button[aria-label="Disminuir cantidad"]'
+		) as HTMLButtonElement;
+		expect(decBtn.disabled).toBe(false);
+	});
+
+	// ENG-67: trash opens a confirmation modal instead of deleting immediately.
+	it('trash button opens the confirmation modal without removing the bowl', async () => {
+		const onRemoveBowl = vi.fn();
+		const { container, getByText } = render(Cart, { props: makeProps({ onRemoveBowl }) });
+		const trash = container.querySelector(
+			'button[aria-label="Eliminar bowl"]'
+		) as HTMLButtonElement;
+		await fireEvent.click(trash);
+		expect(onRemoveBowl).not.toHaveBeenCalled();
+		expect(getByText('¿Eliminar este bowl?')).toBeTruthy();
+	});
+
+	it('confirming the modal removes the bowl exactly once', async () => {
+		const onRemoveBowl = vi.fn();
+		const { container, getByText } = render(Cart, { props: makeProps({ onRemoveBowl }) });
+		await fireEvent.click(
+			container.querySelector('button[aria-label="Eliminar bowl"]') as HTMLButtonElement
+		);
+		await fireEvent.click(getByText('Eliminar'));
+		expect(onRemoveBowl).toHaveBeenCalledOnce();
+		expect(onRemoveBowl).toHaveBeenCalledWith(0);
+	});
+
+	it('cancelling the modal does not remove the bowl', async () => {
+		const onRemoveBowl = vi.fn();
+		const { container, getByText, queryByText } = render(Cart, {
+			props: makeProps({ onRemoveBowl })
+		});
+		await fireEvent.click(
+			container.querySelector('button[aria-label="Eliminar bowl"]') as HTMLButtonElement
+		);
+		await fireEvent.click(getByText('Cancelar'));
+		expect(onRemoveBowl).not.toHaveBeenCalled();
+		expect(queryByText('¿Eliminar este bowl?')).toBeNull();
 	});
 });
 

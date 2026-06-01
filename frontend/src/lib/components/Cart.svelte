@@ -6,6 +6,7 @@
 	import Card from './molecules/Card.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
 	import IconButton from './atoms/IconButton.svelte';
+	import ConfirmModal from './organisms/ConfirmModal.svelte';
 
 	interface BowlSnapshot {
 		bowlSize: BowlSize;
@@ -82,6 +83,10 @@
 
 	const grandTotal = $derived(bowlData.reduce((acc, b) => acc + b.totalPrice, 0));
 	const grandWeight = $derived(bowlData.reduce((acc, b) => acc + b.totalWeight, 0));
+
+	// Trash is the only deletion path (the − button clamps at 1), so it is gated
+	// behind a confirmation modal to prevent accidental, irreversible removal.
+	let pendingRemoveIndex = $state<number | null>(null);
 </script>
 
 <AppScreen {onBack} {cartCount} fill>
@@ -129,7 +134,7 @@
 					<IconButton
 						variant="ghost-danger"
 						ariaLabel={$_('cart.bowl.remove')}
-						onclick={() => onRemoveBowl(i)}
+						onclick={() => (pendingRemoveIndex = i)}
 					>
 						<svg
 							width="18"
@@ -169,6 +174,7 @@
 						<IconButton
 							variant="outline"
 							ariaLabel={$_('cart.bowl.decrease')}
+							disabled={bowl.quantity === 1}
 							onclick={() => onDecreaseBowl(i)}
 						>
 							<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -253,3 +259,17 @@
 		</button>
 	</div>
 </AppScreen>
+
+<ConfirmModal
+	open={pendingRemoveIndex !== null}
+	title={$_('cart.removeConfirm.title')}
+	message={$_('cart.removeConfirm.message', { values: { n: (pendingRemoveIndex ?? 0) + 1 } })}
+	confirmLabel={$_('cart.removeConfirm.confirm')}
+	cancelLabel={$_('cart.removeConfirm.cancel')}
+	variant="danger"
+	onConfirm={() => {
+		if (pendingRemoveIndex !== null) onRemoveBowl(pendingRemoveIndex);
+		pendingRemoveIndex = null;
+	}}
+	onCancel={() => (pendingRemoveIndex = null)}
+/>
