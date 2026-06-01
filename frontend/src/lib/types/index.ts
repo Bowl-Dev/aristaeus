@@ -30,5 +30,9 @@ export const BOWL_SIZE_LABELS: Record<import('@aristaeus/shared').BowlSize, stri
 	600: 'Large (600g)'
 };
 
-// Dressing container size in grams
+// Dressing container size in grams (nominal full container)
 export const DRESSING_CONTAINER_GRAMS = 25;
+
+// Dressing quantity step in grams — half a container, so dressings can be
+// ordered in half-container increments (½, 1, 1½, … containers).
+export const DRESSING_STEP_GRAMS = 12;

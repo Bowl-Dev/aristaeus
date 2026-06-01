@@ -4,29 +4,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import {
+	getQuantityIncrement,
+	getInitialQuantity,
+	gramsToContainers,
+	formatContainerValue
+} from '$lib/utils/ingredientQuantity';
 
-const DRESSING_CONTAINER_GRAMS = 25;
-
-// Helper functions to test (extracted from component logic)
-function getQuantityIncrement(category: string): number {
-	return category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 10;
-}
-
-function getInitialQuantity(category: string): number {
-	return category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 50;
-}
-
-function formatQuantityDisplay(category: string, grams: number): string {
-	if (category === 'dressing') {
-		const containers = grams / DRESSING_CONTAINER_GRAMS;
-		return containers === 1 ? '1 container' : `${containers} containers`;
-	}
-	return `${grams}g`;
-}
-
-function gramsToContainers(grams: number): number {
-	return grams / DRESSING_CONTAINER_GRAMS;
-}
+const DRESSING_STEP_GRAMS = 12;
 
 function formatPricePerGram(pricePerG: number): string {
 	return `$${Math.round(pricePerG)}/g`;
@@ -34,8 +19,8 @@ function formatPricePerGram(pricePerG: number): string {
 
 describe('Dressing Container Logic', () => {
 	describe('getQuantityIncrement', () => {
-		it('should return 25 for dressing', () => {
-			expect(getQuantityIncrement('dressing')).toBe(25);
+		it('should return a half-container step (12g) for dressing', () => {
+			expect(getQuantityIncrement('dressing')).toBe(DRESSING_STEP_GRAMS);
 		});
 
 		it('should return 10 for protein', () => {
@@ -50,14 +35,14 @@ describe('Dressing Container Logic', () => {
 			expect(getQuantityIncrement('vegetable')).toBe(10);
 		});
 
-		it('should return 10 for topping', () => {
-			expect(getQuantityIncrement('topping')).toBe(10);
+		it('should return 5 for topping', () => {
+			expect(getQuantityIncrement('topping')).toBe(5);
 		});
 	});
 
 	describe('getInitialQuantity', () => {
-		it('should return 25 for dressing', () => {
-			expect(getInitialQuantity('dressing')).toBe(25);
+		it('should start dressings at half a container (12g)', () => {
+			expect(getInitialQuantity('dressing')).toBe(DRESSING_STEP_GRAMS);
 		});
 
 		it('should return 50 for protein', () => {
@@ -72,68 +57,60 @@ describe('Dressing Container Logic', () => {
 			expect(getInitialQuantity('vegetable')).toBe(50);
 		});
 
-		it('should return 50 for topping', () => {
-			expect(getInitialQuantity('topping')).toBe(50);
-		});
-	});
-
-	describe('formatQuantityDisplay', () => {
-		it('should show "1 container" for 25g dressing', () => {
-			expect(formatQuantityDisplay('dressing', 25)).toBe('1 container');
-		});
-
-		it('should show "2 containers" for 50g dressing', () => {
-			expect(formatQuantityDisplay('dressing', 50)).toBe('2 containers');
-		});
-
-		it('should show "3 containers" for 75g dressing', () => {
-			expect(formatQuantityDisplay('dressing', 75)).toBe('3 containers');
-		});
-
-		it('should show "4 containers" for 100g dressing', () => {
-			expect(formatQuantityDisplay('dressing', 100)).toBe('4 containers');
-		});
-
-		it('should show grams for protein', () => {
-			expect(formatQuantityDisplay('protein', 100)).toBe('100g');
-		});
-
-		it('should show grams for base', () => {
-			expect(formatQuantityDisplay('base', 80)).toBe('80g');
-		});
-
-		it('should show grams for vegetable', () => {
-			expect(formatQuantityDisplay('vegetable', 60)).toBe('60g');
-		});
-
-		it('should show grams for topping', () => {
-			expect(formatQuantityDisplay('topping', 30)).toBe('30g');
+		it('should return 5 for topping', () => {
+			expect(getInitialQuantity('topping')).toBe(5);
 		});
 	});
 
 	describe('gramsToContainers', () => {
-		it('should convert 25g to 1 container', () => {
+		it('should convert a half-container step (12g) to 0.5', () => {
+			expect(gramsToContainers(12)).toBe(0.5);
+		});
+
+		it('should convert 24g to 1 container', () => {
+			expect(gramsToContainers(24)).toBe(1);
+		});
+
+		it('should convert 36g to 1.5 containers', () => {
+			expect(gramsToContainers(36)).toBe(1.5);
+		});
+
+		it('should convert 48g to 2 containers', () => {
+			expect(gramsToContainers(48)).toBe(2);
+		});
+
+		it('should snap legacy 25g amounts to 1 container', () => {
 			expect(gramsToContainers(25)).toBe(1);
 		});
 
-		it('should convert 50g to 2 containers', () => {
+		it('should snap legacy 50g amounts to 2 containers', () => {
 			expect(gramsToContainers(50)).toBe(2);
-		});
-
-		it('should convert 75g to 3 containers', () => {
-			expect(gramsToContainers(75)).toBe(3);
-		});
-
-		it('should convert 100g to 4 containers', () => {
-			expect(gramsToContainers(100)).toBe(4);
-		});
-
-		it('should handle non-divisible amounts', () => {
-			expect(gramsToContainers(30)).toBe(1.2);
 		});
 
 		it('should handle 0 grams', () => {
 			expect(gramsToContainers(0)).toBe(0);
+		});
+	});
+
+	describe('formatContainerValue', () => {
+		it('should render half a container as ½', () => {
+			expect(formatContainerValue(0.5)).toBe('½');
+		});
+
+		it('should render a whole container as 1', () => {
+			expect(formatContainerValue(1)).toBe('1');
+		});
+
+		it('should render one and a half containers as 1½', () => {
+			expect(formatContainerValue(1.5)).toBe('1½');
+		});
+
+		it('should render two containers as 2', () => {
+			expect(formatContainerValue(2)).toBe('2');
+		});
+
+		it('should render two and a half containers as 2½', () => {
+			expect(formatContainerValue(2.5)).toBe('2½');
 		});
 	});
 });
@@ -171,12 +148,12 @@ describe('Price Formatting', () => {
 });
 
 describe('Increment/Decrement Logic', () => {
-	// Simulating the add/remove ingredient functions
+	// Simulating the add/remove ingredient stepping (step driven by category)
 	function addIngredient(
 		category: string,
 		currentQty: number
 	): { newQty: number; increment: number } {
-		const increment = category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 10;
+		const increment = getQuantityIncrement(category);
 		return { newQty: currentQty + increment, increment };
 	}
 
@@ -184,7 +161,7 @@ describe('Increment/Decrement Logic', () => {
 		category: string,
 		currentQty: number
 	): { newQty: number | null; decrement: number } {
-		const decrement = category === 'dressing' ? DRESSING_CONTAINER_GRAMS : 10;
+		const decrement = getQuantityIncrement(category);
 		if (currentQty <= decrement) {
 			return { newQty: null, decrement }; // null means item should be removed
 		}
@@ -192,10 +169,10 @@ describe('Increment/Decrement Logic', () => {
 	}
 
 	describe('adding ingredients', () => {
-		it('should add 25g for dressing', () => {
-			const result = addIngredient('dressing', 25);
-			expect(result.newQty).toBe(50);
-			expect(result.increment).toBe(25);
+		it('should add half a container (12g) for dressing', () => {
+			const result = addIngredient('dressing', 12);
+			expect(result.newQty).toBe(24);
+			expect(result.increment).toBe(12);
 		});
 
 		it('should add 10g for protein', () => {
@@ -212,10 +189,10 @@ describe('Increment/Decrement Logic', () => {
 	});
 
 	describe('removing ingredients', () => {
-		it('should remove 25g for dressing', () => {
-			const result = removeIngredient('dressing', 50);
-			expect(result.newQty).toBe(25);
-			expect(result.decrement).toBe(25);
+		it('should remove half a container (12g) for dressing', () => {
+			const result = removeIngredient('dressing', 24);
+			expect(result.newQty).toBe(12);
+			expect(result.decrement).toBe(12);
 		});
 
 		it('should remove 10g for protein', () => {
@@ -224,18 +201,13 @@ describe('Increment/Decrement Logic', () => {
 			expect(result.decrement).toBe(10);
 		});
 
-		it('should remove ingredient entirely when at minimum for dressing (25g)', () => {
-			const result = removeIngredient('dressing', 25);
+		it('should remove a dressing entirely from its minimum half container (12g)', () => {
+			const result = removeIngredient('dressing', 12);
 			expect(result.newQty).toBeNull();
 		});
 
 		it('should remove ingredient entirely when at minimum for protein (10g)', () => {
 			const result = removeIngredient('protein', 10);
-			expect(result.newQty).toBeNull();
-		});
-
-		it('should remove ingredient entirely when below minimum for dressing', () => {
-			const result = removeIngredient('dressing', 20);
 			expect(result.newQty).toBeNull();
 		});
 	});

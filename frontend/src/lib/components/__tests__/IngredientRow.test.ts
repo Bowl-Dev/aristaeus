@@ -67,13 +67,48 @@ describe('IngredientRow', () => {
 		expect(img.getAttribute('src')).toBe('/bowl_placeholder.png');
 	});
 
-	it('uses 5g step for dressing/topping and 10g for everything else', () => {
-		const dressing: Ingredient = { ...baseIngredient, category: 'dressing' };
+	it('uses a 5g step for toppings (enabled when 5g remains)', () => {
+		const topping: Ingredient = { ...baseIngredient, category: 'topping' };
 		const { container } = render(IngredientRow, {
-			props: makeProps({ ingredient: dressing, remaining: 6 })
+			props: makeProps({ ingredient: topping, remaining: 6 })
 		});
 		const addBtn = container.querySelector('button') as HTMLButtonElement;
 		expect(addBtn.disabled).toBe(false);
+	});
+
+	it('quantizes dressings to half-container (12g) steps (Add disabled below a half container)', () => {
+		const dressing: Ingredient = { ...baseIngredient, category: 'dressing' };
+		const tooLittle = render(IngredientRow, {
+			props: makeProps({ ingredient: dressing, remaining: 6 })
+		});
+		expect((tooLittle.container.querySelector('button') as HTMLButtonElement).disabled).toBe(true);
+
+		const halfContainer = render(IngredientRow, {
+			props: makeProps({ ingredient: dressing, remaining: 12 })
+		});
+		expect((halfContainer.container.querySelector('button') as HTMLButtonElement).disabled).toBe(
+			false
+		);
+	});
+
+	it('labels a half-container dressing as ½ container, not grams', () => {
+		const dressing: Ingredient = { ...baseIngredient, category: 'dressing' };
+		const { container } = render(IngredientRow, {
+			props: makeProps({ ingredient: dressing, quantity: 12 })
+		});
+		// Tests run in the default 'es' locale → "½ contenedor"
+		expect(container.textContent).toContain('½ contenedor');
+		expect(container.textContent).not.toContain('12g');
+	});
+
+	it('labels a multi-container dressing in containers, not grams', () => {
+		const dressing: Ingredient = { ...baseIngredient, category: 'dressing' };
+		const { container } = render(IngredientRow, {
+			props: makeProps({ ingredient: dressing, quantity: 36 })
+		});
+		// 36g → 1.5 containers → "1½ contenedores"
+		expect(container.textContent).toContain('1½ contenedores');
+		expect(container.textContent).not.toContain('36g');
 	});
 
 	it('long-press on the − button triggers onRemove', async () => {

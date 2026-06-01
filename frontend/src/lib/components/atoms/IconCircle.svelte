@@ -29,7 +29,7 @@
 	<img
 		{src}
 		{alt}
-		class="h-full w-full object-contain"
+		class="h-full w-full {pixelated ? 'object-contain' : 'object-cover'}"
 		style={pixelated ? 'image-rendering: pixelated;' : ''}
 	/>
 </div>
