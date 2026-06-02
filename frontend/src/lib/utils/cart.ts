@@ -4,14 +4,16 @@ export interface BowlSnapshot {
 	bowlSize: BowlSize;
 	items: Map<number, number>;
 	quantity: number;
+	includeCutlery: boolean;
 }
 
 export function addBowl(
 	bowls: BowlSnapshot[],
 	bowlSize: BowlSize,
-	items: Map<number, number> | ReadonlyMap<number, number>
+	items: Map<number, number> | ReadonlyMap<number, number>,
+	includeCutlery = false
 ): BowlSnapshot[] {
-	return [...bowls, { bowlSize, items: new Map(items), quantity: 1 }];
+	return [...bowls, { bowlSize, items: new Map(items), quantity: 1, includeCutlery }];
 }
 
 export function removeAt(bowls: BowlSnapshot[], index: number): BowlSnapshot[] {

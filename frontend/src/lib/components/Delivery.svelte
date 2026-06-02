@@ -2,7 +2,7 @@
 	import { _ } from 'svelte-i18n';
 	import type { Ingredient, BowlSize, CreateOrderRequest } from '$lib/types';
 	import { computeBowlTotals, bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
-	import { DEFAULT_DELIVERY_LOCALE } from '$lib/constants';
+	import { DEFAULT_DELIVERY_LOCALE, CUTLERY_PRICE } from '$lib/constants';
 	import { createOrder, ApiError } from '$lib/api/client';
 	import AppScreen from './templates/AppScreen.svelte';
 	import FormInput from './molecules/FormInput.svelte';
@@ -12,6 +12,7 @@
 		bowlSize: BowlSize;
 		items: Map<number, number>;
 		quantity: number;
+		includeCutlery: boolean;
 	}
 
 	interface Props {
@@ -42,9 +43,12 @@
 
 	function computeBowlUnit(bowl: BowlSnapshot) {
 		const totals = computeBowlTotals(bowl.items, ingredients);
+		const cutlery = bowl.includeCutlery ? CUTLERY_PRICE : 0;
 		return {
 			...totals,
-			unitPrice: roundToNearestCoin(bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice)
+			unitPrice: roundToNearestCoin(
+				bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice + cutlery
+			)
 		};
 	}
 
@@ -86,7 +90,7 @@
 					ingredientId,
 					quantityGrams
 				})),
-				includeCutlery: false
+				includeCutlery: bowl.includeCutlery
 			};
 			for (let i = 0; i < bowl.quantity; i++) requests.push(payload);
 		}

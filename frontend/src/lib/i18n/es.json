@@ -34,7 +34,11 @@
 		"medium": "Mediano",
 		"large": "Grande",
 		"capacity": "Capacidad",
-		"pricingNote": "Incluye empaque — los ingredientes se cobran aparte"
+		"pricingNote": "Incluye empaque — los ingredientes se cobran aparte",
+		"cutlery": {
+			"label": "Agregar cubiertos",
+			"note": "+$300"
+		}
 	},
 	"thnks": {
 		"title": "¡Gracias por elegirnos!",

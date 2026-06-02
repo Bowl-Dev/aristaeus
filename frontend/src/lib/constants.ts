@@ -9,3 +9,7 @@ export const DEFAULT_DELIVERY_LOCALE = {
 	city: 'Bogotá',
 	department: 'Bogotá D.C.'
 } as const;
+
+// Flat surcharge (COP) added to a bowl when the customer opts to include
+// cutlery. Mirrors the legacy app's +$300 cutlery option.
+export const CUTLERY_PRICE = 300;

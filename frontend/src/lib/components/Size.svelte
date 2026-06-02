@@ -10,12 +10,14 @@
 		onBack,
 		onCart,
 		onSelect,
-		cartCount
+		cartCount,
+		includeCutlery = $bindable(false)
 	}: {
 		onBack: () => void;
 		onCart?: () => void;
 		onSelect: (size: BowlSize) => void;
 		cartCount?: number;
+		includeCutlery?: boolean;
 	} = $props();
 
 	interface SizeOption {
@@ -44,5 +46,20 @@
 				onclick={() => onSelect(option.size)}
 			/>
 		{/each}
+
+		<!-- Cutlery: an order-level extra applied to the bowl being built. -->
+		<label
+			class="flex cursor-pointer items-center gap-3 rounded-2xl bg-pure-white p-4 [-webkit-tap-highlight-color:transparent]"
+		>
+			<input
+				type="checkbox"
+				bind:checked={includeCutlery}
+				class="h-5 w-5 rounded border-strokes text-dark-green focus:ring-dark-green"
+			/>
+			<span class="flex-1 text-[15px] font-semibold text-text-black">
+				{$_('size.cutlery.label')}
+			</span>
+			<span class="text-sm font-semibold text-text-muted">{$_('size.cutlery.note')}</span>
+		</label>
 	</div>
 </AppScreen>

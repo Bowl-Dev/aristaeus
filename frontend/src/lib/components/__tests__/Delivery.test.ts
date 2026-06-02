@@ -40,10 +40,11 @@ const rice: Ingredient = {
 
 const ingredients: Ingredient[] = [rice];
 
-const makeBowl = (qty = 1) => ({
+const makeBowl = (qty = 1, includeCutlery = false) => ({
 	bowlSize: 450 as BowlSize,
 	items: new Map([[1, 100]]),
-	quantity: qty
+	quantity: qty,
+	includeCutlery
 });
 
 const makeProps = (overrides: Record<string, unknown> = {}) => ({

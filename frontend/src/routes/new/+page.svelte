@@ -27,6 +27,7 @@
 	// Bowl state
 	let selectedBowlSize = $state<BowlSize | null>(null);
 	let selectedItems = new SvelteMap<number, number>();
+	let includeCutlery = $state(false);
 
 	// Navigation breadcrumbs: track how the user entered Builder / Cart so the
 	// back button returns to the actual previous view instead of always Landing.
@@ -54,6 +55,7 @@
 	function clearSelection() {
 		selectedItems.clear();
 		selectedBowlSize = null;
+		includeCutlery = false;
 	}
 
 	function handleMenuSelect(
@@ -98,7 +100,7 @@
 	}
 
 	function addCurrentBowlToCart() {
-		bowls = addBowl(bowls, selectedBowlSize ?? 450, selectedItems);
+		bowls = addBowl(bowls, selectedBowlSize ?? 450, selectedItems, includeCutlery);
 		clearSelection();
 		cartEntry = 'builder';
 		view = 'cart';
@@ -145,6 +147,7 @@
 {:else if view === 'size'}
 	<Size
 		{cartCount}
+		bind:includeCutlery
 		onBack={backToLanding}
 		onCart={goToCart}
 		onSelect={(size) => {
