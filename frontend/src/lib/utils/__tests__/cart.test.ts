@@ -7,7 +7,8 @@ const bowl = (
 ): BowlSnapshot => ({
 	bowlSize: 450,
 	items,
-	quantity
+	quantity,
+	includeCutlery: false
 });
 
 describe('addBowl', () => {
@@ -15,7 +16,17 @@ describe('addBowl', () => {
 		const before = [bowl(1)];
 		const after = addBowl(before, 250, new Map([[2, 50]]));
 		expect(after).toHaveLength(2);
-		expect(after[1]).toEqual({ bowlSize: 250, items: new Map([[2, 50]]), quantity: 1 });
+		expect(after[1]).toEqual({
+			bowlSize: 250,
+			items: new Map([[2, 50]]),
+			quantity: 1,
+			includeCutlery: false
+		});
+	});
+
+	it('records the cutlery preference on the new bowl', () => {
+		const after = addBowl([], 450, new Map([[1, 100]]), true);
+		expect(after[0].includeCutlery).toBe(true);
 	});
 
 	it('clones the items map (mutating the source map does not affect the snapshot)', () => {

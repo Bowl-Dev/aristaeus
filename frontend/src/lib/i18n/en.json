@@ -34,7 +34,11 @@
 		"medium": "Medium",
 		"large": "Large",
 		"capacity": "Capacity",
-		"pricingNote": "Includes packaging — ingredients priced separately"
+		"pricingNote": "Includes packaging — ingredients priced separately",
+		"cutlery": {
+			"label": "Add cutlery",
+			"note": "+$300"
+		}
 	},
 	"thnks": {
 		"title": "Thank you for choosing us!",

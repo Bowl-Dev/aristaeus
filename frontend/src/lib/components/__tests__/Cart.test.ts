@@ -39,11 +39,17 @@ const avocado: Ingredient = {
 const ingredients: Ingredient[] = [rice, avocado];
 
 const makeBowl = (
-	overrides: { items?: Map<number, number>; quantity?: number; bowlSize?: BowlSize } = {}
+	overrides: {
+		items?: Map<number, number>;
+		quantity?: number;
+		bowlSize?: BowlSize;
+		includeCutlery?: boolean;
+	} = {}
 ) => ({
 	bowlSize: (overrides.bowlSize ?? 450) as BowlSize,
 	items: overrides.items ?? new Map([[1, 100]]),
-	quantity: overrides.quantity ?? 1
+	quantity: overrides.quantity ?? 1,
+	includeCutlery: overrides.includeCutlery ?? false
 });
 
 const makeProps = (overrides: Record<string, unknown> = {}) => ({

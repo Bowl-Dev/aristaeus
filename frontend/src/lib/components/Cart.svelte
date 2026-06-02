@@ -2,6 +2,7 @@
 	import { _, locale } from 'svelte-i18n';
 	import type { Ingredient, BowlSize } from '$lib/types';
 	import { computeBowlTotals, bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
+	import { CUTLERY_PRICE } from '$lib/constants';
 	import AppScreen from './templates/AppScreen.svelte';
 	import Card from './molecules/Card.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
@@ -12,6 +13,7 @@
 		bowlSize: BowlSize;
 		items: Map<number, number>;
 		quantity: number;
+		includeCutlery: boolean;
 	}
 
 	interface Props {
@@ -48,9 +50,12 @@
 
 	function computeBowlUnit(bowl: BowlSnapshot) {
 		const totals = computeBowlTotals(bowl.items, ingredients);
+		const cutlery = bowl.includeCutlery ? CUTLERY_PRICE : 0;
 		return {
 			...totals,
-			unitPrice: roundToNearestCoin(bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice)
+			unitPrice: roundToNearestCoin(
+				bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice + cutlery
+			)
 		};
 	}
 
@@ -75,6 +80,7 @@
 				summary: ingredientSummary(b, isEs),
 				bowlSize: b.bowlSize,
 				quantity: b.quantity,
+				includeCutlery: b.includeCutlery,
 				totalPrice: unit.unitPrice * b.quantity,
 				totalWeight: unit.weight * b.quantity
 			};
@@ -158,6 +164,10 @@
 
 				<!-- Ingredient summary -->
 				<p class="m-0 text-sm leading-relaxed text-text-muted">{bowl.summary}</p>
+
+				{#if bowl.includeCutlery}
+					<p class="m-0 text-sm font-medium text-text-muted">{$_('size.cutlery.label')}</p>
+				{/if}
 
 				<!-- Nutrition chips -->
 				<NutritionChips
