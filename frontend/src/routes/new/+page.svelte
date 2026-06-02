@@ -147,7 +147,6 @@
 {:else if view === 'size'}
 	<Size
 		{cartCount}
-		bind:includeCutlery
 		onBack={backToLanding}
 		onCart={goToCart}
 		onSelect={(size) => {
@@ -163,6 +162,7 @@
 		bowlSize={selectedBowlSize ?? 450}
 		{selectedItems}
 		{cartCount}
+		bind:includeCutlery
 		onBack={handleBuilderBack}
 		onCart={goToCart}
 		onAddToCart={addCurrentBowlToCart}

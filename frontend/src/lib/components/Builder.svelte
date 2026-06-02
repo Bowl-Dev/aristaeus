@@ -5,7 +5,7 @@
 	import AppScreen from './templates/AppScreen.svelte';
 	import CategoryAccordion from './molecules/CategoryAccordion.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
-	import { computeBowlTotals, formatCOP } from '$lib/utils/bowl';
+	import { computeBowlTotals, formatCOP, roundToNearestCoin } from '$lib/utils/bowl';
 	import {
 		getQuantityIncrement,
 		getInitialQuantity,
@@ -21,7 +21,8 @@
 		cartCount,
 		onBack,
 		onCart,
-		onAddToCart
+		onAddToCart,
+		includeCutlery = $bindable(false)
 	}: {
 		ingredients: Ingredient[];
 		loading: boolean;
@@ -31,6 +32,7 @@
 		onBack: () => void;
 		onCart?: () => void;
 		onAddToCart: () => void;
+		includeCutlery?: boolean;
 	} = $props();
 
 	// ──────────────────────────────────────────────
@@ -67,7 +69,7 @@
 	const isOverCapacity = $derived(totals.weight > bowlSize);
 	const hasItems = $derived(selectedItems.size > 0);
 
-	const formattedPrice = $derived(formatCOP(totals.ingredientsPrice));
+	const formattedPrice = $derived(formatCOP(roundToNearestCoin(totals.ingredientsPrice)));
 
 	// Selected ingredients (for the expanded sheet list), in assembly order
 	const selectedList = $derived.by(() => {
@@ -208,6 +210,21 @@
 					onRemove={handleRemove}
 				/>
 			{/each}
+
+			<!-- Cutlery: an order-level extra applied to the bowl being built. -->
+			<label
+				class="flex cursor-pointer items-center gap-3 rounded-2xl bg-pure-white p-4 [-webkit-tap-highlight-color:transparent]"
+			>
+				<input
+					type="checkbox"
+					bind:checked={includeCutlery}
+					class="h-5 w-5 rounded border-strokes text-dark-green focus:ring-dark-green"
+				/>
+				<span class="flex-1 text-[15px] font-semibold text-text-black">
+					{$_('size.cutlery.label')}
+				</span>
+				<span class="text-sm font-semibold text-text-muted">{$_('size.cutlery.note')}</span>
+			</label>
 		{/if}
 	</div>
 
