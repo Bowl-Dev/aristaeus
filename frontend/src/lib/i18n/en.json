@@ -24,6 +24,7 @@
 			"protein": "PROTEIN",
 			"fat": "FAT",
 			"carbs": "CARBS",
+			"price": "Total price",
 			"customize": "Customize bowl"
 		}
 	},
