@@ -10,11 +10,13 @@
 	let { children } = $props();
 	let ready = $state(false);
 
-	// /new/* is the in-progress next-gen frontend; it ships its own footer treatment.
-	// Every other route (legacy /, /admin/orders, /privacy, /privacy/delete) needs the
-	// Privacy Policy link in the global Footer for Law 1581 compliance.
-	const isNewRoute = $derived($page.route.id?.startsWith('/new') ?? false);
-	const showFooter = $derived(!isNewRoute);
+	// The root route `/` is the customer ordering app: it has its own AppHeader and
+	// surfaces the Law 1581 privacy link inside its Delivery step, so it omits the
+	// global Footer and locale toggle (the toggle would overlap the cart icon — ENG-48).
+	// The other routes (/admin/orders, /privacy, /privacy/delete) keep the global
+	// Footer (privacy link) and locale toggle.
+	const isAppRoute = $derived($page.route.id === '/');
+	const showFooter = $derived(!isAppRoute);
 
 	onMount(async () => {
 		await waitForLocale();
@@ -37,7 +39,7 @@
 	</div>
 {:else}
 	<div class="min-h-screen flex flex-col">
-		{#if !isNewRoute}
+		{#if !isAppRoute}
 			<div class="fixed top-4 right-4 z-50">
 				<button
 					onclick={toggleLocale}
