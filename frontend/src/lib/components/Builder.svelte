@@ -5,7 +5,7 @@
 	import AppScreen from './templates/AppScreen.svelte';
 	import CategoryAccordion from './molecules/CategoryAccordion.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
-	import { computeBowlTotals, formatCOP, roundToNearestCoin } from '$lib/utils/bowl';
+	import { computeBowlTotals, formatCOP, roundToNearestCoin, bowlBasePrice } from '$lib/utils/bowl';
 	import {
 		getQuantityIncrement,
 		getInitialQuantity,
@@ -61,7 +61,7 @@
 	);
 
 	// ──────────────────────────────────────────────
-	// Totals (Builder shows ingredient-only price; bowl base is added at cart)
+	// Totals (price includes the bowl base price so it stays continuous into the cart)
 	// ──────────────────────────────────────────────
 	const totals = $derived(computeBowlTotals(selectedItems, ingredients));
 
@@ -69,7 +69,9 @@
 	const isOverCapacity = $derived(totals.weight > bowlSize);
 	const hasItems = $derived(selectedItems.size > 0);
 
-	const formattedPrice = $derived(formatCOP(roundToNearestCoin(totals.ingredientsPrice)));
+	const formattedPrice = $derived(
+		formatCOP(roundToNearestCoin(bowlBasePrice(bowlSize) + totals.ingredientsPrice))
+	);
 
 	// Selected ingredients (for the expanded sheet list), in assembly order
 	const selectedList = $derived.by(() => {
