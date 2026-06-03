@@ -2,6 +2,7 @@
 	import { _ } from 'svelte-i18n';
 	import { base } from '$app/paths';
 	import type { Menu } from '$lib/types';
+	import { bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
 	import Heading from './atoms/Heading.svelte';
 	import Button from './atoms/Button.svelte';
 	import NutritionalInfo from './molecules/NutritionalInfo.svelte';
@@ -41,6 +42,16 @@
 			fat: Math.round(fat),
 			carbs: Math.round(carbs)
 		};
+	});
+
+	// Mirrors the Cart's per-bowl unit price (without cutlery): base packaging
+	// price plus the summed ingredient cost, rounded to the nearest coin.
+	const totalPrice = $derived.by(() => {
+		let ingredientsPrice = 0;
+		for (const item of menu.ingredients) {
+			ingredientsPrice += item.pricePerG * item.quantityGrams;
+		}
+		return roundToNearestCoin(bowlBasePrice(menu.bowlSize) + ingredientsPrice);
 	});
 </script>
 
@@ -90,6 +101,13 @@
 			carbs={nutrition.carbs}
 			fat={nutrition.fat}
 		/>
+
+		<div class="flex items-center justify-between self-stretch">
+			<span class="text-sm font-medium uppercase tracking-[0.5px] text-text-muted">
+				{$_('menu.card.price')}
+			</span>
+			<span class="text-[18px] font-bold text-dark-green">{formatCOP(totalPrice)}</span>
+		</div>
 
 		<Button
 			variant="primary"
