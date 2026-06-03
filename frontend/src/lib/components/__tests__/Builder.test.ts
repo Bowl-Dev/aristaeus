@@ -73,8 +73,8 @@ describe('Builder', () => {
 		const { container } = render(Builder, { props: makeProps({ selectedItems: items }) });
 		// 100g rice in a 450g bowl
 		expect(container.textContent).toContain('100g / 450g');
-		// price = 5 * 100 = 500 COP
-		expect(container.textContent).toMatch(/\$\s*500/);
+		// price = bowl base (1300) + ingredients (5 * 100 = 500) = 1800 COP
+		expect(container.textContent).toMatch(/\$\s*1[.,]?800/);
 	});
 
 	it('disables Add to Cart while over capacity and shows the overage warning', () => {
