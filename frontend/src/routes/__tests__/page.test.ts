@@ -73,7 +73,7 @@ function findButton(container: HTMLElement, match: RegExp): HTMLButtonElement | 
 	);
 }
 
-describe('/new +page (view state machine)', () => {
+describe('/ +page (view state machine)', () => {
 	beforeEach(async () => {
 		getIngredientsMock.mockReset();
 		getMenusMock.mockReset();

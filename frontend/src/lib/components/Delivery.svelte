@@ -4,6 +4,7 @@
 	import { computeBowlTotals, bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
 	import { DEFAULT_DELIVERY_LOCALE, CUTLERY_PRICE } from '$lib/constants';
 	import { createOrder, ApiError } from '$lib/api/client';
+	import { resolve } from '$app/paths';
 	import AppScreen from './templates/AppScreen.svelte';
 	import FormInput from './molecules/FormInput.svelte';
 	import Card from './molecules/Card.svelte';
@@ -226,5 +227,14 @@
 				{$_('delivery.confirm', { values: { price: formatCOP(grandTotal) } })}
 			{/if}
 		</button>
+
+		<!-- Law 1581 implicit-consent notice + privacy policy link. Placed here, at the
+		     point PII is submitted, since the new app ships no global footer. -->
+		<p class="m-0 px-2 text-center text-xs text-text-muted">
+			{$_('footer.implicitConsent')}
+			<a href={resolve('/privacy')} class="underline underline-offset-2 hover:text-text-black">
+				{$_('footer.privacyPolicy')}
+			</a>
+		</p>
 	</div>
 </AppScreen>
