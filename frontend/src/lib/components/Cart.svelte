@@ -233,10 +233,8 @@
 				</div>
 			</Card>
 		{/each}
-	</div>
 
-	<!-- Total card -->
-	<div class="px-5 pb-2 pt-3">
+		<!-- Total card (scrolls with the bowl list) -->
 		<Card gap="gap-1">
 			<div class="flex items-center justify-between">
 				<span class="text-[18px] font-bold uppercase tracking-[0.9px] text-text-black">
