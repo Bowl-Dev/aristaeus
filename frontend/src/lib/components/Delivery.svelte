@@ -181,11 +181,8 @@
 			bind:value={deliveryInstructions}
 			placeholder={$_('delivery.form.instructions.placeholder')}
 		/>
-	</div>
 
-	<!-- Order summary card + CTA — in normal flow at the bottom -->
-	<div class="flex flex-col gap-3 px-5 pb-10 pt-3">
-		<!-- Order Summary Card -->
+		<!-- Order Summary Card (scrolls with the form fields) -->
 		<Card gap="gap-2">
 			<p class="m-0 text-sm font-bold uppercase tracking-[0.5px] text-text-black">
 				{$_('delivery.summary.title')}
@@ -208,7 +205,10 @@
 				<span class="text-base font-bold text-dark-green">{formatCOP(grandTotal)}</span>
 			</div>
 		</Card>
+	</div>
 
+	<!-- Error message + CTA + consent notice — pinned at the bottom of the viewport -->
+	<div class="flex flex-col gap-3 px-5 pb-10 pt-3">
 		<!-- Error message -->
 		{#if submitError}
 			<p class="m-0 text-center text-sm text-red-500">{submitError}</p>
