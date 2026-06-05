@@ -15,7 +15,7 @@ import { calculateNutrition } from '../lib/nutrition.js';
 
 // Validation schemas
 const VALID_BOWL_SIZES = [250, 450, 600] as const;
-const MIN_QUANTITY_GRAMS = 10;
+const MIN_QUANTITY_GRAMS = 5;
 
 // Colombian address validation schema
 const colombianAddressSchema = z.object({
