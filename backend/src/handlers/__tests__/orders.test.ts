@@ -397,7 +397,7 @@ describe('Order Handlers', () => {
 				body: JSON.stringify(validOrderRequest)
 			});
 
-			const response = await createOrder(event, mockContext, () => {});
+			const response = await createOrder(event);
 
 			expect(response!.statusCode).toBe(201);
 		});
