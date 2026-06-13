@@ -24,6 +24,7 @@ import {
 import { registerRobot, getNextOrder, heartbeat } from './handlers/robots.js';
 import { checkPhone, deleteUser } from './handlers/users.js';
 import { getMenus } from './handlers/menus.js';
+import { getConfig } from './handlers/config.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -161,6 +162,9 @@ app.get('/api/ingredients', wrapHandler(getIngredients));
 // GET /api/menus
 app.get('/api/menus', wrapHandler(getMenus));
 
+// GET /api/config
+app.get('/api/config', wrapHandler(getConfig));
+
 // GET /api/users/check-phone (returning customer check)
 app.get('/api/users/check-phone', wrapHandler(checkPhone));
 
@@ -207,6 +211,7 @@ app.listen(PORT, () => {
 	console.log('Available endpoints:');
 	console.log('  GET  /api/ingredients');
 	console.log('  GET  /api/menus');
+	console.log('  GET  /api/config');
 	console.log('  GET  /api/users/check-phone       (returning customer check)');
 	console.log('  DELETE /api/users                 (delete user data)');
 	console.log('  GET  /api/orders                  (list all - admin)');

@@ -10,7 +10,15 @@
 import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
-import { success, created, badRequest, notFound, serverError, conflict } from '../lib/response.js';
+import {
+	success,
+	created,
+	badRequest,
+	notFound,
+	serverError,
+	conflict,
+	serviceUnavailable
+} from '../lib/response.js';
 import { calculateNutrition } from '../lib/nutrition.js';
 
 // Validation schemas
@@ -99,6 +107,17 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
  */
 export const createOrder: APIGatewayProxyHandler = async (event) => {
 	try {
+		// Service pause guard: reject new orders when the store is paused.
+		// Fail open — if the config read throws, log and continue with order creation.
+		try {
+			const storeConfig = await prisma.storeConfig.findFirst();
+			if (storeConfig?.ordersPaused === true) {
+				return serviceUnavailable('ordersPaused');
+			}
+		} catch (configError) {
+			console.error('Error reading store config (failing open):', configError);
+		}
+
 		if (!event.body) {
 			return badRequest('Request body is required');
 		}

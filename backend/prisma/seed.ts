@@ -484,6 +484,15 @@ async function main() {
 
 	console.log(`Created test robot: ${robot.name} (${robot.identifier})`);
 
+	// Seed singleton store config (orders not paused by default)
+	const storeConfig = await prisma.storeConfig.upsert({
+		where: { id: 1 },
+		update: {},
+		create: { id: 1, ordersPaused: false }
+	});
+
+	console.log(`Store config ready (ordersPaused: ${storeConfig.ordersPaused})`);
+
 	console.log('Database seeding completed!');
 }
 

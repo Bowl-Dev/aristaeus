@@ -62,6 +62,13 @@ export class ApiError extends Error {
 // ============================================
 
 /**
+ * Fetch runtime configuration (e.g. whether ordering is paused)
+ */
+export async function getConfig(): Promise<{ ordersPaused: boolean }> {
+	return apiFetch('/api/config');
+}
+
+/**
  * Fetch all available ingredients
  */
 export async function getIngredients(): Promise<Ingredient[]> {

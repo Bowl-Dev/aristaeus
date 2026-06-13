@@ -67,3 +67,13 @@ export function serverError(message = 'Internal server error'): APIGatewayProxyR
 		})
 	};
 }
+
+export function serviceUnavailable(message = 'Service unavailable'): APIGatewayProxyResult {
+	return {
+		statusCode: 503,
+		headers: defaultHeaders,
+		body: JSON.stringify({
+			message
+		})
+	};
+}

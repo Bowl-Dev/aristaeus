@@ -217,3 +217,15 @@ model Robot {
   @@index([status])
   @@map("robots")
 }
+
+// ============================================
+// Store Configuration (Singleton)
+// ============================================
+
+model StoreConfig {
+  id           Int      @id @default(1)
+  ordersPaused Boolean  @default(false) @map("orders_paused")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("store_config")
+}

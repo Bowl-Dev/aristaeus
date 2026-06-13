@@ -31,6 +31,9 @@ vi.mock('../../lib/db.js', () => ({
 			findFirst: vi.fn(),
 			update: vi.fn()
 		},
+		storeConfig: {
+			findFirst: vi.fn()
+		},
 		$transaction: vi.fn()
 	}
 }));
@@ -125,6 +128,8 @@ const mockIngredients = [
 describe('Order Handlers', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Default: store is not paused so order creation proceeds normally
+		vi.mocked(prisma.storeConfig.findFirst).mockResolvedValue({ ordersPaused: false } as never);
 	});
 
 	describe('createOrder', () => {
@@ -347,6 +352,54 @@ describe('Order Handlers', () => {
 			const response = await createOrder(event, mockContext, () => {});
 
 			expect(response!.statusCode).toBe(400);
+		});
+
+		it('should return 503 when orders are paused', async () => {
+			vi.mocked(prisma.storeConfig.findFirst).mockResolvedValue({
+				ordersPaused: true
+			} as never);
+
+			const event = createMockEvent({
+				body: JSON.stringify(validOrderRequest)
+			});
+
+			const response = await createOrder(event, mockContext, () => {});
+
+			expect(response!.statusCode).toBe(503);
+			expect(JSON.parse(response!.body).message).toBe('ordersPaused');
+		});
+
+		it('should continue order creation when store config read fails (fail open)', async () => {
+			vi.mocked(prisma.storeConfig.findFirst).mockRejectedValue(new Error('db down'));
+
+			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
+			vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+				const mockTx = {
+					user: {
+						findUnique: vi.fn().mockResolvedValue(null),
+						create: vi.fn().mockResolvedValue({ id: 'test-uuid' }),
+						update: vi.fn()
+					},
+					order: {
+						create: vi.fn().mockResolvedValue({
+							id: 1,
+							status: 'pending',
+							createdAt: new Date()
+						})
+					},
+					orderItem: { createMany: vi.fn().mockResolvedValue({ count: 2 }) }
+				};
+				return callback(mockTx as never);
+			});
+			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
+
+			const event = createMockEvent({
+				body: JSON.stringify(validOrderRequest)
+			});
+
+			const response = await createOrder(event);
+
+			expect(response!.statusCode).toBe(201);
 		});
 	});
 

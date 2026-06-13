@@ -46,6 +46,15 @@
 		"message": "We're already preparing your bowl with great care. We'll message you on WhatsApp shortly to confirm the final price, including shipping, and process payment.",
 		"dismiss": "Got it"
 	},
+	"pause": {
+		"title": "We're cooking up something amazing.",
+		"body": [
+			"For the next week we won't be taking orders, but we'll keep working to bring you the best alGramo experience.",
+			"Explore our menu and discover our options in the meantime.",
+			"See you very soon! The alGramo team. ☕"
+		],
+		"close": "Close"
+	},
 	"customer": {
 		"returning": {
 			"title": "Welcome back!",

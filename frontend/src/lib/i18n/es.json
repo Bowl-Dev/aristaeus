@@ -46,6 +46,15 @@
 		"message": "Ya estamos preparando tu bowl con mucho cuidado. En breve te escribiremos por WhatsApp para confirmar el precio final, incluyendo el costo de envío, y realizar el pago.",
 		"dismiss": "Entendido"
 	},
+	"pause": {
+		"title": "Estamos preparando algo increíble.",
+		"body": [
+			"Durante la próxima semana no estaremos recibiendo pedidos, pero seguiremos trabajando para ofrecerte la mejor experiencia alGramo.",
+			"Explora nuestro menú y conoce nuestras opciones mientras tanto.",
+			"¡Nos vemos muy pronto! Equipo alGramo. ☕"
+		],
+		"close": "Cerrar"
+	},
 	"customer": {
 		"returning": {
 			"title": "¡Bienvenido de nuevo!",
