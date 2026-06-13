@@ -31,6 +31,7 @@ cd "$BACKEND_DIR"
 npx esbuild \
   src/handlers/ingredients.ts \
   src/handlers/menus.ts \
+  src/handlers/config.ts \
   src/handlers/orders.ts \
   src/handlers/robots.ts \
   src/handlers/users.ts \

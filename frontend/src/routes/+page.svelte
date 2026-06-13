@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { type Ingredient, type Menu as MenuType, type BowlSize } from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { getIngredients, getMenus, ApiError } from '$lib/api/client';
+	import { getIngredients, getMenus, getConfig, ApiError } from '$lib/api/client';
 	import { addBowl, removeAt, incrementAt, decrementAt, type BowlSnapshot } from '$lib/utils/cart';
 	import Landing from '$lib/components/Landing.svelte';
 	import LandingModal from '$lib/components/LandingModal.svelte';
@@ -12,11 +12,16 @@
 	import Cart from '$lib/components/Cart.svelte';
 	import Delivery from '$lib/components/Delivery.svelte';
 	import ThnksModal from '$lib/components/ThnksModal.svelte';
+	import PauseModal from '$lib/components/PauseModal.svelte';
 
 	// View state
 	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'delivery'>('landing');
 	let showLandingModal = $state(false);
 	let showThanks = $state(false);
+
+	// Service-paused state (fail-open: stays false unless backend says otherwise)
+	let ordersPaused = $state(false);
+	let showPauseModal = $state(false);
 
 	// Data
 	let ingredients = $state<Ingredient[]>([]);
@@ -50,7 +55,22 @@
 		}
 	}
 
-	onMount(loadIngredients);
+	// Fail-open: any error leaves ordering enabled so a config outage never
+	// blocks the app. Runs independently of ingredient loading.
+	async function loadConfig() {
+		try {
+			const config = await getConfig();
+			ordersPaused = config.ordersPaused;
+			if (ordersPaused) showPauseModal = true;
+		} catch {
+			ordersPaused = false;
+		}
+	}
+
+	onMount(() => {
+		loadIngredients();
+		loadConfig();
+	});
 
 	function clearSelection() {
 		selectedItems.clear();
@@ -126,7 +146,7 @@
 {/if}
 
 {#if view === 'landing'}
-	<Landing onOrderNow={() => (showLandingModal = true)} />
+	<Landing onOrderNow={() => (ordersPaused ? (showPauseModal = true) : (showLandingModal = true))} />
 {:else if view === 'menu'}
 	<Menu
 		{menus}
@@ -174,7 +194,7 @@
 		{cartCount}
 		onBack={handleCartBack}
 		onProceedToDelivery={() => (view = 'delivery')}
-		onCreateAnother={() => (showLandingModal = true)}
+		onCreateAnother={() => (ordersPaused ? (showPauseModal = true) : (showLandingModal = true))}
 		onRemoveBowl={handleRemoveBowl}
 		onIncreaseBowl={handleIncreaseBowl}
 		onDecreaseBowl={handleDecreaseBowl}
@@ -196,6 +216,10 @@
 
 {#if showThanks}
 	<ThnksModal onDismiss={() => (showThanks = false)} />
+{/if}
+
+{#if showPauseModal}
+	<PauseModal onDismiss={() => (showPauseModal = false)} />
 {/if}
 
 {#if showLandingModal}
