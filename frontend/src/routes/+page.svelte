@@ -146,7 +146,9 @@
 {/if}
 
 {#if view === 'landing'}
-	<Landing onOrderNow={() => (ordersPaused ? (showPauseModal = true) : (showLandingModal = true))} />
+	<Landing
+		onOrderNow={() => (ordersPaused ? (showPauseModal = true) : (showLandingModal = true))}
+	/>
 {:else if view === 'menu'}
 	<Menu
 		{menus}
