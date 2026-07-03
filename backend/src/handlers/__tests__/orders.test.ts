@@ -131,7 +131,11 @@ const mockIngredients = [
 
 // Captured references for assertions on the most recent transaction mock
 let lastTx: {
-	user: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+	user: {
+		findUnique: ReturnType<typeof vi.fn>;
+		create: ReturnType<typeof vi.fn>;
+		update: ReturnType<typeof vi.fn>;
+	};
 	address: { findFirst: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
 	order: { create: ReturnType<typeof vi.fn> };
 	orderItem: { createMany: ReturnType<typeof vi.fn> };
