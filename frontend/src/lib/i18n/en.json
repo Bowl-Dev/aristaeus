@@ -247,7 +247,7 @@
 			"phone": { "label": "Phone", "placeholder": "+57 300 123 4567" },
 			"address": { "label": "Delivery Address", "placeholder": "Street, number, apt" },
 			"instructions": {
-				"label": "Delivery Instructions (Optional)",
+				"label": "Delivery Instructions or Coupons (Optional)",
 				"placeholder": "Additional references, special instructions..."
 			}
 		},
