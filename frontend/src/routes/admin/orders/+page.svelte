@@ -321,6 +321,12 @@
 										- {order.user.address.postalCode}
 									{/if}
 								</p>
+								{#if order.deliveryInstructions}
+									<p class="text-gray-700 mt-2 text-xs">
+										<span class="font-medium">Delivery instructions:</span>
+										{order.deliveryInstructions}
+									</p>
+								{/if}
 							</div>
 						</div>
 

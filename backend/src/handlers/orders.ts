@@ -73,7 +73,8 @@ const createOrderSchema = z.object({
 		)
 		.min(1, 'Order must contain at least one item'),
 	includeCutlery: z.boolean().optional().default(false),
-	updateUserData: z.boolean().optional().default(false)
+	updateUserData: z.boolean().optional().default(false),
+	deliveryInstructions: z.string().max(500).optional()
 });
 
 const updateStatusSchema = z.object({
@@ -129,7 +130,8 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 			return badRequest('Validation failed', parseResult.error.flatten());
 		}
 
-		const { bowlSize, customer, items, includeCutlery, updateUserData } = parseResult.data;
+		const { bowlSize, customer, items, includeCutlery, updateUserData, deliveryInstructions } =
+			parseResult.data;
 
 		// Fetch all ingredients for validation and calculation
 		const ingredientIds = items.map((item) => item.ingredientId);
@@ -168,18 +170,13 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 			});
 
 			if (user) {
-				// User exists - only update if explicitly requested
+				// User exists - only update name/email if explicitly requested
 				if (updateUserData) {
 					user = await tx.user.update({
 						where: { phone: customer.phone },
 						data: {
 							name: customer.name,
-							email: customer.email ?? null,
-							streetAddress: customer.address.streetAddress,
-							neighborhood: customer.address.neighborhood,
-							city: customer.address.city,
-							department: customer.address.department,
-							postalCode: customer.address.postalCode ?? null
+							email: customer.email ?? null
 						}
 					});
 				}
@@ -190,20 +187,49 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 					data: {
 						name: customer.name,
 						phone: customer.phone,
-						email: customer.email ?? null,
-						streetAddress: customer.address.streetAddress,
-						neighborhood: customer.address.neighborhood,
-						city: customer.address.city,
-						department: customer.address.department,
-						postalCode: customer.address.postalCode ?? null
+						email: customer.email ?? null
 					}
 				});
 			}
 
-			// Create the order linked to user
+			// Find-or-create the address for this user. Identical addresses dedupe;
+			// distinct ones accumulate (multiple addresses per user).
+			const postalCode = customer.address.postalCode ?? null;
+			let address = await tx.address.findFirst({
+				where: {
+					userId: user.id,
+					streetAddress: customer.address.streetAddress,
+					neighborhood: customer.address.neighborhood,
+					city: customer.address.city,
+					department: customer.address.department,
+					postalCode
+				}
+			});
+
+			if (!address) {
+				address = await tx.address.create({
+					data: {
+						userId: user.id,
+						streetAddress: customer.address.streetAddress,
+						neighborhood: customer.address.neighborhood,
+						city: customer.address.city,
+						department: customer.address.department,
+						postalCode
+					}
+				});
+			}
+
+			// Create the order linked to user, with the delivery address snapshot
 			const newOrder = await tx.order.create({
 				data: {
 					userId: user.id,
+					addressId: address.id,
+					deliveryStreetAddress: address.streetAddress,
+					deliveryNeighborhood: address.neighborhood,
+					deliveryCity: address.city,
+					deliveryDepartment: address.department,
+					deliveryPostalCode: address.postalCode,
+					deliveryInstructions: deliveryInstructions ?? null,
 					bowlSize,
 					status: 'pending',
 					includeCutlery,
@@ -284,13 +310,14 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
 				phone: order.user.phone,
 				email: order.user.email,
 				address: {
-					streetAddress: order.user.streetAddress,
-					neighborhood: order.user.neighborhood,
-					city: order.user.city,
-					department: order.user.department,
-					postalCode: order.user.postalCode
+					streetAddress: order.deliveryStreetAddress,
+					neighborhood: order.deliveryNeighborhood,
+					city: order.deliveryCity,
+					department: order.deliveryDepartment,
+					postalCode: order.deliveryPostalCode
 				}
 			},
+			deliveryInstructions: order.deliveryInstructions,
 			status: order.status,
 			items: order.items.map((item) => ({
 				ingredientName: item.ingredient.name,
@@ -367,13 +394,14 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 					phone: order.user.phone,
 					email: order.user.email,
 					address: {
-						streetAddress: order.user.streetAddress,
-						neighborhood: order.user.neighborhood,
-						city: order.user.city,
-						department: order.user.department,
-						postalCode: order.user.postalCode
+						streetAddress: order.deliveryStreetAddress,
+						neighborhood: order.deliveryNeighborhood,
+						city: order.deliveryCity,
+						department: order.deliveryDepartment,
+						postalCode: order.deliveryPostalCode
 					}
 				},
+				deliveryInstructions: order.deliveryInstructions,
 				status: order.status,
 				items: order.items.map((item) => ({
 					ingredientName: item.ingredient.name,

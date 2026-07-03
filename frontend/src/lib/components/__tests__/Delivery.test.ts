@@ -116,6 +116,22 @@ describe('Delivery', () => {
 		expect(payload.customer.phone).toBe('3001234567');
 		expect(payload.customer.address.streetAddress).toBe('Cra 7 # 50-10');
 		expect(payload.items).toEqual([{ ingredientId: 1, quantityGrams: 100 }]);
+		// No instructions entered → field is omitted from the payload
+		expect(payload.deliveryInstructions).toBeUndefined();
+	});
+
+	it('includes deliveryInstructions in the payload when the field is filled', async () => {
+		createOrderMock.mockResolvedValue({ id: 1 });
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillRequiredFields(container);
+		await fireEvent.input(
+			container.querySelector('#delivery-instructions') as HTMLTextAreaElement,
+			{ target: { value: 'Leave at the door' } }
+		);
+		await fireEvent.click(getCta(container));
+		await waitFor(() => expect(createOrderMock).toHaveBeenCalled());
+		const payload = createOrderMock.mock.calls[0][0];
+		expect(payload.deliveryInstructions).toBe('Leave at the door');
 	});
 
 	it('shows the API error message and does not call onOrderSuccess when all requests fail', async () => {
@@ -142,5 +158,42 @@ describe('Delivery', () => {
 		await waitFor(() => expect(container.textContent).toMatch(/1 de 2/));
 		expect(container.textContent).toContain('Nope');
 		expect(onOrderSuccess).not.toHaveBeenCalled();
+	});
+
+	it('strips non-digits from the phone field and caps it at 10 digits', async () => {
+		const { container } = render(Delivery, { props: makeProps() });
+		const phone = container.querySelector('#delivery-phone') as HTMLInputElement;
+		await fireEvent.input(phone, { target: { value: '+57 300 123 4567' } });
+		expect(phone.value).toBe('3001234567');
+	});
+
+	it('shows per-field validation errors on submit and does not call the API', async () => {
+		const { container } = render(Delivery, { props: makeProps() });
+		// Force the CTA to fire even while disabled, mirroring an invalid submit attempt.
+		const cta = getCta(container);
+		cta.disabled = false;
+		await fireEvent.click(cta);
+
+		await waitFor(() => expect(container.querySelector('#delivery-name-error')).toBeTruthy());
+		expect(container.querySelector('#delivery-phone-error')).toBeTruthy();
+		expect(container.querySelector('#delivery-address-error')).toBeTruthy();
+		const name = container.querySelector('#delivery-name') as HTMLInputElement;
+		expect(name.getAttribute('aria-invalid')).toBe('true');
+		expect(createOrderMock).not.toHaveBeenCalled();
+	});
+
+	it('clears a field error once the field becomes valid', async () => {
+		const { container } = render(Delivery, { props: makeProps() });
+		const cta = getCta(container);
+		cta.disabled = false;
+		await fireEvent.click(cta);
+		await waitFor(() => expect(container.querySelector('#delivery-name-error')).toBeTruthy());
+
+		await fireEvent.input(container.querySelector('#delivery-name') as HTMLInputElement, {
+			target: { value: 'Juan Pérez' }
+		});
+		await waitFor(() => expect(container.querySelector('#delivery-name-error')).toBeFalsy());
+		// Other invalid fields still show their errors.
+		expect(container.querySelector('#delivery-phone-error')).toBeTruthy();
 	});
 });

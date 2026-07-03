@@ -94,6 +94,26 @@ model User {
   phone         String   @unique @db.VarChar(20)
   email         String?  @db.VarChar(255)
 
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  addresses     Address[]
+  orders        Order[]
+
+  @@map("users")
+}
+
+// ============================================
+// Address (Colombian, one-to-many from User)
+// ============================================
+
+model Address {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Colombian address (structured)
   streetAddress String   @map("street_address") @db.VarChar(200)
   neighborhood  String   @db.VarChar(100)
@@ -108,7 +128,8 @@ model User {
   // Relations
   orders        Order[]
 
-  @@map("users")
+  @@index([userId])
+  @@map("addresses")
 }
 
 // ============================================
@@ -121,6 +142,20 @@ model Order {
   // User reference
   userId          String    @map("user_id") @db.Uuid
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Address reference (nullable; snapshot below preserves history if address is deleted)
+  addressId       String?   @map("address_id") @db.Uuid
+  address         Address?  @relation(fields: [addressId], references: [id], onDelete: SetNull)
+
+  // Delivery address snapshot (captured at order time)
+  deliveryStreetAddress String? @map("delivery_street_address") @db.VarChar(200)
+  deliveryNeighborhood  String? @map("delivery_neighborhood") @db.VarChar(100)
+  deliveryCity          String? @map("delivery_city") @db.VarChar(100)
+  deliveryDepartment    String? @map("delivery_department") @db.VarChar(100)
+  deliveryPostalCode    String? @map("delivery_postal_code") @db.VarChar(6)
+
+  // Delivery instructions (per-order)
+  deliveryInstructions  String? @map("delivery_instructions") @db.VarChar(500)
 
   // Bowl configuration
   bowlSize        Int       @map("bowl_size") // 250, 450, or 600 grams
@@ -161,6 +196,7 @@ model Order {
   @@index([status])
   @@index([assignedRobotId])
   @@index([userId])
+  @@index([addressId])
   @@map("orders")
 }
 

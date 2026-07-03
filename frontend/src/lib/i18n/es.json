@@ -34,8 +34,7 @@
 		"small": "Pequeño",
 		"medium": "Mediano",
 		"large": "Grande",
-		"capacity": "Capacidad",
-		"pricingNote": "Incluye empaque — los ingredientes se cobran aparte",
+		"pricingNotePrefix": "A partir de",
 		"cutlery": {
 			"label": "Agregar cubiertos",
 			"note": "+$300"
@@ -255,8 +254,13 @@
 		"summary": { "title": "Resumen del Pedido" },
 		"confirm": "Confirmar Pedido — {price}",
 		"confirming": "Enviando...",
-		"error": "No se pudo realizar el pedido. Intenta de nuevo.",
-		"partialError": "{failed} de {total} pedidos fallaron: {reason}"
+		"error": "Ocurrió un problema al enviar tu pedido. Revisa tu conexión e intenta de nuevo.",
+		"partialError": "{failed} de {total} pedidos fallaron: {reason}",
+		"errors": {
+			"nameRequired": "Ingresa tu nombre",
+			"phoneInvalid": "El teléfono debe tener 10 dígitos",
+			"addressRequired": "Ingresa una dirección de entrega"
+		}
 	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",

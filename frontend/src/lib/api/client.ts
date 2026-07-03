@@ -180,6 +180,7 @@ export interface AdminOrder {
 	bowlSize: number;
 	includeCutlery: boolean;
 	user: AdminOrderUser;
+	deliveryInstructions?: string | null;
 	status: string;
 	items: AdminOrderItem[];
 	totalWeightG: number;

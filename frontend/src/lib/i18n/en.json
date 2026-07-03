@@ -34,8 +34,7 @@
 		"small": "Small",
 		"medium": "Medium",
 		"large": "Large",
-		"capacity": "Capacity",
-		"pricingNote": "Includes packaging — ingredients priced separately",
+		"pricingNotePrefix": "From",
 		"cutlery": {
 			"label": "Add cutlery",
 			"note": "+$300"
@@ -255,8 +254,13 @@
 		"summary": { "title": "Order Summary" },
 		"confirm": "Confirm Order — {price}",
 		"confirming": "Sending...",
-		"error": "Could not place order. Please try again.",
-		"partialError": "{failed} of {total} orders failed: {reason}"
+		"error": "Something went wrong sending your order. Check your connection and try again.",
+		"partialError": "{failed} of {total} orders failed: {reason}",
+		"errors": {
+			"nameRequired": "Please enter your name",
+			"phoneInvalid": "Phone must be 10 digits",
+			"addressRequired": "Please enter a delivery address"
+		}
 	},
 	"admin": {
 		"printLabel": "Print Label",
