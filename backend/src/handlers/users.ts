@@ -35,11 +35,17 @@ export const checkPhone: APIGatewayProxyHandler = async (event) => {
 			select: {
 				name: true,
 				email: true,
-				streetAddress: true,
-				neighborhood: true,
-				city: true,
-				department: true,
-				postalCode: true
+				addresses: {
+					orderBy: { createdAt: 'desc' },
+					take: 1,
+					select: {
+						streetAddress: true,
+						neighborhood: true,
+						city: true,
+						department: true,
+						postalCode: true
+					}
+				}
 			}
 		});
 
@@ -47,18 +53,22 @@ export const checkPhone: APIGatewayProxyHandler = async (event) => {
 			return success({ exists: false });
 		}
 
+		const address = user.addresses[0] ?? null;
+
 		return success({
 			exists: true,
 			user: {
 				name: user.name,
 				email: user.email,
-				address: {
-					streetAddress: user.streetAddress,
-					neighborhood: user.neighborhood,
-					city: user.city,
-					department: user.department,
-					postalCode: user.postalCode
-				}
+				address: address
+					? {
+							streetAddress: address.streetAddress,
+							neighborhood: address.neighborhood,
+							city: address.city,
+							department: address.department,
+							postalCode: address.postalCode
+						}
+					: null
 			}
 		});
 	} catch (error) {

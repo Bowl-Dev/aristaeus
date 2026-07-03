@@ -174,6 +174,7 @@ export interface CreateOrderRequest {
 	}>;
 	includeCutlery?: boolean;
 	updateUserData?: boolean;
+	deliveryInstructions?: string;
 }
 
 export interface CreateOrderResponse {
@@ -185,6 +186,8 @@ export interface CreateOrderResponse {
 export interface OrderStatusResponse {
 	orderId: number;
 	status: OrderStatus;
+	address?: ColombianAddress;
+	deliveryInstructions?: string | null;
 	nutritionalSummary: NutritionalSummary;
 	createdAt: string;
 	assignedAt: string | null;
@@ -225,6 +228,7 @@ export interface AdminOrder {
 		email: string | null;
 		address: ColombianAddress;
 	};
+	deliveryInstructions?: string | null;
 	status: string;
 	items: AdminOrderItem[];
 	totalWeightG: number;
@@ -258,6 +262,6 @@ export interface CheckPhoneResponse {
 	user?: {
 		name: string;
 		email: string | null;
-		address: ColombianAddress;
+		address: ColombianAddress | null;
 	};
 }

@@ -116,7 +116,8 @@ describe('/ +page (view state machine)', () => {
 		await fireEvent.click(findButton(container, /Desde cero/) as HTMLButtonElement);
 		// Size screen heading
 		await waitFor(() => expect(container.textContent).toContain('Tamaños'));
-		expect(container.textContent).toContain('Capacidad');
+		// Grams are the dominant value on each size card
+		expect(container.textContent).toContain('250g');
 	});
 
 	it('navigates landing → modal → menu when "Ideas para empezar" is clicked', async () => {

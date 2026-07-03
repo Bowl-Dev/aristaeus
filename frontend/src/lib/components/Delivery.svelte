@@ -34,6 +34,30 @@
 	let submitting = $state(false);
 	let submitError = $state<string | null>(null);
 
+	// Per-field validation. Errors surface only after the first submit attempt,
+	// then clear as each field is edited.
+	let errors = $state<{ name?: string; phone?: string; address?: string }>({});
+	let hasSubmitted = $state(false);
+
+	function validate(): boolean {
+		const next: typeof errors = {};
+		if (!name.trim()) next.name = $_('delivery.errors.nameRequired');
+		if (phone.length !== 10) next.phone = $_('delivery.errors.phoneInvalid');
+		if (!deliveryAddress.trim()) next.address = $_('delivery.errors.addressRequired');
+		errors = next;
+		return Object.keys(next).length === 0;
+	}
+
+	// Clear-on-input: once submitted, re-validate reactively so a field's error
+	// disappears as soon as it becomes valid.
+	$effect(() => {
+		// Reference fields so the effect re-runs on edits.
+		void name;
+		void phone;
+		void deliveryAddress;
+		if (hasSubmitted) validate();
+	});
+
 	function sizeLabel(bowlSize: BowlSize) {
 		return bowlSize === 250
 			? $_('size.small')
@@ -69,7 +93,8 @@
 	const grandTotal = $derived(bowlData.reduce((acc, b) => acc + b.totalPrice, 0));
 
 	async function handleSubmit() {
-		if (!name.trim() || !phone.trim() || !deliveryAddress.trim()) return;
+		hasSubmitted = true;
+		if (!validate()) return;
 
 		submitting = true;
 		submitError = null;
@@ -91,7 +116,8 @@
 					ingredientId,
 					quantityGrams
 				})),
-				includeCutlery: bowl.includeCutlery
+				includeCutlery: bowl.includeCutlery,
+				deliveryInstructions: deliveryInstructions.trim() || undefined
 			};
 			for (let i = 0; i < bowl.quantity; i++) requests.push(payload);
 		}
@@ -153,15 +179,17 @@
 			label={$_('delivery.form.name.label')}
 			bind:value={name}
 			placeholder={$_('delivery.form.name.placeholder')}
+			error={errors.name}
 			required
 		/>
 
 		<FormInput
 			id="delivery-phone"
-			type="tel"
+			type="numeric"
 			label={$_('delivery.form.phone.label')}
 			bind:value={phone}
 			placeholder={$_('delivery.form.phone.placeholder')}
+			error={errors.phone}
 			required
 		/>
 
@@ -171,6 +199,7 @@
 			label={$_('delivery.form.address.label')}
 			bind:value={deliveryAddress}
 			placeholder={$_('delivery.form.address.placeholder')}
+			error={errors.address}
 			required
 		/>
 
@@ -217,7 +246,7 @@
 		<!-- CTA Button -->
 		<button
 			type="button"
-			disabled={submitting || !name.trim() || !phone.trim() || !deliveryAddress.trim()}
+			disabled={submitting || !name.trim() || phone.length !== 10 || !deliveryAddress.trim()}
 			onclick={handleSubmit}
 			class="w-full cursor-pointer rounded-full border-none bg-dark-green px-6 py-4 text-sm font-bold text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
 		>

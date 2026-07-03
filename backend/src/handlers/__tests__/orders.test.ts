@@ -17,6 +17,10 @@ vi.mock('../../lib/db.js', () => ({
 			create: vi.fn(),
 			update: vi.fn()
 		},
+		address: {
+			findFirst: vi.fn(),
+			create: vi.fn()
+		},
 		order: {
 			create: vi.fn(),
 			findUnique: vi.fn(),
@@ -125,6 +129,67 @@ const mockIngredients = [
 	}
 ];
 
+// Captured references for assertions on the most recent transaction mock
+let lastTx: {
+	user: {
+		findUnique: ReturnType<typeof vi.fn>;
+		create: ReturnType<typeof vi.fn>;
+		update: ReturnType<typeof vi.fn>;
+	};
+	address: { findFirst: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
+	order: { create: ReturnType<typeof vi.fn> };
+	orderItem: { createMany: ReturnType<typeof vi.fn> };
+};
+
+/**
+ * Wire up a happy-path transaction mock. `existingUser` toggles whether the
+ * user already exists (findUnique returns a user) or is created fresh.
+ */
+function mockSuccessfulTransaction(options: { existingUser?: boolean } = {}) {
+	const user = {
+		id: 'test-uuid',
+		name: validCustomer.name,
+		phone: validCustomer.phone,
+		email: validCustomer.email
+	};
+
+	const createdAddress = {
+		id: 'address-uuid',
+		userId: user.id,
+		streetAddress: validCustomer.address.streetAddress,
+		neighborhood: validCustomer.address.neighborhood,
+		city: validCustomer.address.city,
+		department: validCustomer.address.department,
+		postalCode: validCustomer.address.postalCode
+	};
+
+	vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+		const mockTx = {
+			user: {
+				findUnique: vi.fn().mockResolvedValue(options.existingUser ? user : null),
+				create: vi.fn().mockResolvedValue(user),
+				update: vi.fn().mockResolvedValue(user)
+			},
+			address: {
+				findFirst: vi.fn().mockResolvedValue(null),
+				create: vi.fn().mockResolvedValue(createdAddress)
+			},
+			order: {
+				create: vi.fn().mockResolvedValue({
+					id: 1,
+					status: 'pending',
+					createdAt: new Date()
+				})
+			},
+			orderItem: {
+				createMany: vi.fn().mockResolvedValue({ count: 2 })
+			}
+		};
+		lastTx = mockTx as never;
+		return (callback as (tx: unknown) => unknown)(mockTx);
+	});
+}
+
 describe('Order Handlers', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -186,37 +251,101 @@ describe('Order Handlers', () => {
 				})
 			});
 
-			// Mock successful database operations
 			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
+			mockSuccessfulTransaction();
+			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
+
+			const response = await createOrder(event, mockContext, () => {});
+
+			expect(response!.statusCode).toBe(201);
+		});
+
+		it('should create an address and snapshot it plus delivery instructions onto the order', async () => {
+			const event = createMockEvent({
+				body: JSON.stringify({
+					...validOrderRequest,
+					deliveryInstructions: 'Ring the bell twice'
+				})
+			});
+
+			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
+			mockSuccessfulTransaction();
+			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
+
+			const response = await createOrder(event, mockContext, () => {});
+
+			expect(response!.statusCode).toBe(201);
+
+			// Address dedupe lookup then creation (no existing match)
+			expect(lastTx.address.findFirst).toHaveBeenCalledWith({
+				where: {
+					userId: 'test-uuid',
+					streetAddress: validCustomer.address.streetAddress,
+					neighborhood: validCustomer.address.neighborhood,
+					city: validCustomer.address.city,
+					department: validCustomer.address.department,
+					postalCode: validCustomer.address.postalCode
+				}
+			});
+			expect(lastTx.address.create).toHaveBeenCalledOnce();
+
+			// Order carries the addressId, snapshot fields, and delivery instructions
+			expect(lastTx.order.create).toHaveBeenCalledOnce();
+			const orderData = lastTx.order.create.mock.calls[0][0].data;
+			expect(orderData.addressId).toBe('address-uuid');
+			expect(orderData.deliveryStreetAddress).toBe(validCustomer.address.streetAddress);
+			expect(orderData.deliveryNeighborhood).toBe(validCustomer.address.neighborhood);
+			expect(orderData.deliveryCity).toBe(validCustomer.address.city);
+			expect(orderData.deliveryDepartment).toBe(validCustomer.address.department);
+			expect(orderData.deliveryPostalCode).toBe(validCustomer.address.postalCode);
+			expect(orderData.deliveryInstructions).toBe('Ring the bell twice');
+		});
+
+		it('should reuse an existing address instead of creating a duplicate', async () => {
+			const event = createMockEvent({
+				body: JSON.stringify(validOrderRequest)
+			});
+
+			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
+
+			const existingAddress = {
+				id: 'existing-address-uuid',
+				userId: 'test-uuid',
+				streetAddress: validCustomer.address.streetAddress,
+				neighborhood: validCustomer.address.neighborhood,
+				city: validCustomer.address.city,
+				department: validCustomer.address.department,
+				postalCode: validCustomer.address.postalCode
+			};
+
 			vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
 				const mockTx = {
 					user: {
-						findUnique: vi.fn().mockResolvedValue(null), // New user
-						create: vi.fn().mockResolvedValue({
-							id: 'test-uuid',
-							name: validCustomer.name,
-							phone: '+573001234567'
-						}),
+						findUnique: vi
+							.fn()
+							.mockResolvedValue({ id: 'test-uuid', name: 'Juan', phone: validCustomer.phone }),
+						create: vi.fn(),
 						update: vi.fn()
 					},
-					order: {
-						create: vi.fn().mockResolvedValue({
-							id: 1,
-							status: 'pending',
-							createdAt: new Date()
-						})
+					address: {
+						findFirst: vi.fn().mockResolvedValue(existingAddress),
+						create: vi.fn()
 					},
-					orderItem: {
-						createMany: vi.fn().mockResolvedValue({ count: 2 })
-					}
+					order: {
+						create: vi.fn().mockResolvedValue({ id: 1, status: 'pending', createdAt: new Date() })
+					},
+					orderItem: { createMany: vi.fn().mockResolvedValue({ count: 2 }) }
 				};
-				return callback(mockTx as never);
+				lastTx = mockTx as never;
+				return (callback as (tx: unknown) => unknown)(mockTx);
 			});
 			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const response = await createOrder(event, mockContext, () => {});
 
 			expect(response!.statusCode).toBe(201);
+			expect(lastTx.address.create).not.toHaveBeenCalled();
+			expect(lastTx.order.create.mock.calls[0][0].data.addressId).toBe('existing-address-uuid');
 		});
 
 		it('should return 400 for incomplete address', async () => {
@@ -255,32 +384,8 @@ describe('Order Handlers', () => {
 				})
 			});
 
-			// Mock successful database operations
 			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
-			vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-				const mockTx = {
-					user: {
-						findUnique: vi.fn().mockResolvedValue(null), // New user
-						create: vi.fn().mockResolvedValue({
-							id: 'test-uuid',
-							name: validCustomer.name,
-							phone: validCustomer.phone
-						}),
-						update: vi.fn()
-					},
-					order: {
-						create: vi.fn().mockResolvedValue({
-							id: 1,
-							status: 'pending',
-							createdAt: new Date()
-						})
-					},
-					orderItem: {
-						createMany: vi.fn().mockResolvedValue({ count: 2 })
-					}
-				};
-				return callback(mockTx as never);
-			});
+			mockSuccessfulTransaction();
 			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const response = await createOrder(event, mockContext, () => {});
@@ -373,31 +478,14 @@ describe('Order Handlers', () => {
 			vi.mocked(prisma.storeConfig.findFirst).mockRejectedValue(new Error('db down'));
 
 			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
-			vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-				const mockTx = {
-					user: {
-						findUnique: vi.fn().mockResolvedValue(null),
-						create: vi.fn().mockResolvedValue({ id: 'test-uuid' }),
-						update: vi.fn()
-					},
-					order: {
-						create: vi.fn().mockResolvedValue({
-							id: 1,
-							status: 'pending',
-							createdAt: new Date()
-						})
-					},
-					orderItem: { createMany: vi.fn().mockResolvedValue({ count: 2 }) }
-				};
-				return callback(mockTx as never);
-			});
+			mockSuccessfulTransaction();
 			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const event = createMockEvent({
 				body: JSON.stringify(validOrderRequest)
 			});
 
-			const response = await createOrder(event);
+			const response = await createOrder(event, mockContext, () => {});
 
 			expect(response!.statusCode).toBe(201);
 		});
@@ -425,24 +513,7 @@ describe('Order Handlers', () => {
 
 				if (valid) {
 					vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
-					vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-						const mockTx = {
-							user: {
-								findUnique: vi.fn().mockResolvedValue(null), // New user
-								create: vi.fn().mockResolvedValue({ id: 'test-uuid' }),
-								update: vi.fn()
-							},
-							order: {
-								create: vi.fn().mockResolvedValue({
-									id: 1,
-									status: 'pending',
-									createdAt: new Date()
-								})
-							},
-							orderItem: { createMany: vi.fn().mockResolvedValue({ count: 2 }) }
-						};
-						return callback(mockTx as never);
-					});
+					mockSuccessfulTransaction();
 					vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 				}
 

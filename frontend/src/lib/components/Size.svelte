@@ -23,12 +23,31 @@
 		labelKey: string;
 		capacity: string;
 		basePrice: number;
+		fillLevel: 1 | 2 | 3;
 	}
 
 	const sizes: SizeOption[] = [
-		{ size: 250, labelKey: 'size.small', capacity: '250g', basePrice: BOWL_SIZE_PRICES[0] },
-		{ size: 450, labelKey: 'size.medium', capacity: '450g', basePrice: BOWL_SIZE_PRICES[1] },
-		{ size: 600, labelKey: 'size.large', capacity: '600g', basePrice: BOWL_SIZE_PRICES[2] }
+		{
+			size: 250,
+			labelKey: 'size.small',
+			capacity: '250g',
+			basePrice: BOWL_SIZE_PRICES[0],
+			fillLevel: 1
+		},
+		{
+			size: 450,
+			labelKey: 'size.medium',
+			capacity: '450g',
+			basePrice: BOWL_SIZE_PRICES[1],
+			fillLevel: 2
+		},
+		{
+			size: 600,
+			labelKey: 'size.large',
+			capacity: '600g',
+			basePrice: BOWL_SIZE_PRICES[2],
+			fillLevel: 3
+		}
 	];
 </script>
 
@@ -38,9 +57,9 @@
 			<SizeCard
 				label={$_(option.labelKey)}
 				capacity={option.capacity}
-				capacityLabel={$_('size.capacity')}
 				price={formatCOP(option.basePrice)}
-				pricingNote={$_('size.pricingNote')}
+				pricingNotePrefix={$_('size.pricingNotePrefix')}
+				fillLevel={option.fillLevel}
 				onclick={() => onSelect(option.size)}
 			/>
 		{/each}
