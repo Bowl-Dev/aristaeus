@@ -13,25 +13,41 @@ enum class CommandType
     Calibrate,
 
     EnableStepper,
-
     DisableStepper,
 
     StartStepper,
-
     StopStepper,
 
     SetStepperSpeed,
+    SetStepperDirection,
 
-    SetServo,
+    SetServoPosition,
 
     EmergencyStop,
 
+    Reset,
+
     Reboot
+};
+
+enum class DeviceType
+{
+    None,
+
+    Stepper,
+
+    LoadCell,
+
+    Servo,
+
+    System
 };
 
 struct Command
 {
     CommandType type = CommandType::None;
+
+    DeviceType device = DeviceType::None;
 
     uint8_t target = 0;
 
