@@ -33,29 +33,21 @@ MachineController controller(
 
 void setup()
 {
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("Setup started");
+
     controller.begin();
+    Serial.println("Controller started");
 
-    stepperManager.enable(0);
+    JobRequest request;
 
-    stepperManager.setDirection(0, true);
+    request.type = JobType::Dispense;
+    request.actuator = 0;
+    request.target = 50.0f;
 
-    stepperManager.setSpeed(0, 1000);
-
-    stepperManager.start(0);
-    delay(3000);
-
-    stepperManager.setSpeed(0, 500);
-    delay(3000);
-
-    stepperManager.setSpeed(0, 1500);
-    delay(3000);
-
-    stepperManager.setSpeed(0, 2500);
-    delay(3000);
-
-    stepperManager.stop(0);
-
-    stepperManager.disable(0);
+    controller.enqueueJob(request);
+    Serial.println("Job queued");
 }
 
 void loop()

@@ -1,4 +1,5 @@
 #include "MachineController.h"
+#include <Arduino.h>
 
 MachineController::MachineController(
     MachineContext& ctx,
@@ -10,45 +11,96 @@ MachineController::MachineController(
     SafetyManager& safetyMgr)
 
     : context(ctx),
-      steppers(step),
-      loadCells(load),
-      servos(servo),
-      wifi(wifiMgr),
-      mqtt(mqttMgr),
-      safety(safetyMgr)
+      stepperManager(step),
+      loadCellManager(load),
+      servoManager(servo),
+      wifiManager(wifiMgr),
+      mqttManager(mqttMgr),
+      safetyManager(safetyMgr),
+      services{
+            stepperManager,
+            loadCellManager,
+            servoManager,
+            mqttManager,
+            wifiManager,
+            safetyManager}
 {
 }
 
 void MachineController::begin()
 {
-    wifi.begin();
-
-    mqtt.begin();
-
-    steppers.begin();
-
-    loadCells.begin();
-
-    servos.begin();
-
-    safety.begin();
+    wifiManager.begin();
+    mqttManager.begin();
+    stepperManager.begin();
+    loadCellManager.begin();
+    servoManager.begin();
+    safetyManager.begin();
 
     context.system.initialized = true;
 }
 
 void MachineController::update()
 {
-    wifi.update();
+    //Serial.println("MachineController::update()");
 
-    mqtt.update();
+    wifiManager.update();
+    mqttManager.update();
+    loadCellManager.update();
+    stepperManager.update();
+    servoManager.update();
+    safetyManager.update();
 
-    loadCells.update();
+    if (currentJobType == JobType::None)
+    {
+        JobRequest request;
 
-    steppers.update();
+        if (jobQueue.dequeue(request))
+        {
+        switch (request.type)
+        {
+            case JobType::Dispense:
 
-    servos.update();
+                dispenseJob.state = JobState::Idle;
+                dispenseJob.actuator = request.actuator;
+                dispenseJob.targetWeight = request.target;
 
-    safety.update();
+                Jobs::beginDispenseJob(dispenseJob, services);
+
+                currentJobType = JobType::Dispense;
+
+                break;
+
+                default:
+                break;
+            }
+        }
+    }
+
+    switch (currentJobType)
+    {
+        case JobType::Dispense:
+
+            Jobs::updateDispenseJob(dispenseJob, services);
+
+            break;
+
+            default:
+            break;
+    }
+
+    if (currentJobType == JobType::Dispense)
+    {
+        if (dispenseJob.state == JobState::Finished)
+        {
+            Serial.println("DispenseJob completed");
+            currentJobType = JobType::None;
+        }
+    }
 
     context.system.uptime++;
+}
+
+bool MachineController::enqueueJob(const JobRequest& request)
+{
+    return jobQueue.enqueue(request);
 }

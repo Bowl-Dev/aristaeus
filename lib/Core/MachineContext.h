@@ -13,6 +13,9 @@ struct StepperState
 struct LoadCellState
 {
     float weight = 0.0f;
+    bool stable = false;
+    bool connected = false;
+    bool tareComplete = false;
 };
 
 struct ServoState

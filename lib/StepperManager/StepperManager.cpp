@@ -109,9 +109,7 @@ void StepperManager::start(uint8_t motor)
         return;
 
     hw[motor].running = true;
-
     motors[motor].running = true;
-
     context.stepper[motor].running = true;
 }
 
@@ -121,9 +119,7 @@ void StepperManager::stop(uint8_t motor)
         return;
 
     hw[motor].running = false;
-
     motors[motor].running = false;
-
     context.stepper[motor].running = false;
 }
 
@@ -133,7 +129,6 @@ void StepperManager::setDirection(uint8_t motor, bool direction)
         return;
 
     motors[motor].direction = direction;
-
     context.stepper[motor].direction = direction;
 
     digitalWrite(

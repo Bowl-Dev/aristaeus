@@ -10,8 +10,8 @@ public:
     explicit LoadCellManager(MachineContext& context);
 
     void begin() override;
-
     void update() override;
+    float getWeight(uint8_t channel) const;
 
 private:
 
