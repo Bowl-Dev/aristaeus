@@ -38,12 +38,7 @@ void Jobs::updateDispenseJob(
 
         case JobState::Running:
            {
-            float weight = services.loadCell.getWeight(job.actuator);
-
-            Serial.print("Weight = ");
-            Serial.println(weight);
-            Serial.print("Target = ");
-            Serial.println(job.targetWeight);
+            float weight = services.loadCell.getWeight(job.actuator);            
 
             if(weight >= job.targetWeight)
                 {

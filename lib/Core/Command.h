@@ -63,5 +63,6 @@ struct JobRequest
 {
     JobType type = JobType::None;
     uint8_t actuator = 0;
-    float target = 0.0f;
+    float targetWeight = 0.0f;
+    uint32_t speed = 1000;
 };

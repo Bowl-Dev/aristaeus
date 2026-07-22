@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include "Calibration.h"
+#include "Pins.h"
 
 struct StepperState
 {
@@ -12,10 +14,11 @@ struct StepperState
 
 struct LoadCellState
 {
+    int32_t raw = 0;
     float weight = 0.0f;
     bool stable = false;
     bool connected = false;
-    bool tareComplete = false;
+    bool tareComplete = false;    
 };
 
 struct ServoState
@@ -41,6 +44,8 @@ struct MachineContext
     StepperState stepper[2];
     LoadCellState loadCell[2];
     ServoState servo[2];
+
+    Calibration calibration[NUM_LOAD_CELLS];
 
     CommunicationState communication;
     SystemState system;
