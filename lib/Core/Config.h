@@ -22,3 +22,7 @@ struct ServoConfig
     uint16_t minPulse;
     uint16_t maxPulse;
 };
+
+constexpr char WIFI_SSID[] = "REDACTED";
+
+constexpr char WIFI_PASSWORD[] = "REDACTED";

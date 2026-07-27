@@ -1,19 +1,20 @@
 #pragma once
 
-#include "IManager.h"
-#include "MachineContext.h"
+#include <WiFi.h>
 
-class WifiManager : public IManager
+class WifiManager
 {
 public:
 
-    explicit WifiManager(MachineContext& context);
+    void begin();
 
-    void begin() override;
+    void update();
 
-    void update() override;
+    bool connected() const;
 
 private:
 
-    MachineContext& context;
+    void reconnect();
+
+    uint32_t lastReconnectAttempt = 0;
 };

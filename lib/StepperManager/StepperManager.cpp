@@ -66,14 +66,16 @@ void StepperManager::begin()
     hw[0].stepPin = motors[0].config.stepPin;
     hw[1].stepPin = motors[1].config.stepPin;
 
-    hw[0].timer = timerBegin(1000000); // 1 MHz = 1 tick per microsecond
-    hw[1].timer = timerBegin(1000000);
+    hw[0].timer = timerBegin(0,80,true); // 1 MHz = 1 tick per microsecond
+    hw[1].timer = timerBegin(1,80,true);
 
-    timerAttachInterrupt(hw[0].timer, &onTimer1);
-    timerAttachInterrupt(hw[1].timer, &onTimer2);
+    timerAttachInterrupt(hw[0].timer, &onTimer1, true);
+    timerAttachInterrupt(hw[1].timer, &onTimer2, true);
 
-    timerAlarm(hw[0].timer, 500, true, 0);    
-    timerAlarm(hw[1].timer, 500, true, 0);
+    timerAlarmWrite(hw[0].timer, 500, true);
+    timerAlarmEnable(hw[0].timer);    
+    timerAlarmWrite(hw[1].timer, 500, true);
+    timerAlarmEnable(hw[1].timer);
 }
 
 void StepperManager::update()
@@ -153,9 +155,5 @@ void StepperManager::setSpeed(uint8_t motor, uint32_t stepsPerSecond)
 
     hw[motor].alarmPeriodUs = period;
 
-    timerAlarm(
-        hw[motor].timer,
-        period,
-        true,
-        0);
+    timerAlarmWrite(hw[motor].timer, period, true);
 }

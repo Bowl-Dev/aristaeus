@@ -1,19 +1,20 @@
 #pragma once
 
-#include "IManager.h"
-#include "MachineContext.h"
 
-class MQTTManager : public IManager
+
+class MQTTManager 
 {
 public:
 
-    explicit MQTTManager(MachineContext& context);
+    //MQTTManager(MachineController& controller, Protocol& protocol);
 
-    void begin() override;
+    void begin();
 
-    void update() override;
+    void update();
 
 private:
 
-    MachineContext& context;
+    //MachineController& controller;
+
+   // Protocol& protocol;
 };

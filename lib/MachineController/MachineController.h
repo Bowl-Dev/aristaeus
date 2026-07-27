@@ -6,7 +6,7 @@
 #include "LoadCellManager.h"
 #include "ServoManager.h"
 #include "WifiManager.h"
-#include "MQTTManager.h"
+//#include "MQTTManager.h"
 #include "SafetyManager.h"
 #include "MachineServices.h"
 #include "JobQueue.h"
@@ -22,7 +22,7 @@ public:
         LoadCellManager& loadCells,
         ServoManager& servos,
         WifiManager& wifi,
-        MQTTManager& mqtt,
+        //MQTTManager& mqtt,
         SafetyManager& safety);
 
     void begin();
@@ -39,7 +39,7 @@ private:
     LoadCellManager& loadCellManager;
     ServoManager& servoManager;
     WifiManager& wifiManager;
-    MQTTManager& mqttManager;
+    //MQTTManager& mqttManager;
     SafetyManager& safetyManager;
     MachineServices services;
     JobQueue jobQueue;

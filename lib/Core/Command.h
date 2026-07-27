@@ -56,7 +56,8 @@ enum class JobType : uint8_t
     Dispense,
     Tare,
     MoveServo,
-    Stop
+    Stop,
+    Status
 };
 
 struct JobRequest

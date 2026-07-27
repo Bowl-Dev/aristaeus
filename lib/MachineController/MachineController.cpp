@@ -7,21 +7,19 @@ MachineController::MachineController(
     LoadCellManager& load,
     ServoManager& servo,
     WifiManager& wifiMgr,
-    MQTTManager& mqttMgr,
+    //MQTTManager& mqttMgr,
     SafetyManager& safetyMgr)
 
     : context(ctx),
       stepperManager(step),
       loadCellManager(load),
       servoManager(servo),
-      wifiManager(wifiMgr),
-      mqttManager(mqttMgr),
+      wifiManager(wifiMgr),      
       safetyManager(safetyMgr),
       services{
             stepperManager,
             loadCellManager,
-            servoManager,
-            mqttManager,
+            servoManager,            
             wifiManager,
             safetyManager}
 {
@@ -30,7 +28,7 @@ MachineController::MachineController(
 void MachineController::begin()
 {
     wifiManager.begin();
-    mqttManager.begin();
+    //mqttManager.begin();
     stepperManager.begin();
     loadCellManager.begin();
     servoManager.begin();
@@ -44,7 +42,7 @@ void MachineController::update()
     //Serial.println("MachineController::update()");
 
     wifiManager.update();
-    mqttManager.update();
+    //mqttManager.update();
     loadCellManager.update();
     stepperManager.update();
     servoManager.update();
@@ -62,7 +60,7 @@ void MachineController::update()
 
                 dispenseJob.state = JobState::Idle;
                 dispenseJob.actuator = request.actuator;
-                dispenseJob.targetWeight = request.target;
+                dispenseJob.targetWeight = request.targetWeight;
 
                 Jobs::beginDispenseJob(dispenseJob, services);
 

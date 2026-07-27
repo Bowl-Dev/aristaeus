@@ -9,7 +9,8 @@
 #include "MQTTManager.h"
 #include "SafetyManager.h"
 #include "MachineController.h"
-#include "Pins.h"
+#include "Protocol.h"
+
 
 
 MachineContext context;
@@ -17,8 +18,9 @@ MachineContext context;
 StepperManager stepperManager(context, STEP1, STEP2);
 LoadCellManager loadCellManager(context);
 ServoManager servos(context);
-WifiManager wifi(context);
-MQTTManager mqtt(context);
+WifiManager wifiManager;  //(context);
+Protocol protocol;
+MQTTManager mqttManager; //(controller, protocol);
 SafetyManager safety(context);
 
 MachineController controller(
@@ -26,26 +28,42 @@ MachineController controller(
     stepperManager,
     loadCellManager,
     servos,
-    wifi,
-    mqtt,
+    wifiManager,
+    //mqttManager,
     safety);
 
 void setup()
 {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("Setup started");    
+    Serial.println("Setup started");
+    
+    wifiManager.begin();
 
     controller.begin();
     Serial.println("Controller started");    
     loadCellManager.requestTare(0);
     loadCellManager.requestTare(1);
 
+    Protocol protocol;
+
     JobRequest request;
 
-    request.type = JobType::Dispense;
-    request.actuator = 0;
-    request.target = 50.0f;
+    const char* json =
+    R"({
+        "command":"dispense",
+        "actuator":1,
+        "targetWeight":42.5,
+        "speed":800
+    })";
+
+    if(protocol.parse(json, request))
+    {
+        Serial.println("Protocol OK");
+        Serial.println(request.actuator);
+        Serial.println(request.targetWeight);
+        Serial.println(request.speed);
+    }
 
     controller.enqueueJob(request);
     Serial.println("Job queued");    
@@ -53,7 +71,7 @@ void setup()
 
 void loop()
 {
-    static uint32_t lastPrint = 0;
+    /*static uint32_t lastPrint = 0;
 
     if (millis() - lastPrint >= 500)
     {
@@ -70,6 +88,7 @@ void loop()
 
         Serial.print("    W1: ");
         Serial.println(loadCellManager.getWeight(1));       
-    }
+    }*/
+    wifiManager.update();
     controller.update();
 }
