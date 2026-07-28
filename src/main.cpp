@@ -20,17 +20,16 @@ LoadCellManager loadCellManager(context);
 ServoManager servos(context);
 WifiManager wifiManager;  //(context);
 Protocol protocol;
-MQTTManager mqttManager; //(controller, protocol);
 SafetyManager safety(context);
-
 MachineController controller(
     context,
     stepperManager,
     loadCellManager,
     servos,
-    wifiManager,
-    //mqttManager,
+    wifiManager,    
     safety);
+
+MQTTManager mqttManager(controller, protocol);
 
 void setup()
 {
@@ -39,14 +38,13 @@ void setup()
     Serial.println("Setup started");
     
     wifiManager.begin();
+    mqttManager.begin();
 
     controller.begin();
     Serial.println("Controller started");    
     loadCellManager.requestTare(0);
     loadCellManager.requestTare(1);
-
-    Protocol protocol;
-
+    
     JobRequest request;
 
     const char* json =
@@ -90,5 +88,6 @@ void loop()
         Serial.println(loadCellManager.getWeight(1));       
     }*/
     wifiManager.update();
+    mqttManager.update();
     controller.update();
 }

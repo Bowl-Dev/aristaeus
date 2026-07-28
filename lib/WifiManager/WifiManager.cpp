@@ -6,11 +6,9 @@ void WifiManager::begin()
 {
     WiFi.mode(WIFI_STA);
 
-    WiFi.begin(
-        WIFI_SSID,
-        WIFI_PASSWORD);
+    Serial.printf("Connecting to %s...\n", WIFI_SSID);
 
-    Serial.println("Connecting to WiFi...");
+    WiFi.begin(WIFI_SSID,WIFI_PASSWORD);    
 }
 
 bool WifiManager::connected() const
@@ -18,26 +16,44 @@ bool WifiManager::connected() const
     return WiFi.status() == WL_CONNECTED;
 }
 
-void WifiManager::reconnect()
+IPAddress WifiManager::localIP() const
 {
-    Serial.println("Reconnecting WiFi...");
-
-    WiFi.disconnect();
-
-    WiFi.begin(
-        WIFI_SSID,
-        WIFI_PASSWORD);
+    return WiFi.localIP();
 }
 
 void WifiManager::update()
 {
     if (connected())
+    {
+        if (!wasConnected)
+        {
+            wasConnected = true;
+            Serial.print("WiFi connected: ");
+            Serial.println(WiFi.localIP());
+        }
+        return;
+    }
+
+    if (wasConnected)
+    {
+        wasConnected = false;
+        Serial.println("WiFi disconnected");
+    }
+    reconnect();    
+}
+
+void WifiManager::reconnect()
+{
+    uint32_t now = millis();
+
+    if (now - lastReconnectAttempt < RECONNECT_INTERVAL_MS)
         return;
 
-    if (millis() - lastReconnectAttempt < 5000)
-        return;
+    lastReconnectAttempt = now;
 
-    lastReconnectAttempt = millis();
+    Serial.println("Reconnecting WiFi...");
 
-    reconnect();
+    WiFi.disconnect();
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
