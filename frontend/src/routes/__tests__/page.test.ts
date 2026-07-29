@@ -102,32 +102,32 @@ describe('/ +page (view state machine)', () => {
 		const { container } = render(Page);
 		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
 		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
-		await waitFor(() => expect(container.textContent).toContain('Desde cero'));
-		expect(container.textContent).toContain('Ideas para empezar');
+		await waitFor(() => expect(container.textContent).toContain('Arma tu bowl'));
+		expect(container.textContent).toContain('Menú');
 	});
 
-	it('navigates landing → modal → size when "Desde cero" is clicked', async () => {
+	it('navigates landing → modal → size when "Arma tu bowl" is clicked', async () => {
 		getIngredientsMock.mockResolvedValue([]);
 		getMenusMock.mockResolvedValue([]);
 		const { container } = render(Page);
 		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
 		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
-		await waitFor(() => expect(findButton(container, /Desde cero/)).toBeTruthy());
-		await fireEvent.click(findButton(container, /Desde cero/) as HTMLButtonElement);
+		await waitFor(() => expect(findButton(container, /Arma tu bowl/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Arma tu bowl/) as HTMLButtonElement);
 		// Size screen heading
 		await waitFor(() => expect(container.textContent).toContain('Tamaños'));
 		// Grams are the dominant value on each size card
 		expect(container.textContent).toContain('250g');
 	});
 
-	it('navigates landing → modal → menu when "Ideas para empezar" is clicked', async () => {
+	it('navigates landing → modal → menu when "Menú" is clicked', async () => {
 		getIngredientsMock.mockResolvedValue([rice]);
 		getMenusMock.mockResolvedValue([sampleMenu]);
 		const { container } = render(Page);
 		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
 		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
-		await waitFor(() => expect(findButton(container, /Ideas para empezar/)).toBeTruthy());
-		await fireEvent.click(findButton(container, /Ideas para empezar/) as HTMLButtonElement);
+		await waitFor(() => expect(findButton(container, /Menú/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Menú/) as HTMLButtonElement);
 		await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));
 	});
 
@@ -137,8 +137,8 @@ describe('/ +page (view state machine)', () => {
 		const { container } = render(Page);
 		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
 		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
-		await waitFor(() => expect(findButton(container, /Desde cero/)).toBeTruthy());
-		await fireEvent.click(findButton(container, /Desde cero/) as HTMLButtonElement);
+		await waitFor(() => expect(findButton(container, /Arma tu bowl/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Arma tu bowl/) as HTMLButtonElement);
 		await waitFor(() => expect(container.textContent).toContain('Tamaños'));
 		// SizeCard renders the size label as a clickable card (button or clickable element)
 		const mediumCard = findButton(container, /Mediano/);
@@ -157,8 +157,8 @@ describe('/ +page (view state machine)', () => {
 		const { container } = render(Page);
 		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
 		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
-		await waitFor(() => expect(findButton(container, /Desde cero/)).toBeTruthy());
-		await fireEvent.click(findButton(container, /Desde cero/) as HTMLButtonElement);
+		await waitFor(() => expect(findButton(container, /Arma tu bowl/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Arma tu bowl/) as HTMLButtonElement);
 		await waitFor(() => expect(container.textContent).toContain('Tamaños'));
 		await fireEvent.click(findButton(container, /Mediano/) as HTMLButtonElement);
 		await waitFor(() =>
@@ -177,8 +177,8 @@ describe('/ +page (view state machine)', () => {
 		const { container } = render(Page);
 		await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
 		await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
-		await waitFor(() => expect(findButton(container, /Ideas para empezar/)).toBeTruthy());
-		await fireEvent.click(findButton(container, /Ideas para empezar/) as HTMLButtonElement);
+		await waitFor(() => expect(findButton(container, /Menú/)).toBeTruthy());
+		await fireEvent.click(findButton(container, /Menú/) as HTMLButtonElement);
 		await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));
 		await fireEvent.click(findButton(container, /Personalizar bowl/) as HTMLButtonElement);
 		await waitFor(() =>

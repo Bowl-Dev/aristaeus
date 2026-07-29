@@ -53,14 +53,14 @@ describe('OptionCard molecule', () => {
 		const { getByRole, getByAltText } = render(OptionCard, {
 			props: {
 				iconSrc: '/BuildBowl.png',
-				iconAlt: 'desde cero',
+				iconAlt: 'arma tu bowl',
 				label: 'Desde zero',
 				onclick
 			}
 		});
 		const btn = getByRole('button');
 		expect(btn.textContent).toContain('Desde zero');
-		expect(getByAltText('desde cero')).toBeTruthy();
+		expect(getByAltText('arma tu bowl')).toBeTruthy();
 		await fireEvent.click(btn);
 		expect(onclick).toHaveBeenCalledOnce();
 	});
