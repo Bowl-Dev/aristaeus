@@ -10,8 +10,8 @@
 		"cta": "Order now",
 		"modal": {
 			"title": "How would you like your bowl?",
-			"fromScratch": "From scratch",
-			"menuIdeas": "Ideas to start",
+			"fromScratch": "Build your bowl",
+			"menuIdeas": "Menu",
 			"cancel": "Cancel"
 		}
 	},
