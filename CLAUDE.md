@@ -665,6 +665,45 @@ When changing database operations (e.g., replacing `user.upsert` with `user.find
 
 ---
 
+## Writing Standard: STE is mandatory
+
+Invoke the `ste-writing` skill before you write or edit prose in this repo. The skill
+lives at `.claude/skills/ste-writing/SKILL.md`.
+
+Apply STE to:
+
+- Any `.md` file, including this one, `PROJECT_SPEC.md`, and every README
+- A commit message body, a PR description, or a PR review comment
+- A TSDoc comment, a code comment, and a test description
+- A user-visible error message, an API error body, and a log message
+- A runbook step and a deployment note
+
+Use mode `strict` for a deployment step, a migration step, a runbook, and an error
+message. Use mode `standard` for everything else.
+
+The four subagents in `.claude/agents/` write documentation too. Tell each one to apply
+STE when you dispatch it.
+
+Before you commit a prose change, run the linter:
+
+```
+python3 .claude/skills/ste-writing/ste-lint.py <file>
+```
+
+Target 1.5 violations for each 100 words, or less. The linter exits 1 above that, so a
+pre-commit hook or a CI step can gate on it.
+
+Do not retrofit an existing file only to lower its score. Apply STE to text you write, or
+to a section you already edit for another reason.
+
+This standard does not apply to your chat replies to the user.
+
+The canonical copy of the skill lives at
+`~/Documents/Git/GoodUnited/repos/.claude/skills/ste-writing/`. This copy is a synced
+duplicate. Do not edit it here.
+
+---
+
 **Last Updated:** 2026-03-26
 **Project Status:** MVP Complete + Menu System
 **Current Phase:** Production Ready (Robot integration pending)
