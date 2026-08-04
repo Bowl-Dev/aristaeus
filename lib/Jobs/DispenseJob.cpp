@@ -7,18 +7,14 @@
 namespace Jobs
 {
 
-void beginDispenseJob(
-    DispenseJob& job,
-    MachineServices& services)
+void beginDispenseJob(DispenseJob& job, MachineServices& services)
 {
     (void)services;   // suppress unused parameter warning
     job.state = JobState::Starting;
 }
 }
 
-void Jobs::updateDispenseJob(
-    DispenseJob& job,
-    MachineServices& services)
+void Jobs::updateDispenseJob(DispenseJob& job, MachineServices& services)
 {
     switch(job.state)
     {
@@ -55,8 +51,7 @@ void Jobs::updateDispenseJob(
             job.state = JobState::Finished;
             break;
 
-        case JobState::Finished:
-            //Serial.println("DispenseJob: Finished");
+        case JobState::Finished:            
             break;
 
         case JobState::Error:

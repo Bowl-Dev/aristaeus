@@ -2,7 +2,40 @@
 #include "Protocol.h"
 #include "Config.h"
 #include <WiFi.h>
-//#include "MachineController.h"
+#include "MachineController.h"
+
+namespace
+{
+    const char* toString(MachineMode mode)
+    {
+        switch (mode)
+        {
+            case MachineMode::Booting:
+                return "booting";
+
+            case MachineMode::Initializing:
+                return "initializing";
+
+            case MachineMode::Ready:
+                return "ready";
+
+            case MachineMode::Running:
+                return "running";
+
+            case MachineMode::Paused:
+                return "paused";
+
+            case MachineMode::Error:
+                return "error";
+
+            case MachineMode::EmergencyStop:
+                return "emergency_stop";
+
+            default:
+                return "unknown";
+        }
+    }
+}
 
 MQTTManager* MQTTManager::instance = nullptr;
 
@@ -44,12 +77,40 @@ void MQTTManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
     Serial.print("MQTT topic: ");
     Serial.println(topic);
 
-    Serial.print("Payload: ");
+    constexpr size_t MAX_PAYLOAD = 256;
 
-    for (unsigned int i = 0; i < length; i++)
-        Serial.print((char)payload[i]);
+    if (length >= MAX_PAYLOAD)
+    {
+        Serial.println("Payload too large");
+        return;
+    }
 
-    Serial.println();
+    char json[MAX_PAYLOAD];
+
+    memcpy(json, payload, length);
+    json[length] = '\0';
+
+    JobRequest request;
+
+    if (protocol.parse(json, request))
+    {
+        Serial.println("Protocol parse OK");
+
+        Serial.print("Queueing actuator ");
+        Serial.println(request.actuator);
+
+        controller.processJobRequest(request);
+
+        Serial.print("Target weight: ");
+        Serial.println(request.targetWeight);
+
+        Serial.print("Speed: ");
+        Serial.println(request.speed);
+    }
+    else
+    {
+        Serial.println("Protocol parse FAILED");
+    }
 }
 
 void MQTTManager::reconnect()
@@ -93,4 +154,32 @@ void MQTTManager::update()
 {
     reconnect();
     mqtt.loop();
+   
+   MachineMode mode = controller.state().mode;
+    if (mode != lastPublishedMode)
+    {
+        if (publishStatus(toString(mode)))
+        {
+            lastPublishedMode = mode;
+        }
+    }
+}
+
+bool MQTTManager::publishStatus(const char* status)
+{
+    if (!mqtt.connected())
+        return false;
+
+    /*char payload[256];
+
+    snprintf(payload, sizeof(payload), "{\"mode\":\"%s\"}", status);*/
+
+    return mqtt.publish(MQTT_STATUS_TOPIC, status);
+}
+
+void MQTTManager::publishEvent(const char* payload)
+{
+    if (!connected())
+        return;
+    mqtt.publish(MQTT_EVENT_TOPIC, payload);
 }

@@ -37,3 +37,8 @@ bool JobQueue::full() const
 {
     return count == SIZE;
 }
+
+uint8_t JobQueue::size() const
+{
+    return count;
+}

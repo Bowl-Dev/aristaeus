@@ -5,6 +5,7 @@
 
 class MachineServices;
 
+
 struct DispenseJob
 {
     JobState state = JobState::Idle;
@@ -15,12 +16,8 @@ struct DispenseJob
 
 namespace Jobs
 {
-    void beginDispenseJob(
-        DispenseJob& job,
-        MachineServices& services);
+    void beginDispenseJob( DispenseJob& job, MachineServices& services);
 
-    void updateDispenseJob(
-        DispenseJob& job,
-        MachineServices& services);
+    void updateDispenseJob(  DispenseJob& job, MachineServices& services);
 }
 

@@ -7,12 +7,10 @@ class JobQueue
 public:
 
     bool enqueue(const JobRequest& job);
-
     bool dequeue(JobRequest& job);
-
     bool empty() const;
-
     bool full() const;
+    uint8_t size() const;
 
 private:
 

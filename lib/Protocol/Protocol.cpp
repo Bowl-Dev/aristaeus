@@ -44,3 +44,4 @@ bool Protocol::parseStatus( JsonDocument&, JobRequest& request)
     request.type = JobType::Status;
     return true;
 }
+

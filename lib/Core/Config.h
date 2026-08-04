@@ -26,10 +26,11 @@ struct ServoConfig
 constexpr char WIFI_SSID[] = "REDACTED";
 constexpr char WIFI_PASSWORD[] = "REDACTED";
 
-constexpr char MQTT_SERVER[] = "192.168.2.10";   // Your broker IP
+constexpr char MQTT_SERVER[] = "192.168.2.8";   // Your broker IP
 constexpr uint16_t MQTT_PORT = 1883;
 
 constexpr char MQTT_CLIENT_ID[] = "MachineController";
 
 constexpr char MQTT_COMMAND_TOPIC[] = "machine/command";
 constexpr char MQTT_STATUS_TOPIC[]  = "machine/status";
+constexpr char MQTT_EVENT_TOPIC[] = "machine/event";

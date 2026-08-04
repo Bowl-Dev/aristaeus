@@ -8,6 +8,8 @@ enum class CommandType
 
     Ping,
 
+    Dispense,
+
     Tare,
 
     Calibrate,
@@ -55,9 +57,8 @@ enum class JobType : uint8_t
     None = 0,
     Dispense,
     Tare,
-    MoveServo,
-    Stop,
-    Status
+    Status,    
+    MoveServo     
 };
 
 struct JobRequest
