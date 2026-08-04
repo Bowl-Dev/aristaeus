@@ -20,6 +20,13 @@ provider "aws" {
   region = var.aws_region
 }
 
+# CloudFront accepts an ACM certificate only from us-east-1.
+# This alias keeps the certificate correct if var.aws_region changes.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
 # Data source for current AWS account
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}

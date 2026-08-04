@@ -12,10 +12,13 @@ import type {
 	ColombianAddress
 } from '@aristaeus/shared';
 
-// API base URL - configured via environment variable
+// API base URL - configured via environment variable.
 // In development: http://localhost:3000
-// In production: Your API Gateway URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// In production: an empty string. CloudFront proxies /api/* to API Gateway on the
+// same origin, so every endpoint below is already a complete path.
+// Use ?? and not ||, because an empty string is falsy and || would select the
+// localhost default in a production build.
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 /**
  * Generic fetch wrapper with error handling

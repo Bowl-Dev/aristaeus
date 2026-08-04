@@ -24,6 +24,24 @@ variable "database_url" {
   sensitive   = true
 }
 
+variable "domain_name" {
+  description = "Root domain for this environment (prod: algramo.app, dev: dev.algramo.app)"
+  type        = string
+  default     = "algramo.app"
+}
+
+variable "hosted_zone_name" {
+  description = "Route 53 zone that holds the records. All environments share one zone."
+  type        = string
+  default     = "algramo.app"
+}
+
+variable "admin_dns_enabled" {
+  description = "Create the admin.<domain> record and attach the certificate to the admin distribution. Keep false until the admin API has authentication."
+  type        = bool
+  default     = false
+}
+
 variable "cors_allowed_origins" {
   description = "List of allowed CORS origins"
   type        = list(string)
