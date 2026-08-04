@@ -58,11 +58,13 @@ enum class JobType : uint8_t
     Dispense,
     Tare,
     Status,    
-    MoveServo     
+    MoveServo,
+    Reset     
 };
 
 struct JobRequest
 {
+    uint32_t id = 0;
     JobType type = JobType::None;
     uint8_t actuator = 0;
     float targetWeight = 0.0f;

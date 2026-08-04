@@ -19,6 +19,12 @@ bool Protocol::parse(const char* json, JobRequest& request)
 
     if (command == "status")
         return parseStatus(doc, request);
+    
+    if (command == "reset")
+        {
+            request.type = JobType::Reset;
+            return true;
+        }
 
     return false;
 }

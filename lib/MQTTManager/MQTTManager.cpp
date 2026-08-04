@@ -168,11 +168,7 @@ void MQTTManager::update()
 bool MQTTManager::publishStatus(const char* status)
 {
     if (!mqtt.connected())
-        return false;
-
-    /*char payload[256];
-
-    snprintf(payload, sizeof(payload), "{\"mode\":\"%s\"}", status);*/
+        return false;    
 
     return mqtt.publish(MQTT_STATUS_TOPIC, status);
 }

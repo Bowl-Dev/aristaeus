@@ -14,6 +14,9 @@
 #include "JobQueue.h"
 #include "DispenseJob.h"
 
+constexpr float MIN_PROGRESS = 1.0f;
+constexpr uint32_t STALL_TIMEOUT_MS = 20000;
+
 class MachineController
 {
 public:
@@ -48,7 +51,9 @@ private:
     JobType currentJobType = JobType::None;
     DispenseJob dispenseJob;
     MachineState currentState;
-    MachineEventListener* eventListener = nullptr;    
+    MachineEventListener* eventListener = nullptr;
+    
+    uint32_t nextJobId = 0;
 
     void setMode(MachineMode mode);
     bool canAcceptJob(const JobRequest& request) const;
@@ -60,5 +65,6 @@ private:
     void jobFinished();
     void jobAccepted(const JobRequest& request);
     void jobRejected(const char* reason);
-    void emitEvent(MachineEventType event);     
+    void emitEvent(MachineEventType event);
+    void resetMachine();     
 };

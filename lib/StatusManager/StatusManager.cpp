@@ -2,8 +2,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-//#define MQTT_MAX_PACKET_SIZE 512
-
 namespace
 {
 
@@ -63,6 +61,7 @@ void StatusManager::update()
     JsonDocument doc;
 
     doc["mode"] = modeToString(state.mode);
+    doc["lastError"] = state.lastError;
     doc["uptime"] = state.uptime;
     doc["queuedJobs"] = state.queuedJobs;
 
@@ -74,12 +73,18 @@ void StatusManager::update()
     doc["loadCell0"] = context.loadCell[0].weight;
     doc["loadCell1"] = context.loadCell[1].weight;
 
-    char payload[256];
+    JsonObject job = doc.createNestedObject("job");
+
+    job["id"] = state.activeJob.id;
+    job["active"] = state.activeJob.active;
+    job["actuator"] = state.activeJob.actuator;
+    job["targetWeight"] = state.activeJob.targetWeight;
+    job["currentWeight"] = state.activeJob.currentWeight;
+    job["progress"] = state.activeJob.progress;
+
+    char payload[400];
 
     serializeJson(doc, payload);
     mqttManager.publishStatus(payload);
-
-    /*Serial.print("JSON length = ");
-    Serial.println(strlen(payload));
-    Serial.println(payload);*/
+    
 }

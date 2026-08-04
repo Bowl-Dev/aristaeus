@@ -58,8 +58,13 @@ void MachineController::update()
 
 bool MachineController::enqueueJob(const JobRequest& request)
 {
+    JobRequest job = request;    
     //return jobQueue.enqueue(request);
-    bool ok = jobQueue.enqueue(request);
+    if (job.id == 0)
+    {
+        job.id = nextJobId++;
+    }
+    bool ok = jobQueue.enqueue(job);
 
     if (ok)
     {
@@ -176,6 +181,10 @@ bool MachineController::processJobRequest(const JobRequest& request)
         case JobType::MoveServo:
             return enqueueJob(request);
 
+        case JobType::Reset:
+            resetMachine();
+            break;
+
         case JobType::None:
         default:
             Serial.println("Unknown JobType");
@@ -197,6 +206,15 @@ void MachineController::startNextJob()
         if (jobQueue.dequeue(request))
         {
         currentState.queuedJobs = jobQueue.size();
+        currentState.activeJob.active = true;
+        currentState.activeJob.id = request.id;
+        currentState.activeJob.actuator = request.actuator;
+        currentState.activeJob.targetWeight = request.targetWeight;
+        currentState.activeJob.currentWeight = 0.0f;
+        currentState.activeJob.progress = 0;
+        currentState.activeJob.lastProgressWeight = 0.0f;
+        currentState.activeJob.lastProgressTime = millis();
+
         switch (request.type)
             {
             case JobType::Dispense:
@@ -222,7 +240,29 @@ void MachineController::updateCurrentJob()
         case JobType::Dispense:
 
             Jobs::updateDispenseJob(dispenseJob, services);
+            if ( dispenseJob.state == JobState::Running)
+            {
+                float weight = services.loadCell.getWeight(dispenseJob.actuator);
+                currentState.activeJob.currentWeight = weight;                
 
+                if (weight >= currentState.activeJob.lastProgressWeight + MIN_PROGRESS)
+                {
+                    currentState.activeJob.lastProgressWeight = weight;
+                    currentState.activeJob.lastProgressTime = millis();
+                }                
+
+                if (millis() - currentState.activeJob.lastProgressTime > STALL_TIMEOUT_MS)
+                {
+                    services.stepper.stop(dispenseJob.actuator);
+                    currentState.lastError = "Dispense stalled";
+                    setMode(MachineMode::Error);
+                    //emitEvent(MachineEventType::Error);                    
+                }
+
+                float progress = (weight * 100.0f) / currentState.activeJob.targetWeight;
+                progress = constrain(progress, 0.0f, 100.0f);
+                currentState.activeJob.progress = static_cast<uint8_t>(progress);            
+            }
             break;
             default:
             break;
@@ -235,6 +275,9 @@ void MachineController::finishCurrentJob()
     {
         if (dispenseJob.state == JobState::Finished)
         {
+            currentState.activeJob.active = false;
+            currentState.activeJob.progress = 100;
+            currentState.activeJob.currentWeight = currentState.activeJob.targetWeight;
             Serial.println("DispenseJob completed");
             jobFinished();
         }
@@ -251,8 +294,7 @@ void MachineController::initializeDispenseJob(const JobRequest& request)
 
 void MachineController::jobStarted()
 {
-    setMode(MachineMode::Running);
-    //Serial.println("Machine Mode: Running");
+    setMode(MachineMode::Running);    
     emitEvent(MachineEventType::JobStarted);
 }
 
@@ -289,4 +331,15 @@ void MachineController::emitEvent(MachineEventType type)
 void MachineController::setEventListener(MachineEventListener* listener)
 {
     eventListener = listener;
+}
+
+void MachineController::resetMachine()
+{
+    Serial.println("Resetting machine...");
+    currentState.lastError = "";
+    currentState.activeJob = ActiveJobState{};
+    //request = JobRequest{};
+    dispenseJob = DispenseJob{};
+    setMode(MachineMode::Ready);
+    Serial.println("Machine reset.");
 }
