@@ -1,5 +1,39 @@
 # Outputs for Aristaeus Backend Infrastructure
 
+# ============================================
+# Frontend hosting
+# ============================================
+
+output "site_url" {
+  description = "Public URL of the store"
+  value       = "https://${local.site_domain}"
+}
+
+output "admin_url" {
+  description = "URL of the admin UI. The CloudFront domain applies until admin_dns_enabled is true."
+  value       = var.admin_dns_enabled ? "https://${local.admin_domain}" : "https://${aws_cloudfront_distribution.admin.domain_name}"
+}
+
+output "web_bucket_name" {
+  description = "S3 bucket that holds the built frontend. The deploy workflow syncs to it."
+  value       = aws_s3_bucket.web.bucket
+}
+
+output "site_distribution_id" {
+  description = "CloudFront distribution ID for the public site. The deploy workflow invalidates it."
+  value       = aws_cloudfront_distribution.site.id
+}
+
+output "admin_distribution_id" {
+  description = "CloudFront distribution ID for the admin UI. The deploy workflow invalidates it."
+  value       = aws_cloudfront_distribution.admin.id
+}
+
+output "hosted_zone_name_servers" {
+  description = "Nameservers to set at the registrar (Namecheap Custom DNS)"
+  value       = data.aws_route53_zone.main.name_servers
+}
+
 output "api_gateway_url" {
   description = "URL of the API Gateway"
   value       = aws_apigatewayv2_api.main.api_endpoint

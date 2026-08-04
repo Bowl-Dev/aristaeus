@@ -1,0 +1,48 @@
+// CloudFront function for the public site distribution. Runs on viewer-request.
+//
+// It does two jobs:
+//   1. It redirects www traffic to the apex domain.
+//   2. It hides /admin on the public hostname. The admin UI has its own distribution.
+//
+// The runtime is cloudfront-js-2.0. It supports ES 5.1 and some ES6.
+
+function handler(event) {
+	var request = event.request;
+	var host = request.headers.host ? request.headers.host.value : '';
+
+	if (host.indexOf('www.') === 0) {
+		return {
+			statusCode: 301,
+			statusDescription: 'Moved Permanently',
+			headers: {
+				location: {
+					value: 'https://${apex_domain}' + request.uri + buildQuery(request.querystring)
+				}
+			}
+		};
+	}
+
+	if (request.uri === '/admin' || request.uri.indexOf('/admin/') === 0) {
+		return {
+			statusCode: 404,
+			statusDescription: 'Not Found'
+		};
+	}
+
+	return request;
+}
+
+// Rebuilds the query string from the CloudFront querystring object.
+function buildQuery(querystring) {
+	var keys = Object.keys(querystring);
+	if (keys.length === 0) {
+		return '';
+	}
+
+	var parts = [];
+	for (var i = 0; i < keys.length; i++) {
+		parts.push(encodeURIComponent(keys[i]) + '=' + encodeURIComponent(querystring[keys[i]].value));
+	}
+
+	return '?' + parts.join('&');
+}

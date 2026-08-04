@@ -1,7 +1,17 @@
-# GitHub Actions workflow for deploying frontend to GitHub Pages
-# Triggers on push to main branch
+# Deploys the frontend to S3 and invalidates the CloudFront distributions.
+#
+# Required GitHub repository variables:
+#   AWS_REGION            - the region, for example us-east-1
+#   WEB_BUCKET            - terraform output web_bucket_name
+#   SITE_DISTRIBUTION_ID  - terraform output site_distribution_id
+#   ADMIN_DISTRIBUTION_ID - terraform output admin_distribution_id
+#
+# Required GitHub secret:
+#   AWS_ROLE_ARN - the OIDC role, the same one deploy-backend.yml assumes.
+#                  The role needs s3:PutObject, s3:DeleteObject and s3:ListBucket on
+#                  the bucket, and cloudfront:CreateInvalidation on both distributions.
 
-name: Deploy Frontend to GitHub Pages
+name: Deploy Frontend
 
 on:
   push:
@@ -13,19 +23,20 @@ on:
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  id-token: write # Required for OIDC authentication with AWS
 
-# Allow only one concurrent deployment
+# Allow one deployment at a time
 concurrency:
-  group: 'pages'
+  group: 'frontend-deploy'
   cancel-in-progress: true
 
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,28 +56,41 @@ jobs:
 
       - name: Build frontend
         env:
-          # Set the base path for GitHub Pages
-          # Update this if your repo name is different
-          BASE_PATH: '/${{ github.event.repository.name }}'
-          # Set the API URL (update with your actual API Gateway URL)
-          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:3000' }}
+          # The site serves from the domain root, so the base path is empty.
+          BASE_PATH: ''
+          # CloudFront proxies /api/* to API Gateway on the same origin.
+          # The API client already adds the /api prefix to each endpoint.
+          VITE_API_URL: ''
         run: npm run build
 
-      - name: Add .nojekyll file
-        run: touch frontend/build/.nojekyll
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          path: frontend/build
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # SvelteKit gives each asset a content hash, so an asset can cache forever.
+      # This pass also deletes an object that the build no longer produces.
+      - name: Upload hashed assets
+        run: |
+          aws s3 sync frontend/build "s3://${{ vars.WEB_BUCKET }}" \
+            --delete \
+            --exclude "*.html" \
+            --cache-control "public, max-age=31536000, immutable"
+
+      # An HTML file keeps its name between builds, so it must revalidate.
+      - name: Upload HTML
+        run: |
+          aws s3 sync frontend/build "s3://${{ vars.WEB_BUCKET }}" \
+            --exclude "*" \
+            --include "*.html" \
+            --cache-control "public, max-age=0, must-revalidate"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.SITE_DISTRIBUTION_ID }}" \
+            --paths "/*"
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.ADMIN_DISTRIBUTION_ID }}" \
+            --paths "/*"

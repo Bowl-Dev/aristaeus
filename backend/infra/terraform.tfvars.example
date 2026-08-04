@@ -8,8 +8,26 @@ project_name = "aristaeus"
 # Your database URL (use single quotes in shell, escape special characters)
 database_url = "postgresql://user:password@host:5432/aristaeus?schema=public"
 
-# CORS allowed origins
+# CORS allowed origins.
+# CloudFront proxies /api/* on the site origin, so the browser needs no CORS.
+# Keep localhost here for the local dev server.
 cors_allowed_origins = [
-  "http://localhost:5173",
-  "https://yourusername.github.io"
+  "http://localhost:5173"
 ]
+
+# ============================================
+# Frontend hosting
+# ============================================
+
+# Root domain for this environment.
+#   prod: algramo.app
+#   dev:  dev.algramo.app
+domain_name = "algramo.app"
+
+# Route 53 zone that holds every record. All environments share one zone.
+# Terraform reads this zone. Create it one time with the AWS CLI.
+hosted_zone_name = "algramo.app"
+
+# Keep this false until the orders API has authentication.
+# The admin distribution still exists and answers on its CloudFront domain.
+admin_dns_enabled = false
