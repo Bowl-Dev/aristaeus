@@ -6,11 +6,11 @@ enum class MachineMode
     Booting,
     Initializing,
     Ready,
-    Running,
-    Finished,
-    Paused,
+    Dispensing,
+    Flushing,       
     Error,
-    EmergencyStop
+    EmergencyStop,
+    Paused
 };
 
 struct ActiveJobState

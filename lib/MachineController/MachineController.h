@@ -32,8 +32,7 @@ public:
     void begin();
     void update();
     bool enqueueJob(const JobRequest& request);
-    const MachineState& state() const;
-    bool executeCommand(const Command& command);
+    const MachineState& state() const;    
     bool processJobRequest(const JobRequest& request);
     void setEventListener(MachineEventListener* listener);
     
@@ -47,8 +46,7 @@ private:
     WifiManager& wifiManager;    
     SafetyManager& safetyManager;
     MachineServices services;
-    JobQueue jobQueue;
-    JobType currentJobType = JobType::None;
+    JobQueue jobQueue;    
     DispenseJob dispenseJob;
     MachineState currentState;
     MachineEventListener* eventListener = nullptr;
@@ -58,8 +56,7 @@ private:
     void setMode(MachineMode mode);
     bool canAcceptJob(const JobRequest& request) const;
     void startNextJob();
-    void updateCurrentJob();
-    void finishCurrentJob();
+    void updateCurrentJob();    
     void initializeDispenseJob(const JobRequest& request);
     void jobStarted();
     void jobFinished();

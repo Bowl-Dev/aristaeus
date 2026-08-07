@@ -3,13 +3,13 @@
 #include "IManager.h"
 #include "MachineContext.h"  //Hardware and connection updates
 #include "MachineController.h" //State and Job updates
-#include "MQTTManager.h" //Publishes messages between machines 
+#include "ITelemetryPublisher.h" //Publishes messages between machines 
 
 class StatusManager : public IManager
 {
 public:
 
-    explicit StatusManager(MachineContext& context, MachineController& controller, MQTTManager& mqttManager);
+    explicit StatusManager(MachineContext& context, MachineController& controller, ITelemetryPublisher& telemetry);
 
     void begin() override;
 
@@ -19,6 +19,6 @@ private:
 
     MachineContext& context;
     MachineController& controller;
-    MQTTManager& mqttManager;
+    ITelemetryPublisher& telemetry;
     uint32_t lastPublish = 0;
 };

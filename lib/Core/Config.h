@@ -21,6 +21,8 @@ struct ServoConfig
     uint8_t pin;
     uint16_t minPulse;
     uint16_t maxPulse;
+    uint8_t closedAngle;
+    uint8_t openAngle;
 };
 
 constexpr char WIFI_SSID[] = "REDACTED";

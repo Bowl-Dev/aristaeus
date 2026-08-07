@@ -43,8 +43,7 @@ enum class DeviceType
 
 struct Command
 {
-    CommandType type = CommandType::None;
-    DeviceType device = DeviceType::None;
+    CommandType type = CommandType::None;    
     uint8_t target = 0;
     int32_t value = 0;
     float valueFloat = 0.0f;

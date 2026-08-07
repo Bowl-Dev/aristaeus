@@ -1,17 +1,17 @@
 #pragma once
 
 #include "MachineEventListener.h"
-#include "MQTTManager.h"
+#include "ITelemetryPublisher.h"
 
 class MQTTEventListener : public MachineEventListener
 {
 public:
 
-    explicit MQTTEventListener(MQTTManager& mqtt);
+    explicit MQTTEventListener(ITelemetryPublisher& telemetry);
 
     void onMachineEvent(const MachineEvent& event) override;
 
 private:
 
-    MQTTManager& mqttManager;
+    ITelemetryPublisher& telemetry;
 };

@@ -1,14 +1,13 @@
 #pragma once
 
 #include <stdint.h>
-#include <JobState.h>
+#include "MachineState.h"
 
 class MachineServices;
 
 
 struct DispenseJob
 {
-    JobState state = JobState::Idle;
     uint8_t actuator = 0;
     float targetWeight = 0.0f;
     uint32_t speed = 1000;
@@ -16,8 +15,8 @@ struct DispenseJob
 
 namespace Jobs
 {
-    void beginDispenseJob( DispenseJob& job, MachineServices& services);
+    void beginDispenseJob( DispenseJob& job, MachineServices& services, MachineMode& mode);
 
-    void updateDispenseJob(  DispenseJob& job, MachineServices& services);
+    void updateDispenseJob(  DispenseJob& job, MachineServices& services, MachineMode& mode);
 }
 

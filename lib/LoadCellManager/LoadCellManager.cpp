@@ -33,7 +33,7 @@ void LoadCellManager::update()
 
 float LoadCellManager::getWeight(uint8_t channel) const
 {
-    if (channel >= 2)
+    if (channel >= NUM_LOAD_CELLS)
         return 0.0f;
     return context.loadCell[channel].weight;
 }

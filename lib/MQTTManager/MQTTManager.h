@@ -3,11 +3,12 @@
 #include <WiFiClient.h>
 #include <PubSubClient.h>
 #include "MachineState.h"
+#include "ITelemetryPublisher.h"
 
 class MachineController;
 class Protocol;
 
-class MQTTManager
+class MQTTManager : public ITelemetryPublisher
 {
 public:
 
@@ -16,10 +17,8 @@ public:
     void begin();
     void update();
     bool connected();
-    bool publishStatus(const char* status); 
-    //void publishStatus(const char* status);
-    //void publishEvent(const char* event);
-    void publishEvent(const char* payload);
+    bool publishStatus(const char* status) override;     
+    bool publishEvent(const char* payload) override;
 
 private:
 

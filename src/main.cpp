@@ -57,24 +57,6 @@ void setup()
 
 void loop()
 {
-    /*static uint32_t lastPrint = 0;
-
-    if (millis() - lastPrint >= 500)
-    {
-        lastPrint = millis();
-
-        Serial.print("Raw0: ");
-        Serial.print(loadCellManager.getRaw(0));
-
-        Serial.print("    Raw1: ");
-        Serial.println(loadCellManager.getRaw(1));
-
-        Serial.print("W0: ");
-        Serial.print(loadCellManager.getWeight(0));
-
-        Serial.print("    W1: ");
-        Serial.println(loadCellManager.getWeight(1));       
-    }*/
     wifiManager.update();
     mqttManager.update();
     controller.update();

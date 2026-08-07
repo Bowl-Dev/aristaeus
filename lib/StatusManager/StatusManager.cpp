@@ -12,17 +12,20 @@ const char* modeToString(MachineMode mode)
         case MachineMode::Booting:
             return "Booting";
 
+        case MachineMode::Initializing:
+            return "Initializing";
+
         case MachineMode::Ready:
             return "Ready";
 
-        case MachineMode::Running:
-            return "Running";
+        case MachineMode::Dispensing:
+            return "Dispensing";
+        
+        case MachineMode::Flushing:
+            return "Flushing";
 
         case MachineMode::Paused:
-            return "Paused";
-
-        case MachineMode::Finished:
-            return "Finished";
+            return "Paused";        
 
         case MachineMode::Error:
             return "Error";
@@ -36,10 +39,10 @@ const char* modeToString(MachineMode mode)
 }
 }
 
-StatusManager::StatusManager(MachineContext& ctx, MachineController& ctrl, MQTTManager& mqtt)
+StatusManager::StatusManager(MachineContext& ctx, MachineController& ctrl, ITelemetryPublisher& telemetryPublisher)
     : context(ctx),
     controller(ctrl),
-    mqttManager(mqtt)
+    telemetry(telemetryPublisher)
 {
 }
 
@@ -85,6 +88,6 @@ void StatusManager::update()
     char payload[400];
 
     serializeJson(doc, payload);
-    mqttManager.publishStatus(payload);
+    telemetry.publishStatus(payload);
     
 }

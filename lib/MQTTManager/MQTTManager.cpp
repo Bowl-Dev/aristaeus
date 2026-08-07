@@ -19,8 +19,11 @@ namespace
             case MachineMode::Ready:
                 return "ready";
 
-            case MachineMode::Running:
-                return "running";
+            case MachineMode::Dispensing:
+                return "dispensing";
+
+            case MachineMode::Flushing:
+                return "flushing";
 
             case MachineMode::Paused:
                 return "paused";
@@ -173,9 +176,9 @@ bool MQTTManager::publishStatus(const char* status)
     return mqtt.publish(MQTT_STATUS_TOPIC, status);
 }
 
-void MQTTManager::publishEvent(const char* payload)
+bool MQTTManager::publishEvent(const char* payload)
 {
     if (!connected())
-        return;
-    mqtt.publish(MQTT_EVENT_TOPIC, payload);
+        return false;
+    return mqtt.publish(MQTT_EVENT_TOPIC, payload);
 }
