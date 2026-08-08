@@ -85,9 +85,17 @@ void StatusManager::update()
     job["currentWeight"] = state.activeJob.currentWeight;
     job["progress"] = state.activeJob.progress;
 
+    doc["device"] = DEVICE_ID;
+
     char payload[400];
 
-    serializeJson(doc, payload);
-    telemetry.publishStatus(payload);
-    
+    size_t len = serializeJson(doc, payload);
+
+    bool ok = telemetry.publishStatus(payload);
+
+    /*Serial.print("StatusManager publish: ");
+    Serial.print(ok ? "OK" : "FAILED");
+    Serial.print(" (");
+    Serial.print(len);
+    Serial.println(" bytes)");*/
 }

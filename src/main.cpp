@@ -13,6 +13,7 @@
 #include "EventDispatcher.h"
 #include "MQTTEventListener.h"
 #include "StatusManager.h"
+#include "Config.h"
 
 MachineContext context;
 
@@ -41,7 +42,13 @@ void setup()
     Serial.begin(115200);
     delay(1000);
     Serial.println("Setup started");
-    
+    Serial.print("Device ID: ");
+    Serial.println(DEVICE_ID);
+    Serial.print("Command topic: ");
+    Serial.println(MQTT_COMMAND_TOPIC);
+    Serial.print("Status topic: ");
+    Serial.println(MQTT_STATUS_TOPIC);
+
     wifiManager.begin();
     mqttManager.begin();
 

@@ -2,7 +2,6 @@
 
 #include <WiFiClient.h>
 #include <PubSubClient.h>
-#include "MachineState.h"
 #include "ITelemetryPublisher.h"
 
 class MachineController;
@@ -34,5 +33,4 @@ private:
     PubSubClient mqtt;
     uint32_t lastReconnectAttempt = 0;
     static MQTTManager* instance;
-    MachineMode lastPublishedMode = MachineMode::Booting;
 };

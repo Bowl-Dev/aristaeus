@@ -57,7 +57,20 @@ bool LoadCellManager::requestTare(uint8_t channel)
     if (channel >= NUM_LOAD_CELLS)
         return false;
 
+    constexpr uint32_t TARE_TIMEOUT_MS = 1000;
+
+    if (!scales[channel].wait_ready_timeout(TARE_TIMEOUT_MS))
+    {
+        Serial.print("Load cell ");
+        Serial.print(channel);
+        Serial.println(" not responding, skipping tare");
+
+        context.loadCell[channel].connected = false;
+        return false;
+    }
+
     scales[channel].tare();
+    context.loadCell[channel].connected = true;
     context.loadCell[channel].tareComplete = true;
     return true;
 }

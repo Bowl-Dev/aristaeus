@@ -43,6 +43,7 @@ void MQTTEventListener::onMachineEvent(const MachineEvent& event)
 {
     JsonDocument doc;
     
+    doc["device"] = DEVICE_ID;
     doc["event"] = eventToString(event.type);
     doc["timestamp"] = event.timestamp;
 

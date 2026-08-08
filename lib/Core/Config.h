@@ -31,8 +31,12 @@ constexpr char WIFI_PASSWORD[] = "REDACTED";
 constexpr char MQTT_SERVER[] = "192.168.2.8";   // Your broker IP
 constexpr uint16_t MQTT_PORT = 1883;
 
-constexpr char MQTT_CLIENT_ID[] = "MachineController";
+#ifndef DEVICE_ID
+#define DEVICE_ID "esp32-default"   // overridden per unit via platformio.ini build_flags
+#endif
 
-constexpr char MQTT_COMMAND_TOPIC[] = "machine/command";
-constexpr char MQTT_STATUS_TOPIC[]  = "machine/status";
-constexpr char MQTT_EVENT_TOPIC[] = "machine/event";
+constexpr char MQTT_CLIENT_ID[] = DEVICE_ID;
+
+constexpr char MQTT_COMMAND_TOPIC[] = "machine/" DEVICE_ID "/command";
+constexpr char MQTT_STATUS_TOPIC[]  = "machine/" DEVICE_ID "/status";
+constexpr char MQTT_EVENT_TOPIC[] = "machine/" DEVICE_ID "/event";

@@ -4,42 +4,6 @@
 #include <WiFi.h>
 #include "MachineController.h"
 
-namespace
-{
-    const char* toString(MachineMode mode)
-    {
-        switch (mode)
-        {
-            case MachineMode::Booting:
-                return "booting";
-
-            case MachineMode::Initializing:
-                return "initializing";
-
-            case MachineMode::Ready:
-                return "ready";
-
-            case MachineMode::Dispensing:
-                return "dispensing";
-
-            case MachineMode::Flushing:
-                return "flushing";
-
-            case MachineMode::Paused:
-                return "paused";
-
-            case MachineMode::Error:
-                return "error";
-
-            case MachineMode::EmergencyStop:
-                return "emergency_stop";
-
-            default:
-                return "unknown";
-        }
-    }
-}
-
 MQTTManager* MQTTManager::instance = nullptr;
 
 MQTTManager::MQTTManager(MachineController& ctrl, Protocol& proto)
@@ -54,6 +18,11 @@ MQTTManager::MQTTManager(MachineController& ctrl, Protocol& proto)
 void MQTTManager::begin()
 {
     Serial.println("MQTTManager::begin()");
+
+    // Default PubSubClient buffer is 256 bytes, which the status JSON
+    // (topic + payload + MQTT header) already exceeds. Give it headroom.
+    mqtt.setBufferSize(512);
+
     mqtt.setServer(MQTT_SERVER, MQTT_PORT);
     Serial.print("MQTT server: ");
     Serial.print(MQTT_SERVER);
@@ -157,15 +126,6 @@ void MQTTManager::update()
 {
     reconnect();
     mqtt.loop();
-   
-   MachineMode mode = controller.state().mode;
-    if (mode != lastPublishedMode)
-    {
-        if (publishStatus(toString(mode)))
-        {
-            lastPublishedMode = mode;
-        }
-    }
 }
 
 bool MQTTManager::publishStatus(const char* status)

@@ -136,6 +136,30 @@ bool MachineController::processJobRequest(const JobRequest& request)
             jobAccepted(request);
             return true;        
 
+        case JobType::Tare:
+
+            if (request.actuator >= NUM_LOAD_CELLS)
+            {
+                jobRejected("Invalid actuator");
+                return false;
+            }
+
+            if (currentState.mode == MachineMode::Dispensing || currentState.mode == MachineMode::Flushing)
+            {
+                jobRejected("Cannot tare while a job is running");
+                return false;
+            }
+
+            if (!services.loadCell.requestTare(request.actuator))
+            {
+                jobRejected("Tare failed, load cell not responding");
+                return false;
+            }
+
+            jobAccepted(request);
+            emitEvent(MachineEventType::JobFinished);
+            return true;
+
         case JobType::Reset:
             resetMachine();
             return true;
