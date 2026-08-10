@@ -18,5 +18,6 @@ enum class MachineEventType
 struct MachineEvent
 {
     MachineEventType type;
+    uint8_t actuator = 0;
     uint32_t timestamp;
 };

@@ -23,6 +23,14 @@ bool Protocol::parse(const char* json, JobRequest& request)
     if (command == "reset")
         {
             request.type = JobType::Reset;
+            request.actuator = doc["actuator"];
+            return true;
+        }
+
+    if (command == "resume")
+        {
+            request.type = JobType::Resume;
+            request.actuator = doc["actuator"];
             return true;
         }
 

@@ -21,7 +21,7 @@ void MQTTManager::begin()
 
     // Default PubSubClient buffer is 256 bytes, which the status JSON
     // (topic + payload + MQTT header) already exceeds. Give it headroom.
-    mqtt.setBufferSize(512);
+    mqtt.setBufferSize(768);
 
     mqtt.setServer(MQTT_SERVER, MQTT_PORT);
     Serial.print("MQTT server: ");

@@ -73,9 +73,12 @@ void StepperManager::begin()
     timerAttachInterrupt(hw[1].timer, &onTimer2, true);
 
     timerAlarmWrite(hw[0].timer, 500, true);
-    timerAlarmEnable(hw[0].timer);    
+    timerAlarmEnable(hw[0].timer);
     timerAlarmWrite(hw[1].timer, 500, true);
     timerAlarmEnable(hw[1].timer);
+    
+    disable(0);
+    disable(1);
 }
 
 void StepperManager::update()

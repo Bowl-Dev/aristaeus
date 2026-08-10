@@ -3,6 +3,10 @@
 
 void SerialEventListener::onMachineEvent(const MachineEvent& event)
 {
+    Serial.print("[EVENT] actuator ");
+    Serial.print(event.actuator);
+    Serial.print(": ");
+
     switch(event.type)
     {
         case MachineEventType::JobAccepted:
@@ -34,6 +38,7 @@ void SerialEventListener::onMachineEvent(const MachineEvent& event)
             break;
 
         default:
+            Serial.println("Unknown");
             break;
     }
 }

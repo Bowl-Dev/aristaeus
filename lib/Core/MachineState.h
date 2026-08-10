@@ -1,16 +1,13 @@
 #pragma once
 #include <string>
+#include "Pins.h"
 
-enum class MachineMode
+enum class MachineMode //per actuator value
 {
-    Booting,
-    Initializing,
     Ready,
     Dispensing,
     Flushing,       
-    Error,
-    EmergencyStop,
-    Paused
+    Error,    
 };
 
 struct ActiveJobState
@@ -25,13 +22,18 @@ struct ActiveJobState
     uint32_t lastProgressTime = 0;
 };
 
-struct MachineState
+struct ActuatorState
 {
-    MachineMode mode = MachineMode::Booting;
-    uint32_t uptime = 0;
+    MachineMode mode = MachineMode::Ready;
     uint16_t queuedJobs = 0;
-    bool wifiConnected = false;
-    bool mqttConnected = false;
     ActiveJobState activeJob;
     std::string lastError;
+};
+
+struct MachineState
+{
+    uint32_t uptime = 0;
+    bool wifiConnected = false;
+    bool mqttConnected = false;
+    ActuatorState actuator[NUM_LOAD_CELLS];
 };

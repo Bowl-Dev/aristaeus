@@ -4,6 +4,7 @@
 #include "MachineState.h"
 #include "MachineEvent.h"
 #include "MachineEventListener.h"
+#include "Pins.h"
 
 #include "StepperManager.h"
 #include "LoadCellManager.h"
@@ -46,22 +47,25 @@ private:
     WifiManager& wifiManager;    
     SafetyManager& safetyManager;
     MachineServices services;
-    JobQueue jobQueue;    
-    DispenseJob dispenseJob;
+
+    JobQueue jobQueue[NUM_LOAD_CELLS];    
+    DispenseJob dispenseJob[NUM_LOAD_CELLS];
+
     MachineState currentState;
     MachineEventListener* eventListener = nullptr;
     
     uint32_t nextJobId = 0;
 
-    void setMode(MachineMode mode);
+    void setMode(uint8_t actuator, MachineMode mode);
     bool canAcceptJob(const JobRequest& request) const;
-    void startNextJob();
-    void updateCurrentJob();    
-    void initializeDispenseJob(const JobRequest& request);
-    void jobStarted();
-    void jobFinished();
-    void jobAccepted(const JobRequest& request);
-    void jobRejected(const char* reason);
-    void emitEvent(MachineEventType event);
-    void resetMachine();     
+    void startNextJob(uint8_t actuator);
+    void updateCurrentJob(uint8_t actuator);    
+    void initializeDispenseJob(uint8_t actuator, const JobRequest& request);
+    void jobStarted(uint8_t actuator);
+    void jobFinished(uint8_t actuator);
+    void jobAccepted(uint8_t actuator);
+    void jobRejected(uint8_t actuator, const char* reason);
+    void emitEvent(uint8_t actuator, MachineEventType event);
+    void resetMachine(uint8_t actuator);
+    void resumeMachine(uint8_t actuator);
 };

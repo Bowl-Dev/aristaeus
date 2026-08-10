@@ -25,8 +25,13 @@ void LoadCellManager::update()
             int32_t raw = scales[i].read();
             context.loadCell[i].raw = raw;
 
-            float counts = scales[i].get_value(1);
-            context.loadCell[i].weight = counts /context.calibration[i].countsPerGram;            
+            // get_value(1) would trigger a SECOND HX711 transaction here,
+            // blocking for a full conversion cycle (~100ms) since the chip
+            // needs settle time between reads - derive weight from the raw
+            // read we already have instead of reading twice per channel,
+            // per loop iteration.
+            float counts = static_cast<float>(raw) - scales[i].get_offset();
+            context.loadCell[i].weight = counts / context.calibration[i].countsPerGram;
         }
     }
 }

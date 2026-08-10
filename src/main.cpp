@@ -66,6 +66,14 @@ void loop()
 {
     wifiManager.update();
     mqttManager.update();
+
+    // wifiManager/mqttManager track their own connection state internally,
+    // but nothing was copying it into MachineContext - so the "wifi"/"mqtt"
+    // fields StatusManager publishes were always stuck at their default
+    // (false). Refresh them here, once per loop, before anything reads them.
+    context.communication.wifiConnected = wifiManager.connected();
+    context.communication.mqttConnected = mqttManager.connected();
+
     controller.update();
     statusManager.update();
 }

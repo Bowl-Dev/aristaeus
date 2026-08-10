@@ -16,8 +16,11 @@ Usage examples:
     # Tare load cell 1 on esp32-02
     python mqtt_test.py tare --device esp32-02 --actuator 1
 
-    # Reset esp32-01 out of an Error state
-    python mqtt_test.py reset --device esp32-01
+    # Reset actuator 0 on esp32-01, abandoning whatever job was active on it
+    python mqtt_test.py reset --device esp32-01 --actuator 0
+
+    # Resume esp32-01's actuator 1 stalled dispense job instead of abandoning it
+    python mqtt_test.py resume --device esp32-01 --actuator 1
 
     # Point at a different broker
     python mqtt_test.py monitor --broker 192.168.2.8 --port 1883
@@ -81,6 +84,12 @@ def build_command(args):
     if args.action == "reset":
         return {
             "command": "reset",
+            "actuator": args.actuator,
+        }
+    if args.action == "resume":
+        return {
+            "command": "resume",
+            "actuator": args.actuator,
         }
     return None
 
@@ -104,8 +113,13 @@ def main():
     p_tare.add_argument("--device", required=True, help="Target device ID, e.g. esp32-01")
     p_tare.add_argument("--actuator", type=int, required=True, help="Actuator index (0 or 1)")
 
-    p_reset = sub.add_parser("reset", help="Reset a unit out of Error state")
+    p_reset = sub.add_parser("reset", help="Reset an actuator out of Error state, abandoning its active job")
     p_reset.add_argument("--device", required=True, help="Target device ID, e.g. esp32-01")
+    p_reset.add_argument("--actuator", type=int, required=True, help="Actuator index (0 or 1)")
+
+    p_resume = sub.add_parser("resume", help="Resume an actuator's stalled dispense job instead of abandoning it")
+    p_resume.add_argument("--device", required=True, help="Target device ID, e.g. esp32-01")
+    p_resume.add_argument("--actuator", type=int, required=True, help="Actuator index (0 or 1)")
 
     args = parser.parse_args()
 
