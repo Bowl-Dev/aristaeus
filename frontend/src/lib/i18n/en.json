@@ -264,7 +264,69 @@
 	},
 	"admin": {
 		"printLabel": "Print Label",
-		"generatingLabel": "Generating..."
+		"generatingLabel": "Generating...",
+		"hub": {
+			"title": "Operations",
+			"subtitle": "Admin Dashboard",
+			"backToApp": "Back to Bowl Builder",
+			"backToHub": "Back to Operations",
+			"comingSoon": "Coming soon",
+			"orders": {
+				"title": "Order Manager",
+				"description": "Review incoming orders, update their status, and print labels."
+			},
+			"deliveryCalculator": {
+				"title": "Delivery Calculator",
+				"description": "Estimate delivery costs for an order address."
+			}
+		},
+		"deliveryCalculator": {
+			"title": "Delivery Calculator",
+			"originNote": "Estimates the courier fee from the kitchen at {address}.",
+			"form": {
+				"title": "Destination address",
+				"hint": "Enter the address as it is written: Calle 146 # 21-86. Suffixes like 145a or 25bis are supported.",
+				"calle": "Calle",
+				"carrera": "Carrera",
+				"numero": "Number"
+			},
+			"result": {
+				"label": "Estimated delivery cost",
+				"margin": "Typically within {amount} of the real price.",
+				"northSouth": "North-South",
+				"eastWest": "East-West",
+				"total": "Total",
+				"minFare": "Below the minimum fare, so the estimate is the {amount} floor.",
+				"drift": "{amount} {direction} than the original Ops-data estimate, after your corrections.",
+				"higher": "higher",
+				"lower": "lower",
+				"empty": "Enter a calle, carrera, and number to see an estimate."
+			},
+			"feedback": {
+				"question": "Once the courier quotes you — what did they actually charge?",
+				"explainer": "Every real price you share here makes the next estimate better.",
+				"inputLabel": "Real price (COP)",
+				"save": "Save price",
+				"saved": "Thanks! The estimate for this address moved from {before} to {after}."
+			},
+			"calibration": {
+				"title": "Model calibration",
+				"summary": "Fitted on {seed} past deliveries and {corrections} of your corrections.",
+				"baseFare": "Base fare",
+				"minFare": "Minimum fare",
+				"rateNS": "North-South rate",
+				"rateEW": "East-West rate",
+				"empty": "No corrections yet. The model is using the Ops delivery history only.",
+				"remove": "Remove",
+				"export": "Export JSON",
+				"import": "Import JSON",
+				"imported": "Imported {count} correction(s).",
+				"importError": "That file could not be read as a calibration export.",
+				"clear": "Clear all",
+				"clearConfirm": "Delete every saved correction and go back to the original model?",
+				"storageNote": "Corrections are saved in this browser only. Export them to move the calibration to another device."
+			}
+		}
 	},
 	"footer": {
 		"copyright": "al Gramo. {year}. All rights reserved.",
