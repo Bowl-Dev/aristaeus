@@ -185,6 +185,12 @@
 				</div>
 				<div class="flex flex-wrap items-center gap-3">
 					<a
+						href={resolve('/admin')}
+						class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+					>
+						{$_('admin.hub.backToHub')}
+					</a>
+					<a
 						href={resolve('/')}
 						class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
 					>
@@ -209,7 +215,7 @@
 					<label for="status-filter" class="text-sm font-medium text-gray-700">Status:</label>
 					<select
 						id="status-filter"
-						class="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+						class="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
 						value={statusFilter}
 						onchange={(e) => handleFilterChange(e.currentTarget.value)}
 					>
@@ -225,7 +231,7 @@
 					<label for="items-per-page" class="text-sm font-medium text-gray-700">Show:</label>
 					<select
 						id="items-per-page"
-						class="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+						class="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
 						value={itemsPerPage}
 						onchange={(e) => handleItemsPerPageChange(parseInt(e.currentTarget.value))}
 					>
@@ -415,7 +421,7 @@
 							</label>
 							<select
 								id="status-{order.id}"
-								class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+								class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
 								value={order.status}
 								disabled={updatingOrderId === order.id}
 								onchange={(e) => handleStatusUpdate(order.id, e.currentTarget.value)}

@@ -264,7 +264,69 @@
 	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",
-		"generatingLabel": "Generando..."
+		"generatingLabel": "Generando...",
+		"hub": {
+			"title": "Operaciones",
+			"subtitle": "Panel de Administración",
+			"backToApp": "Volver al Armador de Bowls",
+			"backToHub": "Volver a Operaciones",
+			"comingSoon": "Próximamente",
+			"orders": {
+				"title": "Gestor de Pedidos",
+				"description": "Revisa los pedidos entrantes, actualiza su estado e imprime etiquetas."
+			},
+			"deliveryCalculator": {
+				"title": "Calculadora de Domicilios",
+				"description": "Estima el costo de domicilio para una dirección de pedido."
+			}
+		},
+		"deliveryCalculator": {
+			"title": "Calculadora de Domicilios",
+			"originNote": "Estima la tarifa del domiciliario desde la cocina en {address}.",
+			"form": {
+				"title": "Dirección de destino",
+				"hint": "Escribe la dirección tal como se lee: Calle 146 # 21-86. Acepta sufijos como 145a o 25bis.",
+				"calle": "Calle",
+				"carrera": "Carrera",
+				"numero": "Número"
+			},
+			"result": {
+				"label": "Costo estimado del domicilio",
+				"margin": "Normalmente se acerca al precio real con un margen de {amount}.",
+				"northSouth": "Norte-Sur",
+				"eastWest": "Oriente-Occidente",
+				"total": "Total",
+				"minFare": "Está por debajo de la tarifa mínima, así que el estimado es el piso de {amount}.",
+				"drift": "{amount} más {direction} que el estimado original con los datos de Ops, tras tus correcciones.",
+				"higher": "alto",
+				"lower": "bajo",
+				"empty": "Ingresa calle, carrera y número para ver un estimado."
+			},
+			"feedback": {
+				"question": "Cuando el domiciliario te cotice, ¿cuánto cobró en realidad?",
+				"explainer": "Cada precio real que compartas mejora el siguiente estimado.",
+				"inputLabel": "Precio real (COP)",
+				"save": "Guardar precio",
+				"saved": "¡Gracias! El estimado para esta dirección pasó de {before} a {after}."
+			},
+			"calibration": {
+				"title": "Calibración del modelo",
+				"summary": "Ajustado con {seed} domicilios anteriores y {corrections} correcciones tuyas.",
+				"baseFare": "Tarifa base",
+				"minFare": "Tarifa mínima",
+				"rateNS": "Tarifa Norte-Sur",
+				"rateEW": "Tarifa Oriente-Occidente",
+				"empty": "Aún no hay correcciones. El modelo usa solo el histórico de domicilios de Ops.",
+				"remove": "Eliminar",
+				"export": "Exportar JSON",
+				"import": "Importar JSON",
+				"imported": "Se importaron {count} corrección(es).",
+				"importError": "No se pudo leer ese archivo como una exportación de calibración.",
+				"clear": "Borrar todo",
+				"clearConfirm": "¿Eliminar todas las correcciones guardadas y volver al modelo original?",
+				"storageNote": "Las correcciones se guardan solo en este navegador. Expórtalas para llevar la calibración a otro dispositivo."
+			}
+		}
 	},
 	"footer": {
 		"copyright": "al Gramo. {year}. Todos los derechos reservados.",
