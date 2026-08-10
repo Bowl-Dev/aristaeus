@@ -191,7 +191,6 @@
 		"nutritionNote": "Nutritional values shown are per 100g of ingredient",
 		"viewDetails": "View details",
 		"weight": "Weight: {used}g / {total}g",
-		"price": "Price: {price}",
 		"addToCart": "Add to cart — {price}",
 		"overCapacity": "Exceeds capacity by {amount}g",
 		"remaining": "{amount}g remaining",
@@ -251,7 +250,10 @@
 				"placeholder": "Additional references, special instructions..."
 			}
 		},
-		"summary": { "title": "Order Summary" },
+		"summary": {
+			"title": "Order Summary",
+			"shippingNote": "Shipping cost is calculated once the order is confirmed, based on distance. This information will be communicated during the payment process."
+		},
 		"confirm": "Confirm Order — {price}",
 		"confirming": "Sending...",
 		"error": "Something went wrong sending your order. Check your connection and try again.",

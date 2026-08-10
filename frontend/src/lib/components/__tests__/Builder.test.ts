@@ -37,6 +37,22 @@ const chicken: Ingredient = {
 	pricePerG: 10
 };
 
+const lettuce: Ingredient = {
+	id: 3,
+	name: 'Lettuce',
+	nameEs: 'Lechuga',
+	nameEn: 'Lettuce',
+	category: 'vegetable',
+	caloriesPer100g: 15,
+	proteinGPer100g: 1,
+	carbsGPer100g: 3,
+	fatGPer100g: 0,
+	fiberGPer100g: 1,
+	available: true,
+	displayOrder: 1,
+	pricePerG: 3
+};
+
 const ingredients: Ingredient[] = [rice, chicken];
 
 const makeProps = (
@@ -68,13 +84,19 @@ describe('Builder', () => {
 		expect(container.textContent).not.toContain('Agregar al carrito');
 	});
 
-	it('shows the bottom sheet with weight and price when items are selected', () => {
+	it('shows the weight in the bottom sheet, with the price only in the CTA', () => {
 		const items = new SvelteMap<number, number>([[1, 100]]);
 		const { container } = render(Builder, { props: makeProps({ selectedItems: items }) });
 		// 100g rice in a 450g bowl
 		expect(container.textContent).toContain('100g / 450g');
 		// price = bowl base (1300) + ingredients (5 * 100 = 500) = 1800 COP
-		expect(container.textContent).toMatch(/\$\s*1[.,]?800/);
+		const priceRe = /\$\s*1[.,]?800/g;
+		const cta = Array.from(container.querySelectorAll('button')).find((b) =>
+			(b.textContent ?? '').includes('Agregar al carrito')
+		) as HTMLButtonElement;
+		expect(cta.textContent).toMatch(priceRe);
+		// The price appears only in the CTA, never in the sheet (ENG-74)
+		expect((container.textContent ?? '').match(priceRe)).toHaveLength(1);
 	});
 
 	it('disables Add to Cart while over capacity and shows the overage warning', () => {
@@ -113,6 +135,17 @@ describe('Builder', () => {
 		// Sanity: 600g → Grande
 		rerender({ ...makeProps({ bowlSize: 600 }) });
 		expect(container.textContent).toContain('Grande');
+	});
+
+	it('renders category accordions as Base → Vegetales → Proteína (ENG-4)', () => {
+		// Deliberately out of display order to prove the ordering is applied
+		const { container } = render(Builder, {
+			props: { ...makeProps(), ingredients: [chicken, lettuce, rice] }
+		});
+		const headings = Array.from(container.querySelectorAll('button'))
+			.map((b) => (b.textContent ?? '').trim())
+			.filter((t) => ['Base', 'Vegetales', 'Proteína'].some((c) => t.startsWith(c)));
+		expect(headings.map((t) => t.split(/\s+/)[0])).toEqual(['Base', 'Vegetales', 'Proteína']);
 	});
 
 	it('shows the loading state when loading is true', () => {

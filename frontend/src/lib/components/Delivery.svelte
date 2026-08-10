@@ -233,6 +233,9 @@
 				</span>
 				<span class="text-base font-bold text-dark-green">{formatCOP(grandTotal)}</span>
 			</div>
+			<p class="m-0 mt-1 rounded-lg bg-strokes/30 px-3 py-2 text-xs leading-snug text-text-muted">
+				{$_('delivery.summary.shippingNote')}
+			</p>
 		</Card>
 	</div>
 

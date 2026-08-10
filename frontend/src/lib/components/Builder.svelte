@@ -12,6 +12,7 @@
 		gramsToContainers,
 		formatContainerValue
 	} from '$lib/utils/ingredientQuantity';
+	import { CATEGORY_ORDER } from '$lib/constants';
 
 	let {
 		ingredients,
@@ -38,8 +39,6 @@
 	// ──────────────────────────────────────────────
 	// Derived: category grouping
 	// ──────────────────────────────────────────────
-	const categoryOrder = ['base', 'protein', 'vegetable', 'topping', 'dressing'];
-
 	const ingredientsByCategory = $derived.by(() => {
 		const grouped: Record<string, Ingredient[]> = {};
 		ingredients.forEach((ing) => {
@@ -50,7 +49,7 @@
 	});
 
 	const sortedCategories = $derived(
-		categoryOrder.filter((cat) => ingredientsByCategory[cat]?.length > 0)
+		CATEGORY_ORDER.filter((cat) => ingredientsByCategory[cat]?.length > 0)
 	);
 
 	// ──────────────────────────────────────────────
@@ -77,7 +76,7 @@
 	const selectedList = $derived.by(() => {
 		const list: { id: number; name: string; quantity: number; category: string }[] = [];
 		const isEs = $locale?.startsWith('es') ?? true;
-		categoryOrder.forEach((cat) => {
+		CATEGORY_ORDER.forEach((cat) => {
 			(ingredientsByCategory[cat] ?? []).forEach((ing) => {
 				const qty = selectedItems.get(ing.id);
 				if (qty !== undefined && qty > 0) {
@@ -281,13 +280,10 @@
 					</svg>
 				</button>
 
-				<!-- Weight + price row -->
+				<!-- Weight row (price lives only in the add-to-cart bar) -->
 				<div class="flex items-center justify-between px-4 text-sm text-pure-white/70">
 					<p class="m-0">
 						{$_('builder.weight', { values: { used: totals.weight, total: bowlSize } })}
-					</p>
-					<p class="m-0 text-right font-bold text-light-green">
-						{$_('builder.price', { values: { price: formattedPrice } })}
 					</p>
 				</div>
 

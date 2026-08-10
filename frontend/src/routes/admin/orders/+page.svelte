@@ -9,6 +9,7 @@
 	import { resolve } from '$app/paths';
 	import { generateLabel } from '$lib/utils/labelGenerator';
 	import { _ } from 'svelte-i18n';
+	import { CATEGORY_ORDER } from '$lib/constants';
 
 	// State
 	let orders = $state<AdminOrder[]>([]);
@@ -28,9 +29,6 @@
 	// Derived pagination values
 	const totalPages = $derived(Math.ceil(totalOrders / itemsPerPage));
 	const offset = $derived((currentPage - 1) * itemsPerPage);
-
-	// Category order for ingredient grouping (matches bowl builder)
-	const categoryOrder = ['base', 'protein', 'vegetable', 'topping', 'dressing'];
 
 	const categoryLabels: Record<string, string> = {
 		base: 'Base',
@@ -334,7 +332,7 @@
 						<div class="p-4 sm:p-5 border-b border-gray-100">
 							<h4 class="text-sm font-semibold text-gray-900 mb-3">Ingredients</h4>
 							<div class="space-y-3">
-								{#each categoryOrder as category (category)}
+								{#each CATEGORY_ORDER as category (category)}
 									{#if groupedItems[category]?.length > 0}
 										<div>
 											<p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">

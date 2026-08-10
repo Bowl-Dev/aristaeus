@@ -13,3 +13,8 @@ export const DEFAULT_DELIVERY_LOCALE = {
 // Flat surcharge (COP) added to a bowl when the customer opts to include
 // cutlery. Mirrors the legacy app's +$300 cutlery option.
 export const CUTLERY_PRICE = 300;
+
+// Display order for ingredient categories, shared by the customer Builder and
+// the kitchen/admin order view so the two surfaces can't drift apart. This is
+// presentation only — robot assembly uses each item's `sequenceOrder`.
+export const CATEGORY_ORDER = ['base', 'vegetable', 'protein', 'topping', 'dressing'];
