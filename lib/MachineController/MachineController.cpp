@@ -169,6 +169,36 @@ bool MachineController::processJobRequest(const JobRequest& request)
             emitEvent(request.actuator, MachineEventType::JobFinished);
             return true;
 
+        case JobType::Calibrate:
+
+            if (request.actuator >= NUM_LOAD_CELLS)
+            {
+                Serial.println("Invalid actuator");
+                return false;
+            }
+
+            if (currentState.actuator[request.actuator].mode == MachineMode::Dispensing || currentState.actuator[request.actuator].mode == MachineMode::Flushing)
+            {
+                jobRejected(request.actuator, "Cannot calibrate while a job is running");
+                return false;
+            }
+
+            if (request.targetWeight <= 0.0f)
+            {
+                jobRejected(request.actuator, "Invalid known weight");
+                return false;
+            }
+
+            if (!services.loadCell.calibrate(request.actuator, request.targetWeight))
+            {
+                jobRejected(request.actuator, "Calibration failed - load cell not responding, or the reading looked invalid");
+                return false;
+            }
+
+            jobAccepted(request.actuator);
+            emitEvent(request.actuator, MachineEventType::JobFinished);
+            return true;
+
         case JobType::Reset:
 
             if (request.actuator >= NUM_LOAD_CELLS)
@@ -369,7 +399,7 @@ void MachineController::resumeMachine(uint8_t actuator)
     // deliberately don't call that here.
     ActuatorState& a = currentState.actuator[actuator];
     services.stepper.enable(dispenseJob[actuator].actuator);
-    services.stepper.setDirection(dispenseJob[actuator].actuator, true);
+    services.stepper.setDirection(dispenseJob[actuator].actuator, false);
     services.stepper.setSpeed(dispenseJob[actuator].actuator, dispenseJob[actuator].speed);
     services.stepper.start(dispenseJob[actuator].actuator);
 

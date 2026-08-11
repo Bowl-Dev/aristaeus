@@ -59,7 +59,8 @@ enum class JobType : uint8_t
     Status,
     MoveServo,
     Reset,
-    Resume
+    Resume,
+    Calibrate
 };
 
 struct JobRequest
@@ -67,6 +68,12 @@ struct JobRequest
     uint32_t id = 0;
     JobType type = JobType::None;
     uint8_t actuator = 0;
+
+    // For Dispense: target weight to dispense, in grams.
+    // For Calibrate: the known reference weight currently on the tray, in
+    // grams - reused rather than adding a dedicated field, same as every
+    // other JobType that only cares about a subset of these.
     float targetWeight = 0.0f;
+
     uint32_t speed = 1000;
 };

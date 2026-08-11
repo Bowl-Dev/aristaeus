@@ -13,7 +13,7 @@ struct StepperMotor
 
     float speed = 0.0f;
 
-    bool direction = true;    
+    bool direction = false;    
 
     volatile bool pulseState = false;
 

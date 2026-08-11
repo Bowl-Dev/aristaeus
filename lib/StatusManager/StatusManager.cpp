@@ -60,6 +60,7 @@ void StatusManager::update()
     doc["lastError0"] = state.actuator[0].lastError;
     doc["queuedJobs0"] = state.actuator[0].queuedJobs;
     doc["loadCell0"] = context.loadCell[0].weight;
+    doc["calibration0"] = context.calibration[0].countsPerGram;
     doc["ingredient0"] = INGREDIENT_NAMES[0];
 
     JsonObject job0 = doc.createNestedObject("job0");
@@ -73,6 +74,7 @@ void StatusManager::update()
     doc["lastError1"] = state.actuator[1].lastError;
     doc["queuedJobs1"] = state.actuator[1].queuedJobs;
     doc["loadCell1"] = context.loadCell[1].weight;
+    doc["calibration1"] = context.calibration[1].countsPerGram;
     doc["ingredient1"] = INGREDIENT_NAMES[1];
 
     JsonObject job1 = doc.createNestedObject("job1");
@@ -82,7 +84,7 @@ void StatusManager::update()
     job1["currentWeight"] = state.actuator[1].activeJob.currentWeight;
     job1["progress"] = state.actuator[1].activeJob.progress;
 
-    char payload[600];
+    char payload[700];
 
     size_t len = serializeJson(doc, payload);
 

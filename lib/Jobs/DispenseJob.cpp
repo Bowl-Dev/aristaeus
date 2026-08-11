@@ -15,7 +15,7 @@ void beginDispenseJob(DispenseJob& job, MachineServices& services, MachineMode& 
     Serial.println(services.loadCell.getWeight(job.actuator));
 
     services.stepper.enable(job.actuator);
-    services.stepper.setDirection(job.actuator, true);
+    services.stepper.setDirection(job.actuator, false);
     services.stepper.setSpeed(job.actuator, job.speed);
     services.stepper.start(job.actuator);
 

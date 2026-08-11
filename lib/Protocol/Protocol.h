@@ -21,6 +21,10 @@ private:
         JsonDocument& doc,
         JobRequest& request);
 
+    bool parseCalibrate(
+        JsonDocument& doc,
+        JobRequest& request);
+
     bool parseStatus(
         JsonDocument& doc,
         JobRequest& request);

@@ -17,6 +17,9 @@ bool Protocol::parse(const char* json, JobRequest& request)
     if (command == "tare")
         return parseTare(doc, request);
 
+    if (command == "calibrate")
+        return parseCalibrate(doc, request);
+
     if (command == "status")
         return parseStatus(doc, request);
     
@@ -50,6 +53,14 @@ bool Protocol::parseTare( JsonDocument& doc, JobRequest& request)
 {
     request.type = JobType::Tare;
     request.actuator = doc["actuator"];
+    return true;
+}
+
+bool Protocol::parseCalibrate(JsonDocument& doc, JobRequest& request)
+{
+    request.type = JobType::Calibrate;
+    request.actuator = doc["actuator"];
+    request.targetWeight = doc["knownWeight"];
     return true;
 }
 

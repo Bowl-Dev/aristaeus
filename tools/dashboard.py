@@ -91,7 +91,10 @@ def on_message(client, userdata, msg):
 
             # Feed the recipe runner only while it's actually waiting on
             # something, so this queue doesn't grow unbounded between runs.
-            if recipe_run_state is not None and recipe_run_state.get("status") == "running":
+            # "stalled" must stay included here - that's exactly the state
+            # where we're waiting for the eventual JobFinished after the
+            # operator fixes a jam, and missing it would hang forever.
+            if recipe_run_state is not None and recipe_run_state.get("status") in ("running", "stalled"):
                 recipe_event_queue.put({
                     "device": device_id,
                     "actuator": actuator,
@@ -105,24 +108,61 @@ def on_message(client, userdata, msg):
 # each one to fully finish before starting the next.
 # --------------------------------------------------------------------------
 
-def wait_for_recipe_event(device, actuator, timeout):
-    deadline = time.monotonic() + timeout
+def wait_for_step_result(step):
+    """Blocks until this step's job reaches a terminal outcome.
+
+    A stall (Error event) is NOT treated as terminal here - the ESP32 is
+    still talking to us, it's just jammed. Instead of aborting the recipe,
+    this marks the step "stalled" and switches to waiting indefinitely
+    (bounded only by Cancel), so that once the operator fixes the actuator
+    (Resume or Reset from the Send Command panel) and the job actually
+    finishes, the recipe picks back up right where it left off. Only
+    JobRejected, or a full RECIPE_JOB_TIMEOUT with no response at all
+    (device never even acknowledged the job), aborts the run.
+
+    Returns "JobFinished", "JobRejected", "Timeout", or "Cancelled".
+    """
+    deadline = time.monotonic() + RECIPE_JOB_TIMEOUT
+    stalled = False
 
     while True:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            return "Timeout"
+        if recipe_cancel_event.is_set():
+            return "Cancelled"
+
+        if stalled:
+            poll_timeout = 0.5
+        else:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return "Timeout"
+            poll_timeout = min(remaining, 0.5)
 
         try:
-            event = recipe_event_queue.get(timeout=remaining)
+            event = recipe_event_queue.get(timeout=poll_timeout)
         except queue.Empty:
-            return "Timeout"
-
-        if event["device"] != device or event["actuator"] != actuator:
             continue
 
-        if event["event"] in ("JobFinished", "JobRejected", "Error"):
-            return event["event"]
+        if event["device"] != step["device"] or event["actuator"] != step["actuator"]:
+            continue
+
+        if event["event"] == "JobFinished":
+            return "JobFinished"
+
+        if event["event"] == "JobRejected":
+            return "JobRejected"
+
+        if event["event"] == "Error":
+            stalled = True
+            with state_lock:
+                step["status"] = "stalled"
+                recipe_run_state["status"] = "stalled"
+                recipe_run_state["message"] = (
+                    f"{step['device']} actuator {step['actuator']} stalled while dispensing "
+                    f"{step['ingredient']}. Fix it from the Send Command panel below (select this "
+                    f"dispenser, then Resume or Reset) - this recipe will continue automatically "
+                    f"once it finishes."
+                )
+            continue
 
 
 def run_recipe_worker(name):
@@ -189,6 +229,7 @@ def run_recipe_worker(name):
             step["status"] = "running"
             recipe_run_state["current_step"] = i
             recipe_run_state["status"] = "running"
+            recipe_run_state["message"] = ""
 
         command = {
             "command": "dispense",
@@ -201,11 +242,17 @@ def run_recipe_worker(name):
         print(f"[{now_str()}] Recipe '{name}' step {i + 1}/{len(steps)}: "
               f"{step['grams']}g {step['ingredient']} on {step['device']} actuator {step['actuator']}")
 
-        result = wait_for_recipe_event(step["device"], step["actuator"], RECIPE_JOB_TIMEOUT)
+        result = wait_for_step_result(step)
 
         with state_lock:
             if result == "JobFinished":
                 step["status"] = "done"
+            elif result == "Cancelled":
+                for remaining in steps[i:]:
+                    remaining["status"] = "cancelled"
+                recipe_run_state["status"] = "cancelled"
+                recipe_run_state["message"] = "Cancelled by user"
+                return
             elif result == "Timeout":
                 step["status"] = "timeout"
                 recipe_run_state["status"] = "error"
@@ -279,7 +326,7 @@ PAGE = """<!DOCTYPE html>
   h2:first-of-type { margin-top: 0; }
   h3 { font-size: 22px; color: #cfd3da; margin: 0 0 10px 0; }
   .panel { padding: 14px; margin-bottom: 24px; background: #26272e; border: 1px solid #3a3b42; border-radius: 6px; }
-  #controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+  #controls, #calibrateControls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
   #controls label, .panel label { font-size: 22px; color: #9aa0aa; display: flex; flex-direction: column; gap: 4px; }
   #controls select, #controls input, .panel select, .panel input[type=text], .panel input[type=number] {
     background: #1e1f24; color: #e6e6e6; border: 1px solid #3a3b42; border-radius: 4px; padding: 8px 10px; font-size: 23px;
@@ -319,9 +366,11 @@ PAGE = """<!DOCTYPE html>
   #recipeRunPanel li.step-done { border-left-color: #4caf50; color: #9aa0aa; }
   #recipeRunPanel li.step-failed, #recipeRunPanel li.step-timeout, #recipeRunPanel li.step-unresolved { border-left-color: #f44336; }
   #recipeRunPanel li.step-cancelled { border-left-color: #ffb300; color: #9aa0aa; }
+  #recipeRunPanel li.step-stalled { border-left-color: #ffb300; }
   #recipeRunMessage { font-size: 21px; margin-top: 8px; }
   #recipeRunMessage.bad { color: #f44336; }
   #recipeRunMessage.ok { color: #4caf50; }
+  #recipeRunMessage.warn { color: #ffb300; }
 </style>
 </head>
 <body>
@@ -365,6 +414,7 @@ PAGE = """<!DOCTYPE html>
       <th data-key="mode">Mode</th>
       <th data-key="progress">Progress</th>
       <th data-key="weight">Weight (g)</th>
+      <th data-key="calibration">Calibration</th>
       <th data-key="queued">Queued</th>
       <th data-key="wifi">WiFi</th>
       <th data-key="mqtt">MQTT</th>
@@ -393,6 +443,18 @@ PAGE = """<!DOCTYPE html>
   <span id="commandStatus"></span>
 </div>
 
+<h2>Calibrate a Load Cell</h2>
+<div id="calibrateControls" class="panel">
+  <label>Dispenser
+    <select id="calibrateDispenserSelect"></select>
+  </label>
+  <label>Known weight on the tray now (g)
+    <input type="number" id="calibrateWeightInput" value="100" min="1" step="1">
+  </label>
+  <button id="btnCalibrate" class="btn-run">Calibrate</button>
+  <span id="calibrateStatus"></span>
+</div>
+
 <h2>Events</h2>
 <div id="events"></div>
 
@@ -413,6 +475,7 @@ function dispenserRows() {
     for (let actuator = 0; actuator < 2; actuator++) {
       const job = d["job" + actuator] || {};
       const weight = d["loadCell" + actuator];
+      const calibration = d["calibration" + actuator];
       const queued = d["queuedJobs" + actuator];
       rows.push({
         ingredient: d["ingredient" + actuator] || "unknown",
@@ -421,6 +484,7 @@ function dispenserRows() {
         mode: d["mode" + actuator] || "",
         progress: job.active ? (job.progress + "%") : "-",
         weight: (weight !== undefined) ? Number(weight).toFixed(1) : "-",
+        calibration: (calibration !== undefined) ? Number(calibration).toFixed(1) : "-",
         queued: (queued !== undefined) ? queued : "-",
         wifi: d.wifi ? "up" : "down",
         mqtt: d.mqtt ? "up" : "down",
@@ -457,6 +521,7 @@ function renderTable() {
       <td>${r.mode}</td>
       <td>${r.progress}</td>
       <td>${r.weight}</td>
+      <td>${r.calibration}</td>
       <td>${r.queued}</td>
       <td class="${r.wifi === "up" ? "cell-ok" : "cell-bad"}">${r.wifi}</td>
       <td class="${r.mqtt === "up" ? "cell-ok" : "cell-bad"}">${r.mqtt}</td>
@@ -484,8 +549,8 @@ function setStatus(ok) {
   el.className = ok ? "ok" : "bad";
 }
 
-function updateDispenserOptions() {
-  const sel = document.getElementById("dispenserSelect");
+function populateDispenserSelect(selectId) {
+  const sel = document.getElementById(selectId);
   const current = sel.value;
 
   const options = [];
@@ -514,11 +579,20 @@ function updateDispenserOptions() {
   }
 }
 
-function selectedDispenser() {
-  const raw = document.getElementById("dispenserSelect").value;
+function updateDispenserOptions() {
+  populateDispenserSelect("dispenserSelect");
+  populateDispenserSelect("calibrateDispenserSelect");
+}
+
+function selectedFromSelect(selectId) {
+  const raw = document.getElementById(selectId).value;
   if (!raw) return null;
   const [device, actuatorStr] = raw.split("|");
   return { device, actuator: parseInt(actuatorStr, 10) };
+}
+
+function selectedDispenser() {
+  return selectedFromSelect("dispenserSelect");
 }
 
 function setCommandStatus(msg, isError) {
@@ -565,6 +639,54 @@ async function sendCommand(action) {
     }
   } catch (err) {
     setCommandStatus(`Request failed: ${err}`, true);
+  }
+}
+
+function setCalibrateStatus(msg, isError) {
+  const el = document.getElementById("calibrateStatus");
+  el.textContent = msg;
+  el.className = isError ? "bad" : "ok";
+}
+
+async function sendCalibrate() {
+  const target = selectedFromSelect("calibrateDispenserSelect");
+  if (!target) {
+    setCalibrateStatus("No dispenser known yet", true);
+    return;
+  }
+  const { device, actuator } = target;
+  const ingredient = (lastDevices[device] && lastDevices[device]["ingredient" + actuator]) || "unknown";
+  const knownWeight = parseFloat(document.getElementById("calibrateWeightInput").value);
+
+  if (!(knownWeight > 0)) {
+    setCalibrateStatus("Enter the known weight currently on the tray", true);
+    return;
+  }
+
+  if (!confirm(
+    `Calibrate ${ingredient} (${device} #${actuator})?\n\n` +
+    `Make sure you already Tared this dispenser with the tray empty, and that exactly ` +
+    `${knownWeight}g is on it right now. This replaces its saved calibration.`
+  )) {
+    return;
+  }
+
+  setCalibrateStatus("Calibrating...", false);
+
+  try {
+    const res = await fetch("/api/command", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device, action: "calibrate", actuator, knownWeight }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setCalibrateStatus(`Calibrated ${ingredient} (${device} #${actuator})`, false);
+    } else {
+      setCalibrateStatus(`Failed: ${data.error || "unknown error"}`, true);
+    }
+  } catch (err) {
+    setCalibrateStatus(`Request failed: ${err}`, true);
   }
 }
 
@@ -872,7 +994,7 @@ function renderRecipes() {
       const speedNote = i.speed && i.speed !== 1000 ? ` @${i.speed}` : "";
       return `${i.ingredient} ${i.grams}g${speedNote}`;
     }).join(", ");
-    const running = lastRecipeRun && (lastRecipeRun.status === "running" || lastRecipeRun.status === "waiting_next");
+    const running = lastRecipeRun && ["running", "waiting_next", "stalled"].includes(lastRecipeRun.status);
 
     card.innerHTML = `
       <span class="recipe-name">${recipe.name}</span>
@@ -899,7 +1021,7 @@ function renderRecipeRun() {
   }
 
   const run = lastRecipeRun;
-  const active = run.status === "running" || run.status === "waiting_next";
+  const active = run.status === "running" || run.status === "waiting_next" || run.status === "stalled";
   if (!active && dismissedRunKey === `${run.name}@dismissed`) {
     panel.style.display = "none";
     return;
@@ -913,6 +1035,7 @@ function renderRecipeRun() {
       : `${s.grams}g ${s.ingredient}`;
     const statusText = {
       pending: "Waiting", running: "Dispensing...", done: "Done",
+      stalled: "Stalled - waiting for you to fix it",
       failed: "Failed", timeout: "Timed out", cancelled: "Cancelled",
       unresolved: "No dispenser found for this ingredient",
     }[s.status] || s.status;
@@ -926,6 +1049,8 @@ function renderRecipeRun() {
     messageHtml = `<div id="recipeRunMessage" class="bad">${run.message}</div>`;
   } else if (run.status === "cancelled") {
     messageHtml = `<div id="recipeRunMessage" class="bad">Recipe '${run.name}' was cancelled.</div>`;
+  } else if (run.status === "stalled") {
+    messageHtml = `<div id="recipeRunMessage" class="warn">${run.message}</div>`;
   } else if (run.status === "waiting_next") {
     const next = (run.steps || []).find((s) => s.status === "pending");
     const nextLabel = next ? `${next.ingredient} (${next.grams}g)` : "the next ingredient";
@@ -935,7 +1060,7 @@ function renderRecipeRun() {
   let buttonsHtml;
   if (run.status === "waiting_next") {
     buttonsHtml = `<button class="btn-run" id="btnNextIngredient">Next Ingredient</button> <button class="btn-danger" id="btnCancelRecipe">Cancel remaining steps</button>`;
-  } else if (run.status === "running") {
+  } else if (run.status === "running" || run.status === "stalled") {
     buttonsHtml = `<button class="btn-danger" id="btnCancelRecipe">Cancel remaining steps</button>`;
   } else {
     buttonsHtml = `<button id="btnDismissRecipeRun">Dismiss</button>`;
@@ -946,7 +1071,7 @@ function renderRecipeRun() {
   if (run.status === "waiting_next") {
     document.getElementById("btnNextIngredient").addEventListener("click", nextIngredient);
     document.getElementById("btnCancelRecipe").addEventListener("click", cancelRecipe);
-  } else if (run.status === "running") {
+  } else if (run.status === "running" || run.status === "stalled") {
     document.getElementById("btnCancelRecipe").addEventListener("click", cancelRecipe);
   } else {
     document.getElementById("btnDismissRecipeRun").addEventListener("click", () => {
@@ -989,6 +1114,7 @@ document.getElementById("btnDispense").addEventListener("click", () => sendComma
 document.getElementById("btnTare").addEventListener("click", () => sendCommand("tare"));
 document.getElementById("btnResume").addEventListener("click", () => sendCommand("resume"));
 document.getElementById("btnReset").addEventListener("click", () => sendCommand("reset"));
+document.getElementById("btnCalibrate").addEventListener("click", sendCalibrate);
 
 document.getElementById("btnToggleNewRecipe").addEventListener("click", toggleRecipeForm);
 document.getElementById("btnAddIngredientRow").addEventListener("click", () => addIngredientRow());
@@ -1087,6 +1213,16 @@ class Handler(BaseHTTPRequestHandler):
                     "command": "resume",
                     "actuator": int(body.get("actuator", 0)),
                 }
+            elif action == "calibrate":
+                known_weight = float(body.get("knownWeight", 0))
+                if known_weight <= 0:
+                    self._send_json(400, {"ok": False, "error": "Known weight must be > 0"})
+                    return
+                command = {
+                    "command": "calibrate",
+                    "actuator": int(body.get("actuator", 0)),
+                    "knownWeight": known_weight,
+                }
             else:
                 self._send_json(400, {"ok": False, "error": f"Unknown action '{action}'"})
                 return
@@ -1146,7 +1282,7 @@ class Handler(BaseHTTPRequestHandler):
 
         conflict = None
         with state_lock:
-            if recipe_run_state is not None and recipe_run_state.get("status") in ("running", "waiting_next"):
+            if recipe_run_state is not None and recipe_run_state.get("status") in ("running", "waiting_next", "stalled"):
                 conflict = recipe_run_state["name"]
             else:
                 recipe_run_state = {
@@ -1182,7 +1318,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_recipe_cancel(self, body):
         with state_lock:
-            running = recipe_run_state is not None and recipe_run_state.get("status") in ("running", "waiting_next")
+            running = recipe_run_state is not None and recipe_run_state.get("status") in ("running", "waiting_next", "stalled")
 
         if not running:
             self._send_json(400, {"ok": False, "error": "No recipe is currently running"})
