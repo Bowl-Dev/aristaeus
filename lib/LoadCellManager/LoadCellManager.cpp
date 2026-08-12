@@ -144,6 +144,19 @@ bool LoadCellManager::requestTare(uint8_t channel)
     }
 
     scales[channel].tare();
+
+    // tare() only updates the HX711 wrapper's internal zero-offset - the
+    // cached context.loadCell[channel].weight (what MachineController
+    // actually compares against target weight) doesn't get recomputed
+    // until the next update() tick sees a fresh is_ready() sample, which
+    // can be tens to ~100ms away. If a dispense job starts before that
+    // tick - e.g. right after this tare, as the recipe flow does - it
+    // would read the STALE pre-tare weight (a bowl already on the tray)
+    // and think it already hit target instantly. Zero it here so there's
+    // no window where a fresh tare leaves a stale non-zero reading behind.
+    context.loadCell[channel].weight = 0.0f;
+    context.loadCell[channel].raw = scales[channel].get_offset();
+
     context.loadCell[channel].connected = true;
     context.loadCell[channel].tareComplete = true;
     return true;

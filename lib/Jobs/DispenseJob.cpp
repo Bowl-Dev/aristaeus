@@ -34,6 +34,11 @@ void Jobs::updateDispenseJob(DispenseJob& job, MachineServices& services, Machin
         {
             float weight = services.loadCell.getWeight(job.actuator);
 
+            if (weight >= job.targetWeight*0.85)
+            {
+                services.stepper.setSpeed(job.actuator, job.speed*0.2);
+            }
+
             if (weight >= job.targetWeight)
             {
                 Serial.println("Target reached, opening gate");
