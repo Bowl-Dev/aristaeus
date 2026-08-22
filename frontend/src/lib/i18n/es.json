@@ -193,6 +193,13 @@
 		"weight": "Peso: {used}g / {total}g",
 		"addToCart": "Agregar al carrito — {price}",
 		"overCapacity": "Excede la capacidad por {amount}g",
+		"bowlFull": {
+			"title": "Tu bowl está lleno",
+			"message": "Ya alcanzaste los {size}g de tu bowl. Puedes agrandarlo o ajustar los ingredientes que elegiste.",
+			"messageMax": "Ya alcanzaste los {size}g, el tamaño más grande disponible. Quita o reduce un ingrediente para agregar otro.",
+			"upsize": "Agrandar a {size}g",
+			"adjust": "Ajustar ingredientes"
+		},
 		"remaining": "{amount}g disponibles",
 		"ingredient": {
 			"add": "Agregar {name}",

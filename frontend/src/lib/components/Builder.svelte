@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
 	import { SvelteMap } from 'svelte/reactivity';
-	import type { Ingredient, BowlSize } from '$lib/types';
+	import { BOWL_SIZES, type Ingredient, type BowlSize } from '$lib/types';
 	import AppScreen from './templates/AppScreen.svelte';
 	import CategoryAccordion from './molecules/CategoryAccordion.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
+	import ConfirmModal from './organisms/ConfirmModal.svelte';
 	import { computeBowlTotals, formatCOP, roundToNearestCoin, bowlBasePrice } from '$lib/utils/bowl';
 	import {
 		getQuantityIncrement,
@@ -23,6 +24,7 @@
 		onBack,
 		onCart,
 		onAddToCart,
+		onUpsize,
 		includeCutlery = $bindable(false)
 	}: {
 		ingredients: Ingredient[];
@@ -33,6 +35,9 @@
 		onBack: () => void;
 		onCart?: () => void;
 		onAddToCart: () => void;
+		// Swaps the bowl for the next size up, keeping the current selection.
+		// Omitted by callers that don't allow resizing mid-build.
+		onUpsize?: (size: BowlSize) => void;
 		includeCutlery?: boolean;
 	} = $props();
 
@@ -121,7 +126,10 @@
 
 	function handleAdd(id: number) {
 		const step = getIncrement(id);
-		if (remaining < step) return;
+		if (remaining < step) {
+			registerBlockedAttempt();
+			return;
+		}
 		const ing = ingredients.find((i) => i.id === id);
 		const initial = getInitialQuantity(ing?.category ?? '');
 		// Clamp to available capacity
@@ -130,7 +138,10 @@
 
 	function handleIncrease(id: number) {
 		const step = getIncrement(id);
-		if (remaining < step) return;
+		if (remaining < step) {
+			registerBlockedAttempt();
+			return;
+		}
 		const current = selectedItems.get(id) ?? 0;
 		selectedItems.set(id, current + step);
 	}
@@ -138,6 +149,9 @@
 	function handleDecrease(id: number) {
 		const step = getIncrement(id);
 		const current = selectedItems.get(id) ?? 0;
+		// Freeing capacity clears the streak, so the prompt doesn't fire on a
+		// later, unrelated blocked tap.
+		blockedAttempts = 0;
 		if (current <= step) {
 			selectedItems.delete(id);
 		} else {
@@ -146,7 +160,40 @@
 	}
 
 	function handleRemove(id: number) {
+		blockedAttempts = 0;
 		selectedItems.delete(id);
+	}
+
+	// ──────────────────────────────────────────────
+	// Full-bowl prompt (ENG-88)
+	// ──────────────────────────────────────────────
+	// A single blocked tap stays silent — it reads as a misfire. The second one
+	// is intent, so that's when we explain the bowl is full and offer a way out.
+	const BLOCKED_ATTEMPTS_BEFORE_PROMPT = 2;
+
+	let blockedAttempts = $state(0);
+	let showFullBowl = $state(false);
+
+	// null at 600g — the largest bowl has nothing to upsize to.
+	const nextBowlSize = $derived.by(() => {
+		const index = BOWL_SIZES.indexOf(bowlSize);
+		return index >= 0 && index < BOWL_SIZES.length - 1 ? BOWL_SIZES[index + 1] : null;
+	});
+
+	const canUpsize = $derived(nextBowlSize !== null && onUpsize !== undefined);
+
+	function registerBlockedAttempt() {
+		blockedAttempts += 1;
+		if (blockedAttempts < BLOCKED_ATTEMPTS_BEFORE_PROMPT) return;
+		// Reset on open so a later pair of blocked taps prompts again, rather
+		// than every single tap re-opening it once the threshold is passed.
+		blockedAttempts = 0;
+		showFullBowl = true;
+	}
+
+	function handleUpsize() {
+		showFullBowl = false;
+		if (nextBowlSize !== null) onUpsize?.(nextBowlSize);
 	}
 </script>
 
@@ -370,3 +417,19 @@
 		</div>
 	{/if}
 </AppScreen>
+
+<!-- Bowl-full prompt. At the largest size there is nothing to upsize to, so it
+     becomes acknowledge-only and the copy changes to ask for a removal. -->
+<ConfirmModal
+	open={showFullBowl}
+	title={$_('builder.bowlFull.title')}
+	message={canUpsize
+		? $_('builder.bowlFull.message', { values: { size: bowlSize } })
+		: $_('builder.bowlFull.messageMax', { values: { size: bowlSize } })}
+	cancelLabel={$_('builder.bowlFull.adjust')}
+	confirmLabel={canUpsize
+		? $_('builder.bowlFull.upsize', { values: { size: nextBowlSize } })
+		: undefined}
+	onConfirm={canUpsize ? handleUpsize : undefined}
+	onCancel={() => (showFullBowl = false)}
+/>

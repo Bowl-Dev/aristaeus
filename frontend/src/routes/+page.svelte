@@ -188,6 +188,7 @@
 		onBack={handleBuilderBack}
 		onCart={goToCart}
 		onAddToCart={addCurrentBowlToCart}
+		onUpsize={(size) => (selectedBowlSize = size)}
 	/>
 {:else if view === 'cart'}
 	<Cart

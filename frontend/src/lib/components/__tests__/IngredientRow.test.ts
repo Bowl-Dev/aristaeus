@@ -44,12 +44,25 @@ describe('IngredientRow', () => {
 		expect(buttons.length).toBe(2);
 	});
 
-	it('disables the Add button when remaining is below the step', () => {
+	it('marks the Add button aria-disabled when remaining is below the step', () => {
 		const { container } = render(IngredientRow, {
 			props: makeProps({ remaining: 5 })
 		});
 		const addBtn = container.querySelector('button') as HTMLButtonElement;
-		expect(addBtn.disabled).toBe(true);
+		expect(addBtn.getAttribute('aria-disabled')).toBe('true');
+	});
+
+	// ENG-88: the button stays clickable so the parent can count blocked attempts
+	// and explain that the bowl is full. A real `disabled` would swallow the tap.
+	it('still fires onAdd when at capacity, so the parent can respond', async () => {
+		const onAdd = vi.fn();
+		const { container } = render(IngredientRow, {
+			props: makeProps({ remaining: 5, onAdd })
+		});
+		const addBtn = container.querySelector('button') as HTMLButtonElement;
+		expect(addBtn.disabled).toBe(false);
+		await fireEvent.click(addBtn);
+		expect(onAdd).toHaveBeenCalledOnce();
 	});
 
 	it('uses the imageUrl from the ingredient as the image src', () => {
@@ -73,22 +86,28 @@ describe('IngredientRow', () => {
 			props: makeProps({ ingredient: topping, remaining: 6 })
 		});
 		const addBtn = container.querySelector('button') as HTMLButtonElement;
-		expect(addBtn.disabled).toBe(false);
+		expect(addBtn.getAttribute('aria-disabled')).toBe('false');
 	});
 
-	it('quantizes dressings to half-container (12g) steps (Add disabled below a half container)', () => {
+	it('quantizes dressings to half-container (12g) steps (Add blocked below a half container)', () => {
 		const dressing: Ingredient = { ...baseIngredient, category: 'dressing' };
 		const tooLittle = render(IngredientRow, {
 			props: makeProps({ ingredient: dressing, remaining: 6 })
 		});
-		expect((tooLittle.container.querySelector('button') as HTMLButtonElement).disabled).toBe(true);
+		expect(
+			(tooLittle.container.querySelector('button') as HTMLButtonElement).getAttribute(
+				'aria-disabled'
+			)
+		).toBe('true');
 
 		const halfContainer = render(IngredientRow, {
 			props: makeProps({ ingredient: dressing, remaining: 12 })
 		});
-		expect((halfContainer.container.querySelector('button') as HTMLButtonElement).disabled).toBe(
-			false
-		);
+		expect(
+			(halfContainer.container.querySelector('button') as HTMLButtonElement).getAttribute(
+				'aria-disabled'
+			)
+		).toBe('false');
 	});
 
 	it('labels a half-container dressing as ½ container, not grams', () => {

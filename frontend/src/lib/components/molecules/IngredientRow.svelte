@@ -27,9 +27,12 @@
 	const isSelected = $derived(quantity > 0);
 	const step = $derived(getQuantityIncrement(ingredient.category));
 
-	// Disable add when there isn't room for even the minimum quantity
+	// No room for even the minimum quantity / another full step. These are marked
+	// with aria-disabled rather than `disabled` so the tap still reaches the
+	// parent: a truly disabled button swallows the click, leaving the customer
+	// with no feedback about why nothing happened (ENG-88). The parent guards the
+	// capacity check and explains after a repeated attempt.
 	const addDisabled = $derived(remaining < step);
-	// Disable increase when there isn't room for another full step
 	const increaseDisabled = $derived(remaining < step);
 
 	// Nutritional chips — per-100g reference values until the ingredient is
@@ -167,9 +170,9 @@
 				<span class="flex-1 text-center text-base font-bold text-text-black">{quantityLabel}</span>
 				<button
 					type="button"
-					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
+					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-transform duration-150 active:scale-95 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
 					onclick={onIncrease}
-					disabled={increaseDisabled}
+					aria-disabled={increaseDisabled}
 					aria-label={$_('builder.ingredient.increase', { values: { name: displayName } })}
 				>
 					<svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -198,9 +201,9 @@
 			<div class="flex justify-end">
 				<button
 					type="button"
-					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
+					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-dark-green text-light-green transition-transform duration-150 active:scale-95 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 [-webkit-tap-highlight-color:transparent]"
 					onclick={onAdd}
-					disabled={addDisabled}
+					aria-disabled={addDisabled}
 					aria-label={$_('builder.ingredient.add', { values: { name: displayName } })}
 				>
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
