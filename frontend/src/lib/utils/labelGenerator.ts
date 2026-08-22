@@ -1,4 +1,5 @@
 import type { AdminOrder, AdminOrderItem } from '$lib/api/client';
+import { CATEGORY_ORDER } from '$lib/constants';
 // Bundled at build time — no runtime fetch, no base-path issues on any deployment
 import logoSvgRaw from '$lib/assets/algramo-logo.svg?raw';
 
@@ -11,8 +12,22 @@ function formatNutrientValue(value: number): string {
 	return value % 1 === 0 ? value.toFixed(0) : value.toFixed(1);
 }
 
-function buildIngredientList(items: AdminOrderItem[]): string {
-	const sorted = [...items].sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+// Unknown categories sort after every known one instead of ahead of them,
+// which a bare `indexOf` (-1) would do.
+function categoryRank(category: string): number {
+	const index = CATEGORY_ORDER.indexOf(category);
+	return index === -1 ? CATEGORY_ORDER.length : index;
+}
+
+// The label reads in the same category order as the Builder and the kitchen
+// view (CATEGORY_ORDER), not in robot assembly order. `sequenceOrder` still
+// breaks ties so items within a category keep their assembly sequence.
+export function buildIngredientList(items: AdminOrderItem[]): string {
+	const sorted = [...items].sort(
+		(a, b) =>
+			categoryRank(a.ingredientCategory) - categoryRank(b.ingredientCategory) ||
+			a.sequenceOrder - b.sequenceOrder
+	);
 	const parts = sorted.map((item) => `${item.ingredientNameEs} ${item.quantityGrams}g`);
 	if (parts.length === 0) return '';
 	if (parts.length === 1) return parts[0] + '.';
