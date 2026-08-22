@@ -129,6 +129,26 @@ describe('Builder', () => {
 		expect(onAddToCart).toHaveBeenCalledOnce();
 	});
 
+	// ENG-77: the icon used to render after the label with justify-between, so a
+	// long price wrapped the label onto a second line and shifted the icon to the
+	// far edge, changing the button's height.
+	it('renders the cart icon before the label, on a single line', () => {
+		const items = new SvelteMap<number, number>([[1, 100]]);
+		const { container } = render(Builder, { props: makeProps({ selectedItems: items }) });
+		const cta = Array.from(container.querySelectorAll('button')).find((b) =>
+			(b.textContent ?? '').includes('Agregar al carrito')
+		) as HTMLButtonElement;
+
+		// Icon is the first child, label the second — in a flex row that puts the
+		// icon on the left.
+		expect(cta.children[0].tagName.toLowerCase()).toBe('svg');
+		const label = cta.children[1] as HTMLElement;
+		expect(label.tagName.toLowerCase()).toBe('span');
+		expect(label.className).toContain('whitespace-nowrap');
+		// The old layout pushed the two apart; they now sit together as one unit.
+		expect(cta.className).not.toContain('justify-between');
+	});
+
 	it('renders the size badge label matching the bowlSize prop', () => {
 		const { container, rerender } = render(Builder, { props: makeProps({ bowlSize: 250 }) });
 		expect(container.textContent).toContain('Pequeño');

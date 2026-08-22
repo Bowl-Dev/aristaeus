@@ -344,13 +344,10 @@
 			<!-- CTA pill -->
 			<button
 				type="button"
-				class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-full border-none bg-dark-green px-16 py-4 text-base font-semibold tracking-[0.8px] text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
+				class="flex w-full cursor-pointer items-center justify-center gap-3 rounded-full border-none bg-dark-green px-5 py-4 text-base font-semibold tracking-[0.8px] text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
 				disabled={!hasItems || isOverCapacity}
 				onclick={onAddToCart}
 			>
-				<span class="flex-1 text-center">
-					{$_('builder.addToCart', { values: { price: formattedPrice } })}
-				</span>
 				<svg
 					width="20"
 					height="20"
@@ -360,12 +357,16 @@
 					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
+					class="shrink-0"
 					aria-hidden="true"
 				>
 					<circle cx="9" cy="21" r="1" />
 					<circle cx="20" cy="21" r="1" />
 					<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
 				</svg>
+				<span class="whitespace-nowrap">
+					{$_('builder.addToCart', { values: { price: formattedPrice } })}
+				</span>
 			</button>
 		</div>
 	{/if}
