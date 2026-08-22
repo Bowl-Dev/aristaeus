@@ -69,8 +69,17 @@ const makeProps = (
 	cartCount: 0,
 	onBack: vi.fn(),
 	onCart: vi.fn(),
-	onAddToCart: vi.fn()
+	onAddToCart: vi.fn(),
+	onUpsize: vi.fn()
 });
+
+// Opens the category accordions (collapsed by default) and returns the add /
+// increase control for an ingredient, addressed by its aria-label.
+async function openRowsAndFind(container: HTMLElement, label: string) {
+	const headers = Array.from(container.querySelectorAll('button[aria-expanded="false"]'));
+	for (const header of headers) await fireEvent.click(header);
+	return container.querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement;
+}
 
 describe('Builder', () => {
 	beforeEach(async () => {
@@ -151,6 +160,98 @@ describe('Builder', () => {
 	it('shows the loading state when loading is true', () => {
 		const { container } = render(Builder, { props: makeProps({ loading: true }) });
 		expect(container.textContent).toContain('Cargando');
+	});
+
+	describe('full-bowl prompt (ENG-88)', () => {
+		// 450g of rice fills a 450g bowl exactly, so any further add is blocked.
+		const fullBowl = () => new SvelteMap<number, number>([[1, 450]]);
+
+		it('stays silent on a single blocked attempt', async () => {
+			const { container } = render(Builder, {
+				props: makeProps({ selectedItems: fullBowl(), bowlSize: 450 })
+			});
+			const addChicken = await openRowsAndFind(container, 'Agregar Pollo');
+			await fireEvent.click(addChicken);
+			expect(container.textContent).not.toContain('Tu bowl está lleno');
+		});
+
+		it('explains the bowl is full on the second blocked attempt', async () => {
+			const { container } = render(Builder, {
+				props: makeProps({ selectedItems: fullBowl(), bowlSize: 450 })
+			});
+			const addChicken = await openRowsAndFind(container, 'Agregar Pollo');
+			await fireEvent.click(addChicken);
+			await fireEvent.click(addChicken);
+			expect(document.body.textContent).toContain('Tu bowl está lleno');
+			expect(document.body.textContent).toContain('Agrandar a 600g');
+		});
+
+		it('counts blocked attempts across different ingredients', async () => {
+			const items = new SvelteMap<number, number>([[1, 450]]);
+			const { container } = render(Builder, {
+				props: {
+					...makeProps({ selectedItems: items, bowlSize: 450 }),
+					ingredients: [rice, chicken, lettuce]
+				}
+			});
+			const addChicken = await openRowsAndFind(container, 'Agregar Pollo');
+			const addLettuce = container.querySelector(
+				'button[aria-label="Agregar Lechuga"]'
+			) as HTMLButtonElement;
+			await fireEvent.click(addChicken);
+			await fireEvent.click(addLettuce);
+			expect(document.body.textContent).toContain('Tu bowl está lleno');
+		});
+
+		it('upsizes to the next bowl size when the customer accepts', async () => {
+			const onUpsize = vi.fn();
+			const { container } = render(Builder, {
+				props: { ...makeProps({ selectedItems: fullBowl(), bowlSize: 450 }), onUpsize }
+			});
+			const addChicken = await openRowsAndFind(container, 'Agregar Pollo');
+			await fireEvent.click(addChicken);
+			await fireEvent.click(addChicken);
+			const upsizeBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+				(b.textContent ?? '').includes('Agrandar a 600g')
+			) as HTMLButtonElement;
+			await fireEvent.click(upsizeBtn);
+			expect(onUpsize).toHaveBeenCalledWith(600);
+			expect(document.body.textContent).not.toContain('Tu bowl está lleno');
+		});
+
+		it('offers no upsize at 600g, the largest bowl', async () => {
+			const items = new SvelteMap<number, number>([[1, 600]]);
+			const { container } = render(Builder, {
+				props: makeProps({ selectedItems: items, bowlSize: 600 })
+			});
+			const addChicken = await openRowsAndFind(container, 'Agregar Pollo');
+			await fireEvent.click(addChicken);
+			await fireEvent.click(addChicken);
+			expect(document.body.textContent).toContain('Tu bowl está lleno');
+			expect(document.body.textContent).toContain('el tamaño más grande disponible');
+			expect(document.body.textContent).not.toContain('Agrandar a');
+		});
+
+		it('resets the streak once capacity is freed', async () => {
+			const { container } = render(Builder, {
+				props: makeProps({ selectedItems: fullBowl(), bowlSize: 450 })
+			});
+			const addChicken = await openRowsAndFind(container, 'Agregar Pollo');
+			await fireEvent.click(addChicken);
+
+			// Freeing capacity clears the first blocked attempt...
+			const decreaseRice = container.querySelector(
+				'button[aria-label="Disminuir Arroz"]'
+			) as HTMLButtonElement;
+			await fireEvent.click(decreaseRice);
+			// ...so refilling and tapping once more must not prompt.
+			const increaseRice = container.querySelector(
+				'button[aria-label="Aumentar Arroz"]'
+			) as HTMLButtonElement;
+			await fireEvent.click(increaseRice);
+			await fireEvent.click(addChicken);
+			expect(document.body.textContent).not.toContain('Tu bowl está lleno');
+		});
 	});
 
 	it('expands the details sheet with macros when "Ver detalles" is clicked', async () => {

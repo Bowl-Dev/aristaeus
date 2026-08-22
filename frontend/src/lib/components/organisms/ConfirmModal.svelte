@@ -5,9 +5,12 @@
 		open: boolean;
 		title: string;
 		message?: string;
-		confirmLabel: string;
+		// Omit confirmLabel/onConfirm for an acknowledge-only dialog: the cancel
+		// button is then the single way out (used when the bowl is already at the
+		// largest size, so there is nothing to confirm).
+		confirmLabel?: string;
 		cancelLabel: string;
-		onConfirm: () => void;
+		onConfirm?: () => void;
 		onCancel: () => void;
 		variant?: 'danger' | 'default';
 	}
@@ -87,14 +90,16 @@
 				>
 					{cancelLabel}
 				</button>
-				<!-- Confirm = secondary, danger-styled -->
-				<button
-					type="button"
-					class="w-full cursor-pointer rounded-full px-6 py-4 text-sm font-semibold transition-all duration-200 active:scale-[0.97] [-webkit-tap-highlight-color:transparent] {confirmClass}"
-					onclick={onConfirm}
-				>
-					{confirmLabel}
-				</button>
+				<!-- Confirm = secondary, danger-styled. Absent on acknowledge-only dialogs. -->
+				{#if confirmLabel && onConfirm}
+					<button
+						type="button"
+						class="w-full cursor-pointer rounded-full px-6 py-4 text-sm font-semibold transition-all duration-200 active:scale-[0.97] [-webkit-tap-highlight-color:transparent] {confirmClass}"
+						onclick={onConfirm}
+					>
+						{confirmLabel}
+					</button>
+				{/if}
 			</div>
 		</div>
 	</CenterModal>
