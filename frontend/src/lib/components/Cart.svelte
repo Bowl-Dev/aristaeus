@@ -26,6 +26,8 @@
 		onRemoveBowl: (index: number) => void;
 		onIncreaseBowl: (index: number) => void;
 		onDecreaseBowl: (index: number) => void;
+		// Opens the Builder pre-filled with this bowl for editing.
+		onEditBowl: (index: number) => void;
 	}
 
 	let {
@@ -37,7 +39,8 @@
 		onCreateAnother,
 		onRemoveBowl,
 		onIncreaseBowl,
-		onDecreaseBowl
+		onDecreaseBowl,
+		onEditBowl
 	}: Props = $props();
 
 	function sizeLabel(bowlSize: BowlSize) {
@@ -90,8 +93,9 @@
 	const grandTotal = $derived(bowlData.reduce((acc, b) => acc + b.totalPrice, 0));
 	const grandWeight = $derived(bowlData.reduce((acc, b) => acc + b.totalWeight, 0));
 
-	// Trash is the only deletion path (the − button clamps at 1), so it is gated
-	// behind a confirmation modal to prevent accidental, irreversible removal.
+	// The card's icon is Edit (ENG-75), so the − stepper is the only deletion
+	// path: pressing it at quantity 1 opens this confirmation rather than
+	// removing the bowl outright.
 	let pendingRemoveIndex = $state<number | null>(null);
 </script>
 
@@ -138,13 +142,13 @@
 						<p class="m-0 text-sm text-text-muted">{bowl.weight}g</p>
 					</div>
 					<IconButton
-						variant="ghost-danger"
-						ariaLabel={$_('cart.bowl.remove')}
-						onclick={() => (pendingRemoveIndex = i)}
+						variant="outline"
+						ariaLabel={$_('cart.bowl.edit')}
+						onclick={() => onEditBowl(i)}
 					>
 						<svg
-							width="18"
-							height="18"
+							width="16"
+							height="16"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -153,11 +157,8 @@
 							stroke-linejoin="round"
 							aria-hidden="true"
 						>
-							<polyline points="3 6 5 6 21 6" />
-							<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-							<path d="M10 11v6" />
-							<path d="M14 11v6" />
-							<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+							<path d="M12 20h9" />
+							<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
 						</svg>
 					</IconButton>
 				</div>
@@ -183,9 +184,8 @@
 					<div class="flex items-center gap-3">
 						<IconButton
 							variant="outline"
-							ariaLabel={$_('cart.bowl.decrease')}
-							disabled={bowl.quantity === 1}
-							onclick={() => onDecreaseBowl(i)}
+							ariaLabel={bowl.quantity === 1 ? $_('cart.bowl.remove') : $_('cart.bowl.decrease')}
+							onclick={() => (bowl.quantity === 1 ? (pendingRemoveIndex = i) : onDecreaseBowl(i))}
 						>
 							<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
 								<line

@@ -62,6 +62,7 @@ const makeProps = (overrides: Record<string, unknown> = {}) => ({
 	onRemoveBowl: vi.fn(),
 	onIncreaseBowl: vi.fn(),
 	onDecreaseBowl: vi.fn(),
+	onEditBowl: vi.fn(),
 	...overrides
 });
 
@@ -123,15 +124,36 @@ describe('Cart (locale=es)', () => {
 		expect(container.textContent).not.toContain('White Rice');
 	});
 
-	// ENG-66: the − button must clamp at 1, never delete.
-	it('disables the − button when quantity is 1', () => {
+	// ENG-75: the card's trash icon became an Edit action.
+	it('renders an Edit action per bowl and reports its index', async () => {
+		const onEditBowl = vi.fn();
 		const { container } = render(Cart, {
-			props: makeProps({ bowls: [makeBowl({ quantity: 1 })] })
+			props: { ...makeProps({ bowls: [makeBowl(), makeBowl()] }), onEditBowl }
 		});
-		const decBtn = container.querySelector(
-			'button[aria-label="Disminuir cantidad"]'
+		const editButtons = container.querySelectorAll('button[aria-label="Editar bowl"]');
+		expect(editButtons.length).toBe(2);
+		await fireEvent.click(editButtons[1] as HTMLButtonElement);
+		expect(onEditBowl).toHaveBeenCalledWith(1);
+	});
+
+	// ENG-66 disabled − at quantity 1 because the trash icon handled deletion.
+	// ENG-75 turned that icon into Edit, so − becomes the deletion path: at
+	// quantity 1 it is enabled, relabelled, and gated behind the confirmation.
+	it('turns the − button into a guarded delete when quantity is 1', async () => {
+		const onRemoveBowl = vi.fn();
+		const { container } = render(Cart, {
+			props: { ...makeProps({ bowls: [makeBowl({ quantity: 1 })] }), onRemoveBowl }
+		});
+		expect(container.querySelector('button[aria-label="Disminuir cantidad"]')).toBeNull();
+		const delBtn = container.querySelector(
+			'button[aria-label="Eliminar bowl"]'
 		) as HTMLButtonElement;
-		expect(decBtn.disabled).toBe(true);
+		expect(delBtn.disabled).toBe(false);
+
+		// Opens the confirmation rather than deleting outright.
+		await fireEvent.click(delBtn);
+		expect(onRemoveBowl).not.toHaveBeenCalled();
+		expect(document.body.textContent).toContain('¿Eliminar este bowl?');
 	});
 
 	it('enables the − button when quantity is greater than 1', () => {

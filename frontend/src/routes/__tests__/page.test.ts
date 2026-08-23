@@ -171,6 +171,85 @@ describe('/ +page (view state machine)', () => {
 		expect(findButton(container, /Ordena ahora/)).toBeFalsy();
 	});
 
+	// ENG-75: editing a cart bowl round-trips through the Builder and replaces
+	// the entry in place instead of appending a second one.
+	describe('cart edit flow (ENG-75)', () => {
+		// landing → menu → builder → cart, leaving one 450g bowl of 100g rice.
+		async function goToCartWithOneBowl(container: HTMLElement) {
+			await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
+			await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
+			await waitFor(() => expect(findButton(container, /Menú/)).toBeTruthy());
+			await fireEvent.click(findButton(container, /Menú/) as HTMLButtonElement);
+			await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));
+			await fireEvent.click(findButton(container, /Personalizar bowl/) as HTMLButtonElement);
+			await waitFor(() => expect(findButton(container, /Agregar al carrito/)).toBeTruthy());
+			await fireEvent.click(findButton(container, /Agregar al carrito/) as HTMLButtonElement);
+			await waitFor(() => expect(container.textContent).toContain('Tu carrito'));
+		}
+
+		it('replaces the edited bowl in place and preserves its quantity', async () => {
+			getIngredientsMock.mockResolvedValue([rice]);
+			getMenusMock.mockResolvedValue([sampleMenu]);
+			const { container } = render(Page);
+			await goToCartWithOneBowl(container);
+
+			// Bump to ×2 so we can prove the multiplier survives the edit.
+			await fireEvent.click(
+				container.querySelector('button[aria-label="Aumentar cantidad"]') as HTMLButtonElement
+			);
+			await waitFor(() => expect(container.textContent).toContain('100g'));
+
+			await fireEvent.click(
+				container.querySelector('button[aria-label="Editar bowl"]') as HTMLButtonElement
+			);
+
+			// Builder opens pre-filled with the saved bowl, and the CTA says it will
+			// update rather than add.
+			await waitFor(() => expect(container.textContent).toContain('100g / 450g'));
+			expect(findButton(container, /Actualizar bowl/)).toBeTruthy();
+			expect(findButton(container, /Agregar al carrito/)).toBeFalsy();
+
+			// 100g → 110g (base steps by 10g), then save.
+			await fireEvent.click(
+				container.querySelector('button[aria-label="Aumentar Arroz"]') as HTMLButtonElement
+			);
+			await waitFor(() => expect(container.textContent).toContain('110g / 450g'));
+			await fireEvent.click(findButton(container, /Actualizar bowl/) as HTMLButtonElement);
+
+			await waitFor(() => expect(container.textContent).toContain('Tu carrito'));
+			// One card, not two — and still ×2.
+			expect(container.querySelectorAll('button[aria-label="Editar bowl"]').length).toBe(1);
+			expect(container.textContent).toContain('110g');
+			const qty = container.querySelector('.min-w-\\[1rem\\]');
+			expect(qty?.textContent?.trim()).toBe('2');
+		});
+
+		it('leaves the bowl untouched when the edit is abandoned via Back', async () => {
+			getIngredientsMock.mockResolvedValue([rice]);
+			getMenusMock.mockResolvedValue([sampleMenu]);
+			const { container } = render(Page);
+			await goToCartWithOneBowl(container);
+
+			await fireEvent.click(
+				container.querySelector('button[aria-label="Editar bowl"]') as HTMLButtonElement
+			);
+			await waitFor(() => expect(container.textContent).toContain('100g / 450g'));
+			await fireEvent.click(
+				container.querySelector('button[aria-label="Aumentar Arroz"]') as HTMLButtonElement
+			);
+			await waitFor(() => expect(container.textContent).toContain('110g / 450g'));
+
+			// Back discards the edit and returns to the cart (not Size/Menu).
+			await fireEvent.click(
+				container.querySelector('button[aria-label="Volver"]') as HTMLButtonElement
+			);
+			await waitFor(() => expect(container.textContent).toContain('Tu carrito'));
+			expect(container.querySelectorAll('button[aria-label="Editar bowl"]').length).toBe(1);
+			expect(container.textContent).toContain('100g');
+			expect(container.textContent).not.toContain('110g');
+		});
+	});
+
 	it('Builder → Back returns to Menu when entered from Menu (not Landing)', async () => {
 		getIngredientsMock.mockResolvedValue([rice]);
 		getMenusMock.mockResolvedValue([sampleMenu]);

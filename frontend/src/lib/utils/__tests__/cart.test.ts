@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addBowl, removeAt, incrementAt, decrementAt, type BowlSnapshot } from '../cart';
+import { addBowl, removeAt, incrementAt, decrementAt, replaceAt, type BowlSnapshot } from '../cart';
 
 const bowl = (
 	quantity: number,
@@ -70,17 +70,49 @@ describe('decrementAt', () => {
 		expect(after[0].quantity).toBe(2);
 	});
 
-	it('clamps at 1 and returns the array unchanged (never removes the bowl)', () => {
+	// ENG-66 clamped this at 1 because the trash icon was the only deletion path.
+	// ENG-75 replaced that icon with Edit, so the stepper now has to reach zero.
+	// The caller confirms before decrementing the last one.
+	it('removes the bowl when decrementing the last one', () => {
 		const before = [bowl(1), bowl(2)];
 		const after = decrementAt(before, 0);
-		expect(after).toBe(before);
-		expect(after).toHaveLength(2);
-		expect(after[0].quantity).toBe(1);
+		expect(after).not.toBe(before);
+		expect(after).toHaveLength(1);
+		expect(after[0].quantity).toBe(2);
 	});
 
 	it('is a no-op for an out-of-range index', () => {
 		const before = [bowl(1)];
 		const after = decrementAt(before, 5);
+		expect(after).toBe(before);
+	});
+});
+
+describe('replaceAt', () => {
+	it('swaps the bowl in place, keeping its quantity (ENG-75)', () => {
+		const before = [bowl(3), bowl(1)];
+		const after = replaceAt(before, 0, 600, new Map([[2, 200]]), true);
+		expect(after).toHaveLength(2);
+		expect(after[0]).toEqual({
+			bowlSize: 600,
+			items: new Map([[2, 200]]),
+			quantity: 3, // the ×3 survives the edit
+			includeCutlery: true
+		});
+		// Untouched entries keep their identity
+		expect(after[1]).toBe(before[1]);
+	});
+
+	it('copies the items map so later edits cannot mutate the cart', () => {
+		const live = new Map([[1, 100]]);
+		const after = replaceAt([bowl(1)], 0, 450, live);
+		live.set(1, 999);
+		expect(after[0].items.get(1)).toBe(100);
+	});
+
+	it('is a no-op for an out-of-range index', () => {
+		const before = [bowl(1)];
+		const after = replaceAt(before, 5, 250, new Map());
 		expect(after).toBe(before);
 	});
 });

@@ -192,6 +192,7 @@
 		"viewDetails": "View details",
 		"weight": "Weight: {used}g / {total}g",
 		"addToCart": "Add to cart — {price}",
+		"updateCart": "Update bowl — {price}",
 		"overCapacity": "Exceeds capacity by {amount}g",
 		"bowlFull": {
 			"title": "Your bowl is full",
@@ -218,6 +219,7 @@
 		"subtitle": "{count, plural, one {# bowl in your cart} other {# bowls in your cart}}",
 		"bowl": {
 			"title": "Bowl {n} - {size}",
+			"edit": "Edit bowl",
 			"remove": "Remove bowl",
 			"nutrition": "Nutritional summary",
 			"decrease": "Decrease quantity",
