@@ -3,7 +3,14 @@
 	import { type Ingredient, type Menu as MenuType, type BowlSize } from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { getIngredients, getMenus, getConfig, ApiError } from '$lib/api/client';
-	import { addBowl, removeAt, incrementAt, decrementAt, type BowlSnapshot } from '$lib/utils/cart';
+	import {
+		addBowl,
+		removeAt,
+		incrementAt,
+		decrementAt,
+		replaceAt,
+		type BowlSnapshot
+	} from '$lib/utils/cart';
 	import Landing from '$lib/components/Landing.svelte';
 	import LandingModal from '$lib/components/LandingModal.svelte';
 	import Menu from '$lib/components/Menu.svelte';
@@ -36,8 +43,12 @@
 
 	// Navigation breadcrumbs: track how the user entered Builder / Cart so the
 	// back button returns to the actual previous view instead of always Landing.
-	let builderEntry = $state<'size' | 'menu' | null>(null);
+	let builderEntry = $state<'size' | 'menu' | 'cart' | null>(null);
 	let cartEntry = $state<'menu' | 'size' | 'builder'>('builder');
+
+	// Index of the cart bowl currently being edited, or null when the Builder is
+	// composing a new bowl. Drives whether saving replaces or appends (ENG-75).
+	let editingIndex = $state<number | null>(null);
 
 	// Cart: saved bowl snapshots with quantity multiplier
 	let bowls = $state<BowlSnapshot[]>([]);
@@ -97,12 +108,14 @@
 		view = 'landing';
 	}
 
-	// Builder returns to whichever step opened it (Size or Menu). Ingredient
-	// progress and bowl size are intentionally discarded on Back (see ENG-63).
+	// Builder returns to whichever step opened it (Size, Menu or Cart). Ingredient
+	// progress and bowl size are intentionally discarded on Back (see ENG-63) —
+	// which for an edit means the cart bowl is left exactly as it was.
 	function handleBuilderBack() {
-		const target = builderEntry === 'menu' ? 'menu' : 'size';
+		const target = builderEntry === 'menu' ? 'menu' : builderEntry === 'cart' ? 'cart' : 'size';
 		clearSelection();
 		builderEntry = null;
+		editingIndex = null;
 		view = target;
 	}
 
@@ -119,9 +132,31 @@
 		view = cartEntry;
 	}
 
-	function addCurrentBowlToCart() {
-		bowls = addBowl(bowls, selectedBowlSize ?? 450, selectedItems, includeCutlery);
+	// Loads a saved bowl back into the Builder for editing. The snapshot's items
+	// are copied into the live map, so abandoning the edit cannot mutate the cart.
+	function handleEditBowl(index: number) {
+		const bowl = bowls[index];
+		if (!bowl) return;
 		clearSelection();
+		selectedBowlSize = bowl.bowlSize;
+		bowl.items.forEach((grams, ingredientId) => selectedItems.set(ingredientId, grams));
+		includeCutlery = bowl.includeCutlery;
+		editingIndex = index;
+		builderEntry = 'cart';
+		view = 'builder';
+	}
+
+	// Saving replaces the entry being edited (keeping its ×N) and appends only
+	// when composing a new bowl.
+	function addCurrentBowlToCart() {
+		const size = selectedBowlSize ?? 450;
+		bowls =
+			editingIndex !== null
+				? replaceAt(bowls, editingIndex, size, selectedItems, includeCutlery)
+				: addBowl(bowls, size, selectedItems, includeCutlery);
+		clearSelection();
+		editingIndex = null;
+		builderEntry = null;
 		cartEntry = 'builder';
 		view = 'cart';
 	}
@@ -189,6 +224,7 @@
 		onCart={goToCart}
 		onAddToCart={addCurrentBowlToCart}
 		onUpsize={(size) => (selectedBowlSize = size)}
+		isEditing={editingIndex !== null}
 	/>
 {:else if view === 'cart'}
 	<Cart
@@ -201,6 +237,7 @@
 		onRemoveBowl={handleRemoveBowl}
 		onIncreaseBowl={handleIncreaseBowl}
 		onDecreaseBowl={handleDecreaseBowl}
+		onEditBowl={handleEditBowl}
 	/>
 {:else if view === 'delivery'}
 	<Delivery

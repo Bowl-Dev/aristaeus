@@ -25,6 +25,7 @@
 		onCart,
 		onAddToCart,
 		onUpsize,
+		isEditing = false,
 		includeCutlery = $bindable(false)
 	}: {
 		ingredients: Ingredient[];
@@ -38,6 +39,9 @@
 		// Swaps the bowl for the next size up, keeping the current selection.
 		// Omitted by callers that don't allow resizing mid-build.
 		onUpsize?: (size: BowlSize) => void;
+		// True when editing a bowl already in the cart, so the CTA says it will
+		// update that entry rather than add another (ENG-75).
+		isEditing?: boolean;
 		includeCutlery?: boolean;
 	} = $props();
 
@@ -412,7 +416,9 @@
 					<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
 				</svg>
 				<span class="whitespace-nowrap">
-					{$_('builder.addToCart', { values: { price: formattedPrice } })}
+					{$_(isEditing ? 'builder.updateCart' : 'builder.addToCart', {
+						values: { price: formattedPrice }
+					})}
 				</span>
 			</button>
 		</div>
