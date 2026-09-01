@@ -6,8 +6,11 @@ enum class MachineMode //per actuator value
 {
     Ready,
     Dispensing,
-    Flushing,       
-    Error,    
+    WaitingToFlush,   // synchronized-flush units only: target reached, motor
+                       // stopped, gate held closed until every actuator that
+                       // was actively dispensing has also finished
+    Flushing,
+    Error,
 };
 
 struct ActiveJobState

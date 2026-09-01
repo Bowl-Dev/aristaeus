@@ -3,6 +3,7 @@
 #include "StepperManager.h"
 #include "LoadCellManager.h"
 #include "ServoManager.h"
+#include "Config.h"
 #include <arduino.h>
 
 namespace Jobs
@@ -15,7 +16,7 @@ void beginDispenseJob(DispenseJob& job, MachineServices& services, MachineMode& 
     Serial.println(services.loadCell.getWeight(job.actuator));
 
     services.stepper.enable(job.actuator);
-    services.stepper.setDirection(job.actuator, false);
+    services.stepper.setDirection(job.actuator, true);
     services.stepper.setSpeed(job.actuator, job.speed);
     services.stepper.start(job.actuator);
 
@@ -41,13 +42,24 @@ void Jobs::updateDispenseJob(DispenseJob& job, MachineServices& services, Machin
 
             if (weight >= job.targetWeight)
             {
-                Serial.println("Target reached, opening gate");
-
                 services.stepper.stop(job.actuator);
                 services.stepper.disable(job.actuator);
 
-                services.servo.openGate(job.actuator);
-                mode = MachineMode::Flushing;
+                if (SYNCHRONIZED_FLUSH)
+                {
+                    // Motor's done, but the gate stays closed until every
+                    // actuator that's actively dispensing has also reached
+                    // its target - MachineController::synchronizeFlush()
+                    // opens them all together once that's true.
+                    Serial.println("Target reached, waiting to flush with sibling actuator(s)");
+                    mode = MachineMode::WaitingToFlush;
+                }
+                else
+                {
+                    Serial.println("Target reached, opening gate");
+                    services.servo.openGate(job.actuator);
+                    mode = MachineMode::Flushing;
+                }
             }
             break;
         }

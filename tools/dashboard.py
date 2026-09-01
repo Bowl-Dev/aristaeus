@@ -163,6 +163,95 @@ def unregister_waiter(device, actuator):
         actuator_waiters.pop((device, actuator), None)
 
 
+# esp32_03 and esp32_04 are flashed with the synchronized-flush firmware
+# config (see MachineController::synchronizeFlush() in the firmware) and are
+# meant to be operated as one bundled unit: whenever a recipe calls for
+# ingredients on these two devices back-to-back, dispense all of them in
+# parallel - one shared "Dispense" command starts every motor in the group
+# at once - instead of one at a time. Every other device keeps the strictly
+# sequential, one-ingredient-per-click behavior.
+PARALLEL_DEVICES = {"esp32-03", "esp32-04"}
+
+
+def build_step_groups(steps):
+    """Splits a resolved step list into groups to execute in recipe order.
+
+    A group is either a single ordinary step, or a run of *consecutive*
+    steps that are all on PARALLEL_DEVICES - those get bundled to start
+    together. Non-adjacent esp32-03/esp32-04 ingredients (something else
+    in the recipe between them) are NOT merged - only consecutive ones are,
+    matching how a recipe author would naturally list ingredients they want
+    dispensed as one round.
+
+    Returns a list of lists of indices into `steps`.
+    """
+    groups = []
+    i = 0
+    while i < len(steps):
+        if steps[i]["device"] in PARALLEL_DEVICES:
+            j = i
+            while j < len(steps) and steps[j]["device"] in PARALLEL_DEVICES:
+                j += 1
+            groups.append(list(range(i, j)))
+            i = j
+        else:
+            groups.append([i])
+            i += 1
+    return groups
+
+
+def describe_failure(step, result):
+    if result == "Timeout":
+        return f"Timed out waiting for {step['ingredient']} on {step['device']} actuator {step['actuator']}"
+    return (
+        f"{step['device']} actuator {step['actuator']} reported '{result}' "
+        f"while dispensing {step['ingredient']}"
+    )
+
+
+def run_group_member(run, name, run_id, step, cancel_event, results, idx, total_steps, group_size):
+    """Dispenses one member of a (possibly multi-member) group, in its own
+    thread when group_size > 1 so every member's publish+wait happens
+    concurrently - one member's full wait blocking the next from even
+    starting would defeat the point of dispensing them in parallel. Writes
+    its outcome into results[idx]; safe without a lock since every thread
+    in a group writes a distinct key."""
+    device, actuator = step["device"], step["actuator"]
+
+    event_queue = register_waiter(device, actuator)
+    try:
+        command = {
+            "command": "dispense",
+            "actuator": actuator,
+            "targetWeight": step["grams"],
+            "speed": step["speed"],
+        }
+        mqtt_client.publish(f"machine/{device}/command", json.dumps(command))
+        parallel_note = f" (parallel x{group_size})" if group_size > 1 else ""
+        print(f"[{now_str()}] Recipe '{name}' (run {run_id}) step {idx + 1}/{total_steps}{parallel_note}: "
+              f"{step['grams']}g {step['ingredient']} on {device} actuator {actuator}")
+
+        result = wait_for_step_result(run, step, cancel_event, event_queue)
+    finally:
+        unregister_waiter(device, actuator)
+
+    # Update this member's own step status the moment ITS result is known,
+    # rather than waiting for every other group member to also finish - so
+    # in the UI, a group member that finishes early correctly shows "Done"
+    # right away even while a sibling is still dispensing.
+    with state_lock:
+        if result == "JobFinished":
+            step["status"] = "done"
+        elif result == "Cancelled":
+            step["status"] = "cancelled"
+        elif result == "Timeout":
+            step["status"] = "timeout"
+        else:
+            step["status"] = "failed"
+
+    results[idx] = result
+
+
 def finish_recipe_run(run_id):
     """Called once a run reaches a terminal state (done/error/cancelled).
     Prunes the oldest finished runs once there are more than
@@ -292,32 +381,35 @@ def run_recipe_worker(run_id, name):
         finish_recipe_run(run_id)
         return
 
-    for i, step in enumerate(steps):
+    groups = build_step_groups(steps)
+
+    for group in groups:
+        first = group[0]
+
         if cancel_event.is_set():
             with state_lock:
-                for remaining in steps[i:]:
+                for remaining in steps[first:]:
                     remaining["status"] = "cancelled"
                 run["status"] = "cancelled"
                 run["message"] = "Cancelled by user"
             finish_recipe_run(run_id)
             return
 
-        device, actuator = step["device"], step["actuator"]
-
-        # Every ingredient - including the very first one - waits here for
-        # an explicit "Dispense Ingredient" click before its motor starts.
-        # The full step list (already populated above) shows what's coming
-        # up automatically; only the actual dispense command needs the
-        # operator's go-ahead.
+        # Every group - including the very first one - waits here for an
+        # explicit "Dispense Ingredient" click before anything starts. For a
+        # bundled esp32-03/esp32-04 group, one click starts every member at
+        # once; the full step list (already populated above) shows what's
+        # coming up automatically either way.
         with state_lock:
-            run["current_step"] = i
+            run["current_step"] = first
+            run["current_group"] = list(group)
             run["status"] = "waiting_next"
 
         next_event.clear()
         while True:
             if cancel_event.is_set():
                 with state_lock:
-                    for remaining in steps[i:]:
+                    for remaining in steps[first:]:
                         remaining["status"] = "cancelled"
                     run["status"] = "cancelled"
                     run["message"] = "Cancelled by user"
@@ -327,90 +419,105 @@ def run_recipe_worker(run_id, name):
                 next_event.clear()
                 break
 
-        # Another recipe may currently be dispensing a different ingredient
-        # on this exact actuator - wait our turn. This never blocks *other*
-        # actuators, so this recipe's siblings and every other recipe keep
-        # going normally in the meantime.
+        # Another recipe may currently be using one of this group's
+        # actuators - wait for every member to be free before starting ANY
+        # of them, so "parallel" means a simultaneous start rather than
+        # staggered as locks happen to free up. This never blocks actuators
+        # outside the group, so every other recipe keeps going normally.
+        members = [(steps[idx]["device"], steps[idx]["actuator"]) for idx in group]
         with state_lock:
             run["status"] = "queued"
-            run["message"] = f"Waiting for {device} actuator {actuator} to be free..."
+            run["message"] = "Waiting for " + ", ".join(
+                f"{d} actuator {a}" for d, a in members
+            ) + " to be free..."
 
-        if not acquire_actuator(device, actuator, cancel_event):
+        acquired = []
+        ok = True
+        for device, actuator in members:
+            if not acquire_actuator(device, actuator, cancel_event):
+                ok = False
+                break
+            acquired.append((device, actuator))
+
+        if not ok:
+            for device, actuator in acquired:
+                release_actuator(device, actuator)
             with state_lock:
-                for remaining in steps[i:]:
+                for remaining in steps[first:]:
                     remaining["status"] = "cancelled"
                 run["status"] = "cancelled"
                 run["message"] = "Cancelled by user"
             finish_recipe_run(run_id)
             return
 
-        try:
-            with state_lock:
-                step["status"] = "running"
-                run["current_step"] = i
-                run["status"] = "running"
-                run["message"] = ""
+        with state_lock:
+            for idx in group:
+                steps[idx]["status"] = "running"
+            run["current_step"] = first
+            run["status"] = "running"
+            run["message"] = ""
 
-            event_queue = register_waiter(device, actuator)
-            try:
-                command = {
-                    "command": "dispense",
-                    "actuator": actuator,
-                    "targetWeight": step["grams"],
-                    "speed": step["speed"],
-                }
-                topic = f"machine/{device}/command"
-                mqtt_client.publish(topic, json.dumps(command))
-                print(f"[{now_str()}] Recipe '{name}' (run {run_id}) step {i + 1}/{len(steps)}: "
-                      f"{step['grams']}g {step['ingredient']} on {device} actuator {actuator}")
+        results = {}
+        if len(group) == 1:
+            # Common case (every non-esp32-03/04 step) - no thread overhead
+            # needed for a single member.
+            idx = group[0]
+            run_group_member(run, name, run_id, steps[idx], cancel_event, results, idx, len(steps), 1)
+        else:
+            threads = [
+                threading.Thread(
+                    target=run_group_member,
+                    args=(run, name, run_id, steps[idx], cancel_event, results, idx, len(steps), len(group)),
+                    daemon=True,
+                )
+                for idx in group
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
-                result = wait_for_step_result(run, step, cancel_event, event_queue)
-            finally:
-                unregister_waiter(device, actuator)
-        finally:
-            # Free the actuator the instant this step concludes, regardless
-            # of outcome - a different recipe queued up behind us (or a
-            # later step of this same recipe on a different actuator) should
-            # never wait on us any longer than necessary.
+        for device, actuator in members:
+            # Free every actuator in the group the instant it's done,
+            # regardless of outcome - a different recipe queued up behind
+            # any of them should never wait longer than necessary.
             release_actuator(device, actuator)
 
-        terminal = False
-        with state_lock:
-            if result == "JobFinished":
-                step["status"] = "done"
-            elif result == "Cancelled":
-                for remaining in steps[i:]:
-                    remaining["status"] = "cancelled"
-                run["status"] = "cancelled"
-                run["message"] = "Cancelled by user"
-                terminal = True
-            elif result == "Timeout":
-                step["status"] = "timeout"
-                run["status"] = "error"
-                run["message"] = (
-                    f"Timed out waiting for {step['ingredient']} on {device} actuator {actuator}"
-                )
-                terminal = True
-            else:
-                step["status"] = "failed"
-                run["status"] = "error"
-                run["message"] = (
-                    f"{device} actuator {actuator} reported '{result}' "
-                    f"while dispensing {step['ingredient']}"
-                )
-                terminal = True
+        # Each thread already updated its own step's status the moment its
+        # own result was known (see run_group_member) - this just derives
+        # the group's overall outcome from what they found.
+        terminal = any(results[idx] != "JobFinished" for idx in group)
+        any_cancelled = any(results[idx] == "Cancelled" for idx in group)
+
+        if terminal:
+            with state_lock:
+                for remaining in steps[max(group) + 1:]:
+                    if remaining["status"] == "pending":
+                        remaining["status"] = "cancelled"
+
+                if any_cancelled:
+                    run["status"] = "cancelled"
+                    run["message"] = "Cancelled by user"
+                else:
+                    run["status"] = "error"
+                    run["message"] = "; ".join(
+                        describe_failure(steps[idx], results[idx])
+                        for idx in group
+                        if results[idx] not in ("JobFinished", "Cancelled")
+                    )
 
         if terminal:
             finish_recipe_run(run_id)
             return
 
-        # Ingredient dispensed successfully - loop back around. The next
-        # iteration (if any) starts with its own "waiting_next" gate above,
-        # so nothing dispenses automatically from here.
+        # Group dispensed successfully - loop back around. The next group
+        # (if any) starts with its own "waiting_next" gate above, so nothing
+        # dispenses automatically from here.
 
     with state_lock:
         run["status"] = "done"
         run["current_step"] = len(steps)
+        run["current_group"] = []
 
     finish_recipe_run(run_id)
 
@@ -431,6 +538,7 @@ PAGE = """<!DOCTYPE html>
   th { cursor: pointer; color: #9aa0aa; font-weight: 600; user-select: none; }
   th:hover { color: #fff; }
   tr.mode-dispensing, tr.mode-flushing { background: #1c2b3a; }
+  tr.mode-waitingtoflush { background: #2b2a1c; }
   tr.mode-error, tr.mode-emergencystop { background: #3a1c1c; }
   tr.mode-ready, tr.mode-idle { background: transparent; }
   td.ingredient { font-weight: 700; text-transform: capitalize; }
@@ -1198,14 +1306,26 @@ function renderQueuedRecipes() {
     } else if (run.status === "running") {
       messageHtml = `<div class="recipe-run-message">Dispensing...</div>`;
     } else if (run.status === "waiting_next") {
-      const next = (run.steps || []).find((s) => s.status === "pending");
-      const nextLabel = next ? `${next.ingredient} (${next.grams}g)` : "the next ingredient";
+      // A bundled esp32-03/esp32-04 group has more than one index in
+      // current_group - list every member so the operator knows one click
+      // starts all of them together, instead of just naming the first.
+      const group = (run.current_group && run.current_group.length > 1) ? run.current_group : null;
+      let nextLabel;
+      if (group) {
+        const members = group.map((idx) => (run.steps || [])[idx]).filter(Boolean);
+        nextLabel = members.map((s) => `${s.ingredient} (${s.grams}g)`).join(" + ") + " - together";
+      } else {
+        const next = (run.steps || []).find((s) => s.status === "pending");
+        nextLabel = next ? `${next.ingredient} (${next.grams}g)` : "the next ingredient";
+      }
       messageHtml = `<div class="recipe-run-message ok">Up next: ${nextLabel}.</div>`;
     }
 
     let buttonsHtml;
     if (run.status === "waiting_next") {
-      buttonsHtml = `<button class="btn-run btnNextIngredient">Dispense Ingredient</button> <button class="btn-danger btnCancelRecipe">Cancel</button>`;
+      const groupSize = (run.current_group && run.current_group.length) || 1;
+      const dispenseLabel = groupSize > 1 ? "Dispense Ingredients" : "Dispense Ingredient";
+      buttonsHtml = `<button class="btn-run btnNextIngredient">${dispenseLabel}</button> <button class="btn-danger btnCancelRecipe">Cancel</button>`;
     } else if (run.status === "running" || run.status === "stalled" || run.status === "queued") {
       buttonsHtml = `<button class="btn-danger btnCancelRecipe">Cancel</button>`;
     } else {
@@ -1456,6 +1576,7 @@ class Handler(BaseHTTPRequestHandler):
                 "status": "waiting_next",
                 "steps": [],
                 "current_step": 0,
+                "current_group": [],
                 "message": "",
             }
             recipe_run_controls[run_id] = {
@@ -1474,25 +1595,30 @@ class Handler(BaseHTTPRequestHandler):
             run = recipe_runs.get(run_id)
             waiting = run is not None and run.get("status") == "waiting_next"
             controls = recipe_run_controls.get(run_id)
-            target = None
-            if waiting and run["steps"] and run["current_step"] < len(run["steps"]):
-                step = run["steps"][run["current_step"]]
-                target = (step["device"], step["actuator"])
+            targets = []
+            if waiting:
+                group = run.get("current_group") or [run.get("current_step", 0)]
+                for idx in group:
+                    if 0 <= idx < len(run["steps"]):
+                        step = run["steps"][idx]
+                        if step.get("device") is not None:
+                            targets.append((step["device"], step["actuator"]))
 
         if not waiting:
             self._send_json(400, {"ok": False, "error": "That recipe run isn't waiting for the next ingredient"})
             return
 
-        # Tare the load cell for the ingredient we're about to dispense right
-        # as the operator commits to it - the tray's current contents
-        # (leftover residue, a bowl someone placed on it, etc.) become the
-        # new zero point before the motor starts, same as pressing Tare from
-        # Send Command manually, just automatic here.
-        if target and mqtt_client is not None and mqtt_client.is_connected():
-            device, actuator = target
-            tare_command = {"command": "tare", "actuator": actuator}
-            mqtt_client.publish(f"machine/{device}/command", json.dumps(tare_command))
-            print(f"[{now_str()}] Recipe run {run_id}: tared {device} actuator {actuator} before dispensing")
+        # Tare every load cell about to be dispensed right as the operator
+        # commits to it - the tray's current contents (leftover residue, a
+        # bowl someone placed on it, etc.) become the new zero point before
+        # the motor starts, same as pressing Tare from Send Command
+        # manually, just automatic here. For a bundled esp32-03/esp32-04
+        # group this tares every member, not just one.
+        if mqtt_client is not None and mqtt_client.is_connected():
+            for device, actuator in targets:
+                tare_command = {"command": "tare", "actuator": actuator}
+                mqtt_client.publish(f"machine/{device}/command", json.dumps(tare_command))
+                print(f"[{now_str()}] Recipe run {run_id}: tared {device} actuator {actuator} before dispensing")
 
         controls["next"].set()
         print(f"[{now_str()}] Recipe run {run_id} 'next ingredient' requested via dashboard")

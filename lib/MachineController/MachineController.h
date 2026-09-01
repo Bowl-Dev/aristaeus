@@ -59,7 +59,8 @@ private:
     void setMode(uint8_t actuator, MachineMode mode);
     bool canAcceptJob(const JobRequest& request) const;
     void startNextJob(uint8_t actuator);
-    void updateCurrentJob(uint8_t actuator);    
+    void updateCurrentJob(uint8_t actuator);
+    void synchronizeFlush();
     void initializeDispenseJob(uint8_t actuator, const JobRequest& request);
     void jobStarted(uint8_t actuator);
     void jobFinished(uint8_t actuator);

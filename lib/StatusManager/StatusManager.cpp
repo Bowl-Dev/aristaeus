@@ -14,7 +14,10 @@ const char* modeToString(MachineMode mode)
 
         case MachineMode::Dispensing:
             return "Dispensing";
-        
+
+        case MachineMode::WaitingToFlush:
+            return "WaitingToFlush";
+
         case MachineMode::Flushing:
             return "Flushing";       
 

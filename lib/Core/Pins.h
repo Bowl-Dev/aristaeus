@@ -34,20 +34,20 @@ constexpr uint8_t HX711_SCK_PIN[NUM_LOAD_CELLS] =
 
 constexpr ServoConfig SERVO1 =
 {
-    15,
+    26,
     500,
     2500,
-    0,      // closedAngle
-    90      // openAngle
+    94,      // closedAngle
+    20      // openAngle
 };
 
 constexpr ServoConfig SERVO2 =
 {
-    19,
+    13,
     500,
     2500,
-    0,
-    90
+    88,
+    20
 };
 
 constexpr uint32_t FLUSH_DURATION_MS = 1000;

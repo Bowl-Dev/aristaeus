@@ -56,7 +56,9 @@ void MachineController::update()
         startNextJob(i);
         updateCurrentJob(i);
     }
-    
+
+    synchronizeFlush();
+
     currentState.uptime = millis();
     context.system.uptime++;
 }
@@ -316,6 +318,37 @@ void MachineController::updateCurrentJob(uint8_t actuator)
     }    
 }
 
+void MachineController::synchronizeFlush()
+{
+    if (!SYNCHRONIZED_FLUSH)
+        return;
+
+    // Hold every actuator that already reached target weight (parked in
+    // WaitingToFlush by Jobs::updateDispenseJob) as long as ANY actuator is
+    // still actively dispensing. An actuator that was never given a job
+    // this round just sits in Ready/Error/etc. the whole time and is not
+    // "still dispensing", so it never blocks the ones that were - a single
+    // actuator's own ingredient flushes immediately, same as before, and
+    // only actually waits when a sibling is genuinely mid-dispense too.
+    for (uint8_t i = 0; i < NUM_LOAD_CELLS; i++)
+    {
+        if (currentState.actuator[i].mode == MachineMode::Dispensing)
+            return;
+    }
+
+    for (uint8_t i = 0; i < NUM_LOAD_CELLS; i++)
+    {
+        if (currentState.actuator[i].mode != MachineMode::WaitingToFlush)
+            continue;
+
+        Serial.print("Synchronized flush: opening gate ");
+        Serial.println(i);
+
+        services.servo.openGate(i);
+        setMode(i, MachineMode::Flushing);
+    }
+}
+
 void MachineController::initializeDispenseJob(uint8_t actuator, const JobRequest& request)
 {
     dispenseJob[actuator].actuator = request.actuator;
@@ -399,7 +432,7 @@ void MachineController::resumeMachine(uint8_t actuator)
     // deliberately don't call that here.
     ActuatorState& a = currentState.actuator[actuator];
     services.stepper.enable(dispenseJob[actuator].actuator);
-    services.stepper.setDirection(dispenseJob[actuator].actuator, false);
+    services.stepper.setDirection(dispenseJob[actuator].actuator, true);
     services.stepper.setSpeed(dispenseJob[actuator].actuator, dispenseJob[actuator].speed);
     services.stepper.start(dispenseJob[actuator].actuator);
 

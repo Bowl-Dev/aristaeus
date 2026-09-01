@@ -52,3 +52,19 @@ constexpr char MQTT_EVENT_TOPIC[] = "machine/" DEVICE_ID "/event";
 #endif
 
 constexpr const char* INGREDIENT_NAMES[2] = { INGREDIENT_ACTUATOR_0, INGREDIENT_ACTUATOR_1 };
+
+// Two flush behaviors share this same codebase, picked per unit at build
+// time via platformio.ini (see the esp32_03/esp32_04 environments):
+//   off (default, esp32_01/esp32_02): each actuator opens its own gate the
+//        moment IT reaches target weight - actuators are fully independent.
+//   on  (esp32_03/esp32_04): an actuator that reaches target weight stops
+//        its motor and waits - gates only open once every actuator that was
+//        actively dispensing has also finished, and then they open together.
+// Motors themselves already run in parallel either way; this flag only
+// changes when the gates are allowed to open. See
+// MachineController::synchronizeFlush().
+#ifndef SYNCHRONIZED_FLUSH_CONFIG
+#define SYNCHRONIZED_FLUSH_CONFIG 0
+#endif
+
+constexpr bool SYNCHRONIZED_FLUSH = (SYNCHRONIZED_FLUSH_CONFIG != 0);
