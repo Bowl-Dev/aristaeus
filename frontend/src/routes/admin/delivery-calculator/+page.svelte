@@ -4,119 +4,194 @@
 	import { onMount } from 'svelte';
 	import { formatCOP } from '$lib/utils/bowl';
 	import {
-		BASELINE_MODEL,
-		KITCHEN_ORIGIN,
+		ApiError,
+		createDeliveryObservation,
+		deleteDeliveryObservation,
 		estimateDelivery,
-		formatAddress,
-		isValidAddress,
-		meanAbsoluteError,
-		type BogotaAddress,
-		type DeliveryObservation
-	} from '$lib/utils/deliveryModel';
+		listDeliveryObservations,
+		type DeliveryEstimateResponse,
+		type DeliveryMatchTier,
+		type DeliveryObservationsResponse
+	} from '$lib/api/client';
 	import {
-		addCorrection,
-		calibrationSet,
-		clearCorrections,
-		currentModel,
-		exportCorrections,
-		importCorrections,
-		loadCorrections,
-		removeCorrection
+		hasLegacyCorrections,
+		migrateLegacyCorrections,
+		readLegacyCorrections
 	} from '$lib/utils/deliveryCalibration';
 
-	// Address form
-	let calle = $state('');
-	let carrera = $state('');
-	let numero = $state('');
+	/** The kitchen every distance is measured from. */
+	const KITCHEN_ADDRESS = 'Calle 125 # 18A-05';
 
-	// Calibration state. Loaded on mount so SSR/prerender never touches storage.
-	let corrections = $state<DeliveryObservation[]>([]);
+	/**
+	 * How loudly a match tier must be presented.
+	 *
+	 * `medium` and `low` are not decorative distinctions: below `nearest_number`
+	 * the exact address was never found, and the previous version of this page
+	 * hid exactly that behind a confident-looking number.
+	 */
+	type Level = 'high' | 'good' | 'medium' | 'low';
+
+	const TIER_LEVEL: Record<DeliveryMatchTier, Level> = {
+		exact: 'high',
+		nearest_number: 'good',
+		nearest_cross: 'medium',
+		street_segment: 'low',
+		grid_fallback: 'low',
+		failed: 'low'
+	};
+
+	/** Match tier -> i18n key segment. */
+	const TIER_KEY: Record<DeliveryMatchTier, string> = {
+		exact: 'exact',
+		nearest_number: 'nearestNumber',
+		nearest_cross: 'nearestCross',
+		street_segment: 'streetSegment',
+		grid_fallback: 'gridFallback',
+		failed: 'failed'
+	};
+
+	// Address lookup
+	let addressInput = $state('');
+	let result = $state<DeliveryEstimateResponse | null>(null);
+	let estimating = $state(false);
+	let estimateError = $state<string | null>(null);
+
+	// Recording what the courier really charged
 	let actualCost = $state('');
+	let savingCost = $state(false);
 	let feedbackMessage = $state<string | null>(null);
-	let importError = $state<string | null>(null);
-	let fileInput = $state<HTMLInputElement | null>(null);
+	let feedbackError = $state<string | null>(null);
+
+	// Shared, server-side training set
+	let calibration = $state<DeliveryObservationsResponse | null>(null);
+	let calibrationError = $state<string | null>(null);
+
+	// One-time migration of the retired localStorage store
+	let legacyCount = $state(0);
+	let migrating = $state(false);
+	let migrationMessage = $state<string | null>(null);
 
 	onMount(() => {
-		corrections = loadCorrections();
+		legacyCount = hasLegacyCorrections() ? readLegacyCorrections().length : 0;
+		void loadCalibration();
 	});
 
-	const model = $derived(currentModel(corrections));
-	const trainingSet = $derived(calibrationSet(corrections));
-	const typicalError = $derived(meanAbsoluteError(model, trainingSet));
-
-	const address = $derived<BogotaAddress | null>(
-		isValidAddress({ calle, carrera, numero: Number(numero) })
-			? { calle: calle.trim(), carrera: carrera.trim(), numero: Number(numero) }
-			: null
-	);
-
-	const estimate = $derived(address ? estimateDelivery(address, model) : null);
-
-	// How far the corrections have moved the estimate away from the Ops-only fit.
-	const baselineEstimate = $derived(address ? estimateDelivery(address, BASELINE_MODEL) : null);
-	const drift = $derived(estimate && baselineEstimate ? estimate.cost - baselineEstimate.cost : 0);
-
-	// Any input change invalidates the "saved" confirmation from the last address.
-	$effect(() => {
-		void calle;
-		void carrera;
-		void numero;
-		feedbackMessage = null;
-	});
-
-	function saveActualCost() {
-		const value = Number(actualCost);
-		if (!address || !Number.isFinite(value) || value <= 0) return;
-
-		const before = estimate?.cost ?? 0;
-		corrections = addCorrection(address, value);
-		const after = estimateDelivery(address, currentModel(corrections))?.cost ?? before;
-
-		feedbackMessage = $_('admin.deliveryCalculator.feedback.saved', {
-			values: { before: formatCOP(before), after: formatCOP(after) }
-		});
-		actualCost = '';
-	}
-
-	function handleExport() {
-		const blob = new Blob([exportCorrections(corrections)], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = `delivery-calibration-${new Date().toISOString().slice(0, 10)}.json`;
-		link.click();
-		URL.revokeObjectURL(url);
-	}
-
-	async function handleImport(event: Event) {
-		const input = event.currentTarget as HTMLInputElement;
-		const file = input.files?.[0];
-		if (!file) return;
-
-		importError = null;
+	async function loadCalibration() {
+		calibrationError = null;
 		try {
-			const result = importCorrections(await file.text());
-			corrections = result.corrections;
-			feedbackMessage = $_('admin.deliveryCalculator.calibration.imported', {
-				values: { count: result.added }
-			});
-		} catch {
-			importError = $_('admin.deliveryCalculator.calibration.importError');
-		} finally {
-			// Reset so re-picking the same file fires a change event again.
-			input.value = '';
+			calibration = await listDeliveryObservations();
+		} catch (e) {
+			calibrationError =
+				e instanceof ApiError ? e.message : $_('admin.deliveryCalculator.calibration.loadError');
 		}
 	}
 
-	function handleClear() {
-		if (!confirm($_('admin.deliveryCalculator.calibration.clearConfirm'))) return;
-		corrections = clearCorrections();
+	async function runEstimate() {
+		const address = addressInput.trim();
+		if (!address) {
+			estimateError = $_('admin.deliveryCalculator.error.empty');
+			return;
+		}
+
+		estimating = true;
+		estimateError = null;
 		feedbackMessage = null;
+		feedbackError = null;
+		try {
+			result = await estimateDelivery(address);
+		} catch (e) {
+			result = null;
+			estimateError =
+				e instanceof ApiError ? e.message : $_('admin.deliveryCalculator.error.generic');
+		} finally {
+			estimating = false;
+		}
 	}
 
-	function handleRemove(index: number) {
-		corrections = removeCorrection(index);
+	function handleSubmit(event: SubmitEvent) {
+		event.preventDefault();
+		void runEstimate();
 	}
+
+	async function saveActualCost() {
+		const value = Number(actualCost);
+		const address = addressInput.trim();
+		if (!address || !Number.isFinite(value) || value <= 0) return;
+
+		savingCost = true;
+		feedbackError = null;
+		feedbackMessage = null;
+		try {
+			await createDeliveryObservation({ address, actualCost: Math.round(value) });
+			actualCost = '';
+			await loadCalibration();
+			// Re-price with the newly fitted model so the operator sees the shift.
+			// This clears the feedback slot, so the confirmation is set afterwards.
+			await runEstimate();
+			feedbackMessage = $_('admin.deliveryCalculator.feedback.saved');
+		} catch (e) {
+			feedbackError =
+				e instanceof ApiError ? e.message : $_('admin.deliveryCalculator.feedback.error');
+		} finally {
+			savingCost = false;
+		}
+	}
+
+	async function handleRemove(id: number) {
+		if (!confirm($_('admin.deliveryCalculator.calibration.removeConfirm'))) return;
+		try {
+			await deleteDeliveryObservation(id);
+			await loadCalibration();
+		} catch (e) {
+			calibrationError =
+				e instanceof ApiError ? e.message : $_('admin.deliveryCalculator.calibration.loadError');
+		}
+	}
+
+	async function runMigration() {
+		migrating = true;
+		migrationMessage = null;
+		try {
+			const outcome = await migrateLegacyCorrections();
+			migrationMessage = outcome.cleared
+				? $_('admin.deliveryCalculator.migration.done', { values: { count: outcome.uploaded } })
+				: $_('admin.deliveryCalculator.migration.failed', { values: { failed: outcome.failed } });
+			legacyCount = readLegacyCorrections().length;
+			await loadCalibration();
+		} finally {
+			migrating = false;
+		}
+	}
+
+	const tier = $derived<DeliveryMatchTier | null>(result ? result.matchTier : null);
+	const level = $derived<Level | null>(tier ? TIER_LEVEL[tier] : null);
+	const tierKey = $derived(tier ? TIER_KEY[tier] : null);
+	const accuracy = $derived(result?.accuracyCop ?? calibration?.accuracyCop ?? null);
+
+	// A low-confidence estimate must never look like a confident one: the card
+	// itself changes colour, gains a red rule, and is topped by a warning bar.
+	const cardClass = $derived(
+		level === 'low'
+			? 'bg-red-50 border-4 border-red-500 text-red-950'
+			: level === 'medium'
+				? 'bg-amber-50 border-4 border-amber-400 text-amber-950'
+				: 'bg-gray-900 border-4 border-gray-900 text-white'
+	);
+	const mutedClass = $derived(
+		level === 'low' ? 'text-red-800' : level === 'medium' ? 'text-amber-800' : 'text-gray-300'
+	);
+	const dividerClass = $derived(
+		level === 'low' ? 'border-red-300' : level === 'medium' ? 'border-amber-300' : 'border-gray-700'
+	);
+	const badgeClass = $derived(
+		level === 'low'
+			? 'bg-red-600 text-white'
+			: level === 'medium'
+				? 'bg-amber-500 text-amber-950'
+				: level === 'good'
+					? 'bg-sky-200 text-sky-900'
+					: 'bg-emerald-200 text-emerald-900'
+	);
 
 	// text-gray-900 is explicit on purpose: the Skeleton base sets a light body
 	// text colour in dark mode, which inputs would inherit over their white bg.
@@ -135,7 +210,7 @@
 					</h1>
 					<p class="text-sm text-gray-500 mt-1">
 						{$_('admin.deliveryCalculator.originNote', {
-							values: { address: formatAddress(KITCHEN_ORIGIN) }
+							values: { address: KITCHEN_ADDRESS }
 						})}
 					</p>
 				</div>
@@ -150,6 +225,30 @@
 			</div>
 		</header>
 
+		<!-- One-time migration of corrections stranded in this browser -->
+		{#if legacyCount > 0}
+			<section class="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-6">
+				<p class="text-sm font-semibold text-amber-900">
+					{$_('admin.deliveryCalculator.migration.heading', { values: { count: legacyCount } })}
+				</p>
+				<p class="text-sm text-amber-800 mt-1">
+					{$_('admin.deliveryCalculator.migration.body')}
+				</p>
+				<button
+					class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50"
+					onclick={runMigration}
+					disabled={migrating}
+				>
+					{migrating
+						? $_('admin.deliveryCalculator.migration.running')
+						: $_('admin.deliveryCalculator.migration.run')}
+				</button>
+			</section>
+		{/if}
+		{#if migrationMessage}
+			<p class="text-sm text-gray-700 mb-6">{migrationMessage}</p>
+		{/if}
+
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 			<!-- Address input + estimate -->
 			<section class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 flex flex-col gap-5">
@@ -162,95 +261,165 @@
 					</p>
 				</div>
 
-				<div class="grid grid-cols-3 gap-3">
+				<form class="flex flex-col gap-3" onsubmit={handleSubmit}>
 					<div>
-						<label for="calle" class="block text-sm font-medium text-gray-700 mb-1">
-							{$_('admin.deliveryCalculator.form.calle')}
+						<label for="address" class="block text-sm font-medium text-gray-700 mb-1">
+							{$_('admin.deliveryCalculator.form.label')}
 						</label>
 						<input
-							id="calle"
+							id="address"
 							class={inputClass}
-							placeholder="146"
-							inputmode="text"
-							bind:value={calle}
+							placeholder={$_('admin.deliveryCalculator.form.placeholder')}
+							autocomplete="off"
+							bind:value={addressInput}
 						/>
 					</div>
-					<div>
-						<label for="carrera" class="block text-sm font-medium text-gray-700 mb-1">
-							{$_('admin.deliveryCalculator.form.carrera')}
-						</label>
-						<input
-							id="carrera"
-							class={inputClass}
-							placeholder="21"
-							inputmode="text"
-							bind:value={carrera}
-						/>
-					</div>
-					<div>
-						<label for="numero" class="block text-sm font-medium text-gray-700 mb-1">
-							{$_('admin.deliveryCalculator.form.numero')}
-						</label>
-						<input
-							id="numero"
-							class={inputClass}
-							placeholder="86"
-							inputmode="numeric"
-							bind:value={numero}
-						/>
-					</div>
-				</div>
+					<button
+						type="submit"
+						class="self-start px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50"
+						disabled={estimating || !addressInput.trim()}
+					>
+						{estimating
+							? $_('admin.deliveryCalculator.form.submitting')
+							: $_('admin.deliveryCalculator.form.submit')}
+					</button>
+				</form>
 
-				{#if estimate}
-					<div class="bg-gray-900 text-white rounded-xl p-5">
-						<p class="text-xs uppercase tracking-wide text-gray-300">
-							{$_('admin.deliveryCalculator.result.label')}
-						</p>
-						<p class="text-4xl font-bold mt-1">{formatCOP(estimate.cost)}</p>
-						{#if typicalError}
-							<p class="text-sm text-gray-300 mt-2">
-								{$_('admin.deliveryCalculator.result.margin', {
-									values: { amount: formatCOP(typicalError) }
-								})}
+				{#if estimateError}
+					<p class="text-sm text-red-600">{estimateError}</p>
+				{/if}
+
+				{#if result}
+					<div class={`rounded-xl overflow-hidden ${cardClass}`}>
+						<!-- The unmissable part: a solid bar, not a subtle grey label. -->
+						{#if level === 'low' || level === 'medium'}
+							<p
+								class={`px-5 py-3 text-sm font-bold uppercase tracking-wide ${
+									level === 'low' ? 'bg-red-600 text-white' : 'bg-amber-400 text-amber-950'
+								}`}
+							>
+								⚠ {$_(`admin.deliveryCalculator.warning.${level}`)}
 							</p>
 						{/if}
-						<dl class="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-700 text-sm">
-							<div>
-								<dt class="text-gray-400">{$_('admin.deliveryCalculator.result.northSouth')}</dt>
-								<dd class="font-semibold">{estimate.northKm.toFixed(2)} km</dd>
+
+						<div class="p-5">
+							<div class="flex flex-wrap items-center gap-2">
+								<p class={`text-xs uppercase tracking-wide ${mutedClass}`}>
+									{level === 'low'
+										? $_('admin.deliveryCalculator.result.approxLabel')
+										: $_('admin.deliveryCalculator.result.label')}
+								</p>
+								{#if tierKey}
+									<span
+										class={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${badgeClass}`}
+									>
+										{$_(`admin.deliveryCalculator.tier.${tierKey}.badge`)}
+									</span>
+								{/if}
 							</div>
-							<div>
-								<dt class="text-gray-400">{$_('admin.deliveryCalculator.result.eastWest')}</dt>
-								<dd class="font-semibold">{estimate.eastKm.toFixed(2)} km</dd>
+
+							{#if result.estimate}
+								<p class="text-4xl font-bold mt-1">
+									{level === 'low' ? '≈ ' : ''}{formatCOP(result.estimate.cost)}
+								</p>
+							{:else}
+								<p class="text-lg font-semibold mt-1">
+									{$_('admin.deliveryCalculator.result.noEstimate')}
+								</p>
+							{/if}
+
+							<!-- Plain language about what was actually matched. -->
+							{#if tierKey}
+								<p class={`text-sm mt-2 ${level === 'high' ? mutedClass : 'font-medium'}`}>
+									{$_(`admin.deliveryCalculator.tier.${tierKey}.note`)}
+								</p>
+							{/if}
+
+							<div class={`mt-3 pt-3 border-t ${dividerClass} text-sm`}>
+								{#if result.resolvedPlate}
+									<p>
+										<span class={mutedClass}>{$_('admin.deliveryCalculator.result.plate')}:</span>
+										<span class="font-semibold">{result.resolvedPlate}</span>
+										{#if result.cached}
+											<span class={`text-xs ${mutedClass}`}
+												>({$_('admin.deliveryCalculator.result.cached')})</span
+											>
+										{/if}
+									</p>
+								{:else}
+									<p class="font-semibold">{$_('admin.deliveryCalculator.result.plateNone')}</p>
+								{/if}
+								<p class={`text-xs mt-1 ${mutedClass}`}>
+									{$_('admin.deliveryCalculator.result.parsedAs', {
+										values: { address: result.address }
+									})}
+								</p>
 							</div>
-							<div>
-								<dt class="text-gray-400">{$_('admin.deliveryCalculator.result.total')}</dt>
-								<dd class="font-semibold">{estimate.totalKm.toFixed(2)} km</dd>
+
+							{#if result.estimate}
+								<dl class={`grid grid-cols-3 gap-3 mt-3 pt-3 border-t ${dividerClass} text-sm`}>
+									<div>
+										<dt class={mutedClass}>{$_('admin.deliveryCalculator.result.northSouth')}</dt>
+										<dd class="font-semibold">{result.estimate.northKm.toFixed(2)} km</dd>
+									</div>
+									<div>
+										<dt class={mutedClass}>{$_('admin.deliveryCalculator.result.eastWest')}</dt>
+										<dd class="font-semibold">{result.estimate.eastKm.toFixed(2)} km</dd>
+									</div>
+									<div>
+										<dt class={mutedClass}>{$_('admin.deliveryCalculator.result.total')}</dt>
+										<dd class="font-semibold">{result.estimate.totalKm.toFixed(2)} km</dd>
+									</div>
+								</dl>
+							{/if}
+
+							<div class={`mt-3 pt-3 border-t ${dividerClass} text-xs ${mutedClass}`}>
+								{#if accuracy}
+									<p>
+										{$_('admin.deliveryCalculator.result.margin', {
+											values: { amount: formatCOP(accuracy) }
+										})}
+									</p>
+								{:else}
+									<p>{$_('admin.deliveryCalculator.result.marginUnknown')}</p>
+								{/if}
+								{#if result.observationCount}
+									<p class="mt-1">
+										{$_('admin.deliveryCalculator.result.observations', {
+											values: { count: result.observationCount }
+										})}
+									</p>
+								{/if}
+								{#if result.estimate?.minFareApplied && calibration}
+									<p class="mt-1">
+										{$_('admin.deliveryCalculator.result.minFare', {
+											values: { amount: formatCOP(calibration.model.minFare) }
+										})}
+									</p>
+								{/if}
 							</div>
-						</dl>
-						{#if estimate.minFareApplied}
-							<p class="text-xs text-gray-300 mt-3">
-								{$_('admin.deliveryCalculator.result.minFare', {
-									values: { amount: formatCOP(model.minFare) }
-								})}
-							</p>
-						{/if}
-						{#if drift !== 0}
-							<p class="text-xs text-gray-300 mt-1">
-								{$_('admin.deliveryCalculator.result.drift', {
-									values: {
-										amount: formatCOP(Math.abs(drift)),
-										direction: $_(
-											drift > 0
-												? 'admin.deliveryCalculator.result.higher'
-												: 'admin.deliveryCalculator.result.lower'
-										)
-									}
-								})}
-							</p>
-						{/if}
+						</div>
 					</div>
-				{:else}
+
+					<!-- A truncated search is a retry prompt, not a verdict on the address. -->
+					{#if result.searchTruncated}
+						<div class="bg-blue-50 border-2 border-blue-400 rounded-xl p-4">
+							<p class="text-sm font-bold text-blue-900">
+								{$_('admin.deliveryCalculator.truncated.heading')}
+							</p>
+							<p class="text-sm text-blue-800 mt-1">
+								{$_('admin.deliveryCalculator.truncated.body')}
+							</p>
+							<button
+								class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+								onclick={runEstimate}
+								disabled={estimating}
+							>
+								{$_('admin.deliveryCalculator.truncated.retry')}
+							</button>
+						</div>
+					{/if}
+				{:else if !estimateError}
 					<div
 						class="border border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-500"
 					>
@@ -259,7 +428,7 @@
 				{/if}
 
 				<!-- The friendly ask: what did the courier really charge? -->
-				{#if estimate}
+				{#if result}
 					<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
 						<p class="text-sm font-medium text-gray-900">
 							{$_('admin.deliveryCalculator.feedback.question')}
@@ -283,113 +452,113 @@
 							<button
 								class="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50"
 								onclick={saveActualCost}
-								disabled={!Number(actualCost)}
+								disabled={savingCost || !Number(actualCost)}
 							>
-								{$_('admin.deliveryCalculator.feedback.save')}
+								{savingCost
+									? $_('admin.deliveryCalculator.feedback.saving')
+									: $_('admin.deliveryCalculator.feedback.save')}
 							</button>
 						</div>
 						{#if feedbackMessage}
 							<p class="text-sm text-green-700 mt-3">{feedbackMessage}</p>
 						{/if}
+						{#if feedbackError}
+							<p class="text-sm text-red-600 mt-3">{feedbackError}</p>
+						{/if}
 					</div>
 				{/if}
 			</section>
 
-			<!-- Calibration panel -->
+			<!-- Calibration panel: the shared, server-side training set -->
 			<section class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 flex flex-col gap-5">
-				<div>
-					<h2 class="text-lg font-semibold text-gray-900">
-						{$_('admin.deliveryCalculator.calibration.title')}
-					</h2>
-					<p class="text-sm text-gray-500 mt-1">
-						{$_('admin.deliveryCalculator.calibration.summary', {
-							values: {
-								seed: trainingSet.length - corrections.length,
-								corrections: corrections.length
-							}
-						})}
-					</p>
+				<div class="flex items-start justify-between gap-3">
+					<div>
+						<h2 class="text-lg font-semibold text-gray-900">
+							{$_('admin.deliveryCalculator.calibration.title')}
+						</h2>
+						<p class="text-sm text-gray-500 mt-1">
+							{$_('admin.deliveryCalculator.calibration.summary', {
+								values: { count: calibration?.count ?? 0 }
+							})}
+						</p>
+						<p class="text-sm text-gray-500">
+							{calibration?.accuracyCop
+								? $_('admin.deliveryCalculator.calibration.accuracy', {
+										values: { amount: formatCOP(calibration.accuracyCop) }
+									})
+								: $_('admin.deliveryCalculator.calibration.accuracyUnknown')}
+						</p>
+					</div>
+					<button
+						class="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+						onclick={loadCalibration}
+					>
+						{$_('admin.deliveryCalculator.calibration.refresh')}
+					</button>
 				</div>
 
-				<dl class="grid grid-cols-2 gap-3 text-sm">
-					<div class="bg-gray-50 rounded-xl p-3">
-						<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.baseFare')}</dt>
-						<dd class="font-semibold text-gray-900">{formatCOP(Math.round(model.intercept))}</dd>
-					</div>
-					<div class="bg-gray-50 rounded-xl p-3">
-						<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.minFare')}</dt>
-						<dd class="font-semibold text-gray-900">{formatCOP(model.minFare)}</dd>
-					</div>
-					<div class="bg-gray-50 rounded-xl p-3">
-						<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.rateNS')}</dt>
-						<dd class="font-semibold text-gray-900">
-							{formatCOP(Math.round(model.ratePerKmNS))}/km
-						</dd>
-					</div>
-					<div class="bg-gray-50 rounded-xl p-3">
-						<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.rateEW')}</dt>
-						<dd class="font-semibold text-gray-900">
-							{formatCOP(Math.round(model.ratePerKmEW))}/km
-						</dd>
-					</div>
-				</dl>
-
-				{#if corrections.length}
-					<ul class="flex flex-col gap-2 max-h-64 overflow-y-auto">
-						{#each corrections as correction, index (correction.recordedAt ?? index)}
-							<li
-								class="flex items-center justify-between gap-3 border border-gray-200 rounded-xl px-3 py-2"
-							>
-								<div class="min-w-0">
-									<p class="text-sm text-gray-900 truncate">{formatAddress(correction)}</p>
-									<p class="text-xs text-gray-500">{formatCOP(correction.actualCost)}</p>
-								</div>
-								<button
-									class="text-xs text-gray-500 hover:text-red-600 transition-colors"
-									onclick={() => handleRemove(index)}
-								>
-									{$_('admin.deliveryCalculator.calibration.remove')}
-								</button>
-							</li>
-						{/each}
-					</ul>
-				{:else}
-					<p class="text-sm text-gray-500">
-						{$_('admin.deliveryCalculator.calibration.empty')}
-					</p>
+				{#if calibrationError}
+					<p class="text-sm text-red-600">{calibrationError}</p>
 				{/if}
 
-				<div class="flex flex-wrap gap-3">
-					<button
-						class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-						onclick={handleExport}
-						disabled={!corrections.length}
-					>
-						{$_('admin.deliveryCalculator.calibration.export')}
-					</button>
-					<button
-						class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-						onclick={() => fileInput?.click()}
-					>
-						{$_('admin.deliveryCalculator.calibration.import')}
-					</button>
-					<button
-						class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-						onclick={handleClear}
-						disabled={!corrections.length}
-					>
-						{$_('admin.deliveryCalculator.calibration.clear')}
-					</button>
-					<input
-						bind:this={fileInput}
-						type="file"
-						accept="application/json"
-						class="hidden"
-						onchange={handleImport}
-					/>
-				</div>
-				{#if importError}
-					<p class="text-sm text-red-600">{importError}</p>
+				{#if calibration}
+					<dl class="grid grid-cols-2 gap-3 text-sm">
+						<div class="bg-gray-50 rounded-xl p-3">
+							<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.baseFare')}</dt>
+							<dd class="font-semibold text-gray-900">
+								{formatCOP(Math.round(calibration.model.intercept))}
+							</dd>
+						</div>
+						<div class="bg-gray-50 rounded-xl p-3">
+							<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.minFare')}</dt>
+							<dd class="font-semibold text-gray-900">{formatCOP(calibration.model.minFare)}</dd>
+						</div>
+						<div class="bg-gray-50 rounded-xl p-3">
+							<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.rateNS')}</dt>
+							<dd class="font-semibold text-gray-900">
+								{formatCOP(Math.round(calibration.model.ratePerKmNS))}/km
+							</dd>
+						</div>
+						<div class="bg-gray-50 rounded-xl p-3">
+							<dt class="text-gray-500">{$_('admin.deliveryCalculator.calibration.rateEW')}</dt>
+							<dd class="font-semibold text-gray-900">
+								{formatCOP(Math.round(calibration.model.ratePerKmEW))}/km
+							</dd>
+						</div>
+					</dl>
+
+					{#if calibration.observations.length}
+						<ul class="flex flex-col gap-2 max-h-96 overflow-y-auto">
+							{#each calibration.observations as observation (observation.id)}
+								<li
+									class="flex items-center justify-between gap-3 border border-gray-200 rounded-xl px-3 py-2"
+								>
+									<div class="min-w-0">
+										<p class="text-sm text-gray-900 truncate">{observation.rawAddress}</p>
+										<p class="text-xs text-gray-500">
+											{formatCOP(observation.actualCost)}
+											·
+											{$_(
+												`admin.deliveryCalculator.tier.${
+													TIER_KEY[observation.matchTier as DeliveryMatchTier] ?? 'failed'
+												}.badge`
+											)}
+										</p>
+									</div>
+									<button
+										class="text-xs text-gray-500 hover:text-red-600 transition-colors"
+										onclick={() => handleRemove(observation.id)}
+									>
+										{$_('admin.deliveryCalculator.calibration.remove')}
+									</button>
+								</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="text-sm text-gray-500">
+							{$_('admin.deliveryCalculator.calibration.empty')}
+						</p>
+					{/if}
 				{/if}
 
 				<p class="text-xs text-gray-400 border-t border-gray-100 pt-4">

@@ -31,7 +31,8 @@ async function build() {
 			resolve(rootDir, 'src/handlers/config.ts'),
 			resolve(rootDir, 'src/handlers/orders.ts'),
 			resolve(rootDir, 'src/handlers/robots.ts'),
-			resolve(rootDir, 'src/handlers/users.ts')
+			resolve(rootDir, 'src/handlers/users.ts'),
+			resolve(rootDir, 'src/handlers/delivery.ts')
 		],
 		bundle: true,
 		platform: 'node',

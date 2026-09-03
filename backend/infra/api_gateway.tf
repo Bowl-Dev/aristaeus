@@ -141,6 +141,34 @@ resource "aws_apigatewayv2_integration" "get_config" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_integration" "estimate_delivery_cost" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.estimate_delivery_cost.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "list_delivery_observations" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.list_delivery_observations.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "create_delivery_observation" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.create_delivery_observation.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "delete_delivery_observation" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.delete_delivery_observation.invoke_arn
+  payload_format_version = "2.0"
+}
+
 # ============================================
 # Routes
 # ============================================
@@ -234,6 +262,34 @@ resource "aws_apigatewayv2_route" "get_config" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /api/config"
   target    = "integrations/${aws_apigatewayv2_integration.get_config.id}"
+}
+
+# POST /api/delivery/estimate (admin/ops delivery cost estimate)
+resource "aws_apigatewayv2_route" "estimate_delivery_cost" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/delivery/estimate"
+  target    = "integrations/${aws_apigatewayv2_integration.estimate_delivery_cost.id}"
+}
+
+# GET /api/delivery/observations
+resource "aws_apigatewayv2_route" "list_delivery_observations" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/delivery/observations"
+  target    = "integrations/${aws_apigatewayv2_integration.list_delivery_observations.id}"
+}
+
+# POST /api/delivery/observations (record an actual courier charge)
+resource "aws_apigatewayv2_route" "create_delivery_observation" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/delivery/observations"
+  target    = "integrations/${aws_apigatewayv2_integration.create_delivery_observation.id}"
+}
+
+# DELETE /api/delivery/observations/{id}
+resource "aws_apigatewayv2_route" "delete_delivery_observation" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /api/delivery/observations/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.delete_delivery_observation.id}"
 }
 
 # ============================================
@@ -340,6 +396,38 @@ resource "aws_lambda_permission" "get_config" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_config.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "estimate_delivery_cost" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.estimate_delivery_cost.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "list_delivery_observations" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.list_delivery_observations.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "create_delivery_observation" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_delivery_observation.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "delete_delivery_observation" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.delete_delivery_observation.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }

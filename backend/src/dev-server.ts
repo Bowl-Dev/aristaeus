@@ -25,6 +25,12 @@ import { registerRobot, getNextOrder, heartbeat } from './handlers/robots.js';
 import { checkPhone, deleteUser } from './handlers/users.js';
 import { getMenus } from './handlers/menus.js';
 import { getConfig } from './handlers/config.js';
+import {
+	estimateDeliveryCost,
+	listDeliveryObservations,
+	createDeliveryObservation,
+	deleteDeliveryObservation
+} from './handlers/delivery.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -182,6 +188,22 @@ app.get('/api/orders/:id', wrapHandler(getOrder, ['id']));
 
 // PUT /api/orders/:orderId/status (admin update)
 app.put('/api/orders/:orderId/status', wrapHandler(adminUpdateOrderStatus, ['orderId']));
+
+// ============================================
+// Delivery Cost Estimation (admin/ops)
+// ============================================
+
+// POST /api/delivery/estimate
+app.post('/api/delivery/estimate', wrapHandler(estimateDeliveryCost));
+
+// GET /api/delivery/observations
+app.get('/api/delivery/observations', wrapHandler(listDeliveryObservations));
+
+// POST /api/delivery/observations
+app.post('/api/delivery/observations', wrapHandler(createDeliveryObservation));
+
+// DELETE /api/delivery/observations/:id
+app.delete('/api/delivery/observations/:id', wrapHandler(deleteDeliveryObservation, ['id']));
 
 // ============================================
 // Robot-Facing APIs

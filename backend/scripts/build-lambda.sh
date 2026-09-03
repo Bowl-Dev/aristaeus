@@ -35,6 +35,7 @@ npx esbuild \
   src/handlers/orders.ts \
   src/handlers/robots.ts \
   src/handlers/users.ts \
+  src/handlers/delivery.ts \
   --bundle \
   --platform=node \
   --target=node20 \

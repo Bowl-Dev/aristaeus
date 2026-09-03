@@ -296,46 +296,100 @@
 			"originNote": "Estima la tarifa del domiciliario desde la cocina en {address}.",
 			"form": {
 				"title": "Dirección de destino",
-				"hint": "Escribe la dirección tal como se lee: Calle 146 # 21-86. Acepta sufijos como 145a o 25bis.",
-				"calle": "Calle",
-				"carrera": "Carrera",
-				"numero": "Número"
+				"hint": "Escribe la dirección tal como la dio el cliente: Calle 146 # 21-86, Apto 302. La buscamos en el registro de placas domiciliarias del catastro de Bogotá.",
+				"label": "Dirección",
+				"placeholder": "Calle 146 # 21-86",
+				"submit": "Calcular costo",
+				"submitting": "Buscando la dirección…"
 			},
 			"result": {
 				"label": "Costo estimado del domicilio",
-				"margin": "Normalmente se acerca al precio real con un margen de {amount}.",
+				"approxLabel": "Costo aproximado — no ubicamos la dirección",
+				"margin": "Más o menos {amount} de diferencia, medido dejando por fuera cada domicilio anterior al ajustar el modelo.",
+				"marginUnknown": "Todavía no hay suficientes cobros registrados para saber qué tanto se puede desviar.",
 				"northSouth": "Norte-Sur",
 				"eastWest": "Oriente-Occidente",
 				"total": "Total",
 				"minFare": "Está por debajo de la tarifa mínima, así que el estimado es el piso de {amount}.",
-				"drift": "{amount} más {direction} que el estimado original con los datos de Ops, tras tus correcciones.",
-				"higher": "alto",
-				"lower": "bajo",
-				"empty": "Ingresa calle, carrera y número para ver un estimado."
+				"plate": "Dirección encontrada",
+				"plateNone": "No se encontró ninguna placa en el catastro.",
+				"parsedAs": "Se leyó como {address}",
+				"cached": "Desde caché",
+				"observations": "Ajustado con {count} cobros registrados.",
+				"empty": "Escribe una dirección para ver el estimado.",
+				"noEstimate": "Sin estimado. No pudimos ubicar la dirección y tampoco aplicó la malla vial aproximada."
+			},
+			"tier": {
+				"exact": {
+					"badge": "Dirección exacta",
+					"note": "El catastro tiene esta dirección exacta. Las coordenadas son las del predio."
+				},
+				"nearestNumber": {
+					"badge": "Número más cercano",
+					"note": "La vía y la calle cruzada están bien, pero ese número de placa no está registrado. Usamos el número más cercano de la misma cuadra: suele quedar a pocos metros."
+				},
+				"nearestCross": {
+					"badge": "Otra calle cruzada",
+					"note": "Esta dirección exacta no existe en el catastro. Usamos una dirección vecina sobre la misma vía, en otra calle cruzada. Revisa abajo la dirección encontrada antes de cotizar este precio."
+				},
+				"streetSegment": {
+					"badge": "Solo la vía — no encontramos la dirección",
+					"note": "Encontramos la vía pero no la dirección sobre ella, así que este punto es la mitad de toda la vía. En una vía larga eso puede quedar a kilómetros del destino real."
+				},
+				"gridFallback": {
+					"badge": "Calculado con la malla aproximada",
+					"note": "No encontramos la dirección. Este número sale de la malla vieja, que asume cuadras de 100 m: no corresponde a una ubicación real."
+				},
+				"failed": {
+					"badge": "Sin ubicar",
+					"note": "No fue posible ubicar la dirección."
+				}
+			},
+			"warning": {
+				"low": "No cotices este precio así.",
+				"medium": "Revisa la dirección encontrada antes de cotizar."
+			},
+			"truncated": {
+				"heading": "La búsqueda de la dirección se quedó sin tiempo.",
+				"body": "Este resultado es provisional y no significa que la dirección no exista. Vuelve a intentarlo: lo que ya se consultó quedó en caché, así que será rápido.",
+				"retry": "Reintentar búsqueda"
+			},
+			"error": {
+				"generic": "No se pudo calcular el estimado. Inténtalo de nuevo.",
+				"empty": "Primero escribe una dirección."
 			},
 			"feedback": {
 				"question": "Cuando el domiciliario te cotice, ¿cuánto cobró en realidad?",
-				"explainer": "Cada precio real que compartas mejora el siguiente estimado.",
+				"explainer": "Cada precio real que registres queda para todo el equipo y mejora el siguiente estimado.",
 				"inputLabel": "Precio real (COP)",
 				"save": "Guardar precio",
-				"saved": "¡Gracias! El estimado para esta dirección pasó de {before} a {after}."
+				"saving": "Guardando…",
+				"saved": "Listo. El modelo se reajustó con este precio.",
+				"error": "No se pudo guardar ese precio. Inténtalo de nuevo."
 			},
 			"calibration": {
 				"title": "Calibración del modelo",
-				"summary": "Ajustado con {seed} domicilios anteriores y {corrections} correcciones tuyas.",
+				"summary": "Ajustado con {count} cobros registrados, compartidos con todo el equipo.",
+				"accuracy": "Error típico: {amount} (validado cruzado).",
+				"accuracyUnknown": "Faltan cobros registrados para medir el error típico.",
 				"baseFare": "Tarifa base",
 				"minFare": "Tarifa mínima",
 				"rateNS": "Tarifa Norte-Sur",
 				"rateEW": "Tarifa Oriente-Occidente",
-				"empty": "Aún no hay correcciones. El modelo usa solo el histórico de domicilios de Ops.",
+				"empty": "Todavía no hay cobros registrados.",
 				"remove": "Eliminar",
-				"export": "Exportar JSON",
-				"import": "Importar JSON",
-				"imported": "Se importaron {count} corrección(es).",
-				"importError": "No se pudo leer ese archivo como una exportación de calibración.",
-				"clear": "Borrar todo",
-				"clearConfirm": "¿Eliminar todas las correcciones guardadas y volver al modelo original?",
-				"storageNote": "Las correcciones se guardan solo en este navegador. Expórtalas para llevar la calibración a otro dispositivo."
+				"removeConfirm": "¿Quitar este cobro registrado del modelo?",
+				"refresh": "Actualizar",
+				"loadError": "No se pudieron cargar los cobros registrados.",
+				"storageNote": "Los cobros se guardan en el servidor, así que todos los operadores ven el mismo modelo. En este navegador no queda nada."
+			},
+			"migration": {
+				"heading": "Tienes {count} corrección(es) guardadas en este navegador.",
+				"body": "Las correcciones ahora viven en el servidor para que todo el equipo las comparta. Súbelas antes de que se pierdan.",
+				"run": "Subirlas ahora",
+				"running": "Subiendo…",
+				"done": "Se subieron {count} corrección(es). Ya se limpió el almacenamiento viejo de este navegador.",
+				"failed": "No se pudieron subir {failed} corrección(es), así que no se borró nada. Vuelve a intentarlo."
 			}
 		}
 	},

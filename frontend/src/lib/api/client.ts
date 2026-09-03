@@ -158,8 +158,149 @@ export async function deleteUserData(phone: string): Promise<DeleteUserResponse>
 }
 
 // ============================================
+// Delivery estimation (admin/ops only)
+// ============================================
+
+/**
+ * Estimate the courier fee for a free-text Bogota address.
+ * The server geocodes it against the cadastral service and prices the result.
+ */
+export async function estimateDelivery(address: string): Promise<DeliveryEstimateResponse> {
+	return apiFetch<DeliveryEstimateResponse>('/api/delivery/estimate', {
+		method: 'POST',
+		body: JSON.stringify({ address })
+	});
+}
+
+/**
+ * List the recorded courier charges the model is fitted on, together with the
+ * fitted parameters and the cross-validated accuracy figure.
+ */
+export async function listDeliveryObservations(): Promise<DeliveryObservationsResponse> {
+	return apiFetch<DeliveryObservationsResponse>('/api/delivery/observations');
+}
+
+/**
+ * Record what a courier actually charged. This is how the model improves, and
+ * unlike the old localStorage store it is shared across every operator.
+ */
+export async function createDeliveryObservation(
+	observation: CreateDeliveryObservationRequest
+): Promise<DeliveryObservationCreated> {
+	return apiFetch<DeliveryObservationCreated>('/api/delivery/observations', {
+		method: 'POST',
+		body: JSON.stringify(observation)
+	});
+}
+
+/**
+ * Remove a recorded courier charge (a mistyped price, say).
+ */
+export async function deleteDeliveryObservation(
+	id: number
+): Promise<{ deleted: boolean; id: number }> {
+	return apiFetch<{ deleted: boolean; id: number }>(`/api/delivery/observations/${id}`, {
+		method: 'DELETE'
+	});
+}
+
+// ============================================
 // Utility Types
 // ============================================
+
+/**
+ * How the address was located in the cadastre, in descending order of trust.
+ * `street_segment` and `grid_fallback` mean the exact address was never found.
+ */
+export type DeliveryMatchTier =
+	| 'exact'
+	| 'nearest_number'
+	| 'nearest_cross'
+	| 'street_segment'
+	| 'grid_fallback'
+	| 'failed';
+
+export type DeliveryConfidence = 'high' | 'good' | 'medium' | 'low';
+
+export interface DeliveryEstimateFigures {
+	/** Estimated cost in COP, rounded to the nearest 100. */
+	cost: number;
+	northKm: number;
+	eastKm: number;
+	totalKm: number;
+	/** True when the raw estimate fell below the minimum fare and was clamped. */
+	minFareApplied: boolean;
+}
+
+export interface DeliveryEstimateResponse {
+	/** Null only when neither the cadastre nor the grid fallback could place the address. */
+	estimate: DeliveryEstimateFigures | null;
+	matchTier: DeliveryMatchTier;
+	confidence: DeliveryConfidence;
+	/** True when the geocode search ran out of its time budget — retry is cheap and better. */
+	searchTruncated: boolean;
+	/** The cadastral plate actually matched, e.g. "AC 26 43 89". Null on the fallback paths. */
+	resolvedPlate?: string | null;
+	coordinates?: { lat: number; lng: number } | null;
+	cached?: boolean;
+	/** Leave-one-out cross-validated MAE in COP. Null when it does not apply. */
+	accuracyCop?: number | null;
+	observationCount?: number;
+	/** The parsed address, normalised the way it is written in Colombia. */
+	address: string;
+	/** Present only when the server needs to explain a degraded result. */
+	message?: string;
+}
+
+export interface DeliveryModelParams {
+	intercept: number;
+	ratePerKmNS: number;
+	ratePerKmEW: number;
+	minFare: number;
+}
+
+export interface DeliveryObservationRecord {
+	id: number;
+	rawAddress: string;
+	prefix: string;
+	street: string;
+	cross: string;
+	number: number;
+	lat: number | null;
+	lng: number | null;
+	matchTier: string;
+	northKm: number | null;
+	eastKm: number | null;
+	actualCost: number;
+	source: string;
+	recordedAt: string;
+}
+
+export interface DeliveryObservationsResponse {
+	observations: DeliveryObservationRecord[];
+	count: number;
+	accuracyCop: number | null;
+	model: DeliveryModelParams;
+}
+
+export interface CreateDeliveryObservationRequest {
+	address: string;
+	actualCost: number;
+	source?: 'seed' | 'correction';
+}
+
+export interface DeliveryObservationCreated {
+	id: number;
+	rawAddress: string;
+	lat: number | null;
+	lng: number | null;
+	matchTier: string;
+	northKm: number | null;
+	eastKm: number | null;
+	actualCost: number;
+	source: string;
+	recordedAt: string;
+}
 
 export interface AdminOrderUser {
 	id: string;

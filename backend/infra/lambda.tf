@@ -15,7 +15,11 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "updateOrderStatus",
     "robotHeartbeat",
     "getMenus",
-    "getConfig"
+    "getConfig",
+    "estimateDeliveryCost",
+    "listDeliveryObservations",
+    "createDeliveryObservation",
+    "deleteDeliveryObservation"
   ])
 
   name              = "/aws/lambda/${var.project_name}-${each.key}-${var.environment}"
@@ -318,6 +322,123 @@ resource "aws_lambda_function" "get_menus" {
   function_name = "${var.project_name}-getMenus-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
   handler       = "handlers/menus.getMenus"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# --------------------------------------------
+# Delivery cost estimation
+#
+# estimateDeliveryCost calls the Bogota cadastral geocoding service
+# (serviciosgis.catastrobogota.gov.co) over the public internet. The library
+# uses a 6 s per-query timeout and may issue several sequential queries while
+# walking street-prefix alternates (KR/AK, CL/AC) and BIS variants, so the
+# 30 s used by the DB-only handlers is too tight. 60 s lets a cold, uncached
+# lookup finish and persist to GeocodeCache even if API Gateway has already
+# returned (HTTP API integrations cap at 29 s), so the retry is a cache hit.
+# --------------------------------------------
+resource "aws_lambda_function" "estimate_delivery_cost" {
+  function_name = "${var.project_name}-estimateDeliveryCost-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/delivery.estimateDeliveryCost"
+  runtime       = "nodejs20.x"
+  timeout       = 60
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "list_delivery_observations" {
+  function_name = "${var.project_name}-listDeliveryObservations-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/delivery.listDeliveryObservations"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# Recording a courier charge geocodes the address too, so it gets the same
+# 60 s budget as the estimate handler.
+resource "aws_lambda_function" "create_delivery_observation" {
+  function_name = "${var.project_name}-createDeliveryObservation-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/delivery.createDeliveryObservation"
+  runtime       = "nodejs20.x"
+  timeout       = 60
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "delete_delivery_observation" {
+  function_name = "${var.project_name}-deleteDeliveryObservation-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/delivery.deleteDeliveryObservation"
   runtime       = "nodejs20.x"
   timeout       = 30
   memory_size   = 256

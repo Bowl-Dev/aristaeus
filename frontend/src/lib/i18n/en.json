@@ -296,46 +296,100 @@
 			"originNote": "Estimates the courier fee from the kitchen at {address}.",
 			"form": {
 				"title": "Destination address",
-				"hint": "Enter the address as it is written: Calle 146 # 21-86. Suffixes like 145a or 25bis are supported.",
-				"calle": "Calle",
-				"carrera": "Carrera",
-				"numero": "Number"
+				"hint": "Type the address as the customer wrote it: Calle 146 # 21-86, Apto 302. We look it up in Bogota's cadastral address register.",
+				"label": "Address",
+				"placeholder": "Calle 146 # 21-86",
+				"submit": "Estimate cost",
+				"submitting": "Looking up the address…"
 			},
 			"result": {
 				"label": "Estimated delivery cost",
-				"margin": "Typically within {amount} of the real price.",
+				"approxLabel": "Approximate cost — address not located",
+				"margin": "Give or take {amount}, measured by leaving each past delivery out of the fit in turn.",
+				"marginUnknown": "Not enough recorded courier charges yet to measure how far off this can be.",
 				"northSouth": "North-South",
 				"eastWest": "East-West",
 				"total": "Total",
 				"minFare": "Below the minimum fare, so the estimate is the {amount} floor.",
-				"drift": "{amount} {direction} than the original Ops-data estimate, after your corrections.",
-				"higher": "higher",
-				"lower": "lower",
-				"empty": "Enter a calle, carrera, and number to see an estimate."
+				"plate": "Matched address",
+				"plateNone": "No cadastral address was matched.",
+				"parsedAs": "Read as {address}",
+				"cached": "From cache",
+				"observations": "Fitted on {count} recorded courier charges.",
+				"empty": "Enter an address to see an estimate.",
+				"noEstimate": "No estimate. The address could not be located and the street grid did not apply either."
+			},
+			"tier": {
+				"exact": {
+					"badge": "Exact address",
+					"note": "The cadastre holds this exact address. The coordinates are the building's own."
+				},
+				"nearestNumber": {
+					"badge": "Nearest house number",
+					"note": "The street and cross-street are right, but this exact house number is not registered. The closest number on the same block was used — usually a few metres out."
+				},
+				"nearestCross": {
+					"badge": "Different cross-street",
+					"note": "This exact address does not exist in the cadastre. We used a neighbouring address on the same street, at a different cross-street. Check the matched address below before you quote this price."
+				},
+				"streetSegment": {
+					"badge": "Street only — address not found",
+					"note": "We found the street but not the address on it, so this is the middle of the whole street. On a long street that can be kilometres away from the real destination."
+				},
+				"gridFallback": {
+					"badge": "Guessed from the street grid",
+					"note": "The address was not found at all. This number comes from the old approximate grid, which assumes every block is 100 m — it is not a real location."
+				},
+				"failed": {
+					"badge": "Not located",
+					"note": "The address could not be located at all."
+				}
+			},
+			"warning": {
+				"low": "Do not quote this price as-is.",
+				"medium": "Check the matched address before quoting."
+			},
+			"truncated": {
+				"heading": "The address lookup ran out of time.",
+				"body": "This result is provisional and does not mean the address is missing. Retry — the parts that finished are cached, so it will be fast.",
+				"retry": "Retry lookup"
+			},
+			"error": {
+				"generic": "The estimate could not be calculated. Please try again.",
+				"empty": "Enter an address first."
 			},
 			"feedback": {
 				"question": "Once the courier quotes you — what did they actually charge?",
-				"explainer": "Every real price you share here makes the next estimate better.",
+				"explainer": "Every real price you record here is shared with the whole team and makes the next estimate better.",
 				"inputLabel": "Real price (COP)",
 				"save": "Save price",
-				"saved": "Thanks! The estimate for this address moved from {before} to {after}."
+				"saving": "Saving…",
+				"saved": "Saved. The model has been re-fitted with this price.",
+				"error": "That price could not be saved. Please try again."
 			},
 			"calibration": {
 				"title": "Model calibration",
-				"summary": "Fitted on {seed} past deliveries and {corrections} of your corrections.",
+				"summary": "Fitted on {count} recorded courier charges, shared across every operator.",
+				"accuracy": "Typical error: {amount} (cross-validated).",
+				"accuracyUnknown": "Too few charges recorded to measure the typical error.",
 				"baseFare": "Base fare",
 				"minFare": "Minimum fare",
 				"rateNS": "North-South rate",
 				"rateEW": "East-West rate",
-				"empty": "No corrections yet. The model is using the Ops delivery history only.",
+				"empty": "No courier charges recorded yet.",
 				"remove": "Remove",
-				"export": "Export JSON",
-				"import": "Import JSON",
-				"imported": "Imported {count} correction(s).",
-				"importError": "That file could not be read as a calibration export.",
-				"clear": "Clear all",
-				"clearConfirm": "Delete every saved correction and go back to the original model?",
-				"storageNote": "Corrections are saved in this browser only. Export them to move the calibration to another device."
+				"removeConfirm": "Remove this recorded courier charge from the model?",
+				"refresh": "Refresh",
+				"loadError": "The recorded charges could not be loaded.",
+				"storageNote": "Charges are stored on the server, so every operator sees the same model. Nothing is kept in this browser."
+			},
+			"migration": {
+				"heading": "You have {count} correction(s) saved in this browser.",
+				"body": "Corrections now live on the server so the whole team shares them. Upload these before they are lost.",
+				"run": "Upload them now",
+				"running": "Uploading…",
+				"done": "Uploaded {count} correction(s). This browser's old store has been cleared.",
+				"failed": "{failed} correction(s) could not be uploaded, so nothing was cleared. Try again."
 			}
 		}
 	},

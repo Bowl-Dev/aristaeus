@@ -265,3 +265,62 @@ model StoreConfig {
 
   @@map("store_config")
 }
+
+// ============================================
+// Delivery Cost Estimation
+// ============================================
+
+/// Cached cadastral geocoding results, keyed by normalised address.
+/// The cadastral service has no SLA, so a repeat address must never re-query it.
+model GeocodeCache {
+  id            Int      @id @default(autoincrement())
+  addressKey    String   @unique @map("address_key") @db.VarChar(200)
+
+  lat           Decimal  @db.Decimal(10, 7)
+  lng           Decimal  @db.Decimal(10, 7)
+
+  /// 'exact' | 'nearest_number' | 'nearest_cross' | 'street_segment'
+  matchTier     String   @map("match_tier") @db.VarChar(30)
+  /// The PDONVIAL / PDOTEXTO plate actually matched, for display and audit.
+  resolvedPlate String?  @map("resolved_plate") @db.VarChar(120)
+
+  fetchedAt     DateTime @default(now()) @map("fetched_at")
+
+  @@map("geocode_cache")
+}
+
+/// A delivery whose real third-party courier charge we know. This is the
+/// model's training data — shared server-side rather than trapped in one
+/// operator's localStorage.
+model DeliveryObservation {
+  id          Int      @id @default(autoincrement())
+
+  /// Address as the operator typed it.
+  rawAddress  String   @map("raw_address") @db.VarChar(255)
+  /// Parsed components, in the cadastre's vocabulary.
+  prefix      String   @db.VarChar(4)
+  street      String   @db.VarChar(20)
+  cross       String   @db.VarChar(20)
+  number      Int
+
+  /// Geocoded position. Null when geocoding failed for this row.
+  lat         Decimal? @db.Decimal(10, 7)
+  lng         Decimal? @db.Decimal(10, 7)
+  matchTier   String?  @map("match_tier") @db.VarChar(30)
+
+  /// Grid-aligned legs from the kitchen, in km. Denormalised for inspection;
+  /// the fit recomputes them from lat/lng when those are present.
+  northKm     Decimal? @map("north_km") @db.Decimal(8, 4)
+  eastKm      Decimal? @map("east_km") @db.Decimal(8, 4)
+
+  /// What the courier actually charged, in COP. Ground truth.
+  actualCost  Int      @map("actual_cost")
+
+  /// 'seed' (Ops history) or 'correction' (operator-entered).
+  source      String   @default("correction") @db.VarChar(20)
+
+  recordedAt  DateTime @default(now()) @map("recorded_at")
+
+  @@index([source])
+  @@map("delivery_observations")
+}

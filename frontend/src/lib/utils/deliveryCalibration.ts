@@ -1,30 +1,42 @@
 /**
- * Storage for the delivery-model calibration set.
+ * One-time migration of the retired localStorage calibration store.
  *
- * Every time an operator tells us what a courier really charged, the price is
- * appended here and the model is re-fitted against the seed history plus these
- * corrections. Corrections live in localStorage (this is a PoC, and there is no
- * corrections table yet), with JSON export/import so a calibration set can be
- * moved between machines or handed back to Ops to fold into the seed data.
+ * Corrections used to be kept in `aristaeus.delivery.calibration.v1`, which
+ * trapped every operator's feedback in one browser. They now live in Postgres
+ * behind `/api/delivery/observations`. This module exists purely so the rows an
+ * operator already recorded are uploaded rather than silently lost: it reads the
+ * legacy key once, POSTs each row, and only then clears the key.
+ *
+ * Nothing here writes to localStorage. Once every browser has run the migration
+ * this file can be deleted.
  */
 
-import {
-	SEED_OBSERVATIONS,
-	fitDeliveryModel,
-	isValidAddress,
-	type BogotaAddress,
-	type DeliveryModel,
-	type DeliveryObservation
-} from './deliveryModel';
+import { createDeliveryObservation } from '$lib/api/client';
 
 const STORAGE_KEY = 'aristaeus.delivery.calibration.v1';
-const EXPORT_VERSION = 1;
 
-/** Shape of the exported / stored JSON file. */
-export interface CalibrationFile {
-	version: number;
-	exportedAt: string;
-	corrections: DeliveryObservation[];
+/** A correction as the old localStorage format stored it. */
+export interface LegacyCorrection {
+	/** Calle token, e.g. `146`, `145a`, `25bis`. */
+	calle: string;
+	/** Carrera token, e.g. `21`, `18a`. */
+	carrera: string;
+	/** Metre offset from the carrera (the `-86` in `# 21-86`). */
+	numero: number;
+	/** What the courier actually charged, in COP. */
+	actualCost: number;
+	recordedAt?: string;
+}
+
+export interface MigrationResult {
+	/** Rows found in localStorage and considered worth uploading. */
+	found: number;
+	/** Rows the API accepted. */
+	uploaded: number;
+	/** Rows the API rejected — reported, not discarded silently. */
+	failed: number;
+	/** True when the legacy key was removed (only after a clean run). */
+	cleared: boolean;
 }
 
 function isBrowser(): boolean {
@@ -32,123 +44,92 @@ function isBrowser(): boolean {
 }
 
 /**
- * Accept only well-formed corrections. Anything malformed is dropped rather
- * than thrown on, so one bad row cannot brick the applet on load.
+ * Render a legacy row the way the server's address parser expects to read it.
+ * The old store only ever held calle/carrera/numero triples.
  */
-function sanitize(rows: unknown): DeliveryObservation[] {
+export function legacyAddressText(row: LegacyCorrection): string {
+	return `Calle ${row.calle} # ${row.carrera}-${row.numero}`;
+}
+
+/**
+ * Accept only well-formed rows. Anything malformed is dropped rather than
+ * thrown on, so one bad row cannot block the rest of the migration.
+ */
+function sanitize(rows: unknown): LegacyCorrection[] {
 	if (!Array.isArray(rows)) return [];
 
-	return rows.flatMap((row): DeliveryObservation[] => {
+	return rows.flatMap((row): LegacyCorrection[] => {
 		if (typeof row !== 'object' || row === null) return [];
-		const candidate = row as Partial<DeliveryObservation>;
-		const address = {
-			calle: String(candidate.calle ?? ''),
-			carrera: String(candidate.carrera ?? ''),
-			numero: Number(candidate.numero)
-		};
-		if (!isValidAddress(address)) return [];
-		if (!Number.isFinite(candidate.actualCost) || (candidate.actualCost as number) <= 0) return [];
+		const candidate = row as Partial<LegacyCorrection>;
+		const calle = String(candidate.calle ?? '').trim();
+		const carrera = String(candidate.carrera ?? '').trim();
+		const numero = Number(candidate.numero);
+		const actualCost = Number(candidate.actualCost);
+
+		if (!calle || !carrera) return [];
+		if (!Number.isFinite(numero) || numero < 0) return [];
+		if (!Number.isFinite(actualCost) || actualCost <= 0) return [];
 
 		return [
 			{
-				...address,
-				actualCost: Math.round(candidate.actualCost as number),
-				recordedAt: candidate.recordedAt ?? new Date().toISOString(),
-				source: 'correction'
+				calle,
+				carrera,
+				numero,
+				actualCost: Math.round(actualCost),
+				recordedAt: candidate.recordedAt
 			}
 		];
 	});
 }
 
-/** Corrections recorded so far, newest last. Empty on the server or on first run. */
-export function loadCorrections(): DeliveryObservation[] {
+/** Corrections still sitting in the retired localStorage store, if any. */
+export function readLegacyCorrections(): LegacyCorrection[] {
 	if (!isBrowser()) return [];
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
 		if (!raw) return [];
-		const parsed = JSON.parse(raw) as Partial<CalibrationFile>;
+		const parsed = JSON.parse(raw) as { corrections?: unknown };
 		return sanitize(parsed?.corrections);
 	} catch {
-		// Corrupt storage is not worth surfacing: fall back to the seed-only model.
+		// Corrupt storage holds nothing recoverable; there is no data to lose.
 		return [];
 	}
 }
 
-function persist(corrections: DeliveryObservation[]): void {
-	if (!isBrowser()) return;
-	const file: CalibrationFile = {
-		version: EXPORT_VERSION,
-		exportedAt: new Date().toISOString(),
-		corrections
-	};
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(file));
-}
-
-/** Record a real courier price and return the updated correction set. */
-export function addCorrection(address: BogotaAddress, actualCost: number): DeliveryObservation[] {
-	const correction: DeliveryObservation = {
-		...address,
-		actualCost: Math.round(actualCost),
-		recordedAt: new Date().toISOString(),
-		source: 'correction'
-	};
-	const corrections = [...loadCorrections(), correction];
-	persist(corrections);
-	return corrections;
-}
-
-/** Drop one correction by its position, and return what is left. */
-export function removeCorrection(index: number): DeliveryObservation[] {
-	const corrections = loadCorrections().filter((_, i) => i !== index);
-	persist(corrections);
-	return corrections;
-}
-
-/** Forget every correction, reverting the model to the Ops seed fit. */
-export function clearCorrections(): DeliveryObservation[] {
-	if (isBrowser()) localStorage.removeItem(STORAGE_KEY);
-	return [];
-}
-
-/** The full training set: Ops history plus operator corrections. */
-export function calibrationSet(corrections: DeliveryObservation[]): DeliveryObservation[] {
-	return [...SEED_OBSERVATIONS, ...corrections];
-}
-
-/** The model currently in effect, given the corrections recorded so far. */
-export function currentModel(corrections: DeliveryObservation[]): DeliveryModel {
-	return fitDeliveryModel(calibrationSet(corrections));
-}
-
-/** Serialise the corrections for download. */
-export function exportCorrections(corrections: DeliveryObservation[]): string {
-	const file: CalibrationFile = {
-		version: EXPORT_VERSION,
-		exportedAt: new Date().toISOString(),
-		corrections
-	};
-	return JSON.stringify(file, null, 2);
+/** True when this browser still has corrections that have not been uploaded. */
+export function hasLegacyCorrections(): boolean {
+	return readLegacyCorrections().length > 0;
 }
 
 /**
- * Merge an exported file into the stored corrections, skipping rows already
- * present so re-importing the same file is harmless. Returns the merged set and
- * how many rows were actually added.
+ * Upload every legacy correction to the API, then clear the legacy key.
+ *
+ * The key is only removed when every row was accepted — a partial failure keeps
+ * the data on disk so the operator can retry rather than lose it. Uploads run
+ * one at a time because the server geocodes each address as it writes it.
  */
-export function importCorrections(json: string): {
-	corrections: DeliveryObservation[];
-	added: number;
-} {
-	const parsed = JSON.parse(json) as Partial<CalibrationFile>;
-	const incoming = sanitize(parsed?.corrections);
-	const existing = loadCorrections();
+export async function migrateLegacyCorrections(): Promise<MigrationResult> {
+	const rows = readLegacyCorrections();
+	if (!rows.length) return { found: 0, uploaded: 0, failed: 0, cleared: false };
 
-	const key = (row: DeliveryObservation) =>
-		`${row.calle}|${row.carrera}|${row.numero}|${row.actualCost}|${row.recordedAt}`;
-	const seen = new Set(existing.map(key));
-	const fresh = incoming.filter((row) => !seen.has(key(row)));
+	let uploaded = 0;
+	let failed = 0;
 
-	const merged = [...existing, ...fresh];
-	persist(merged);
-	return { corrections: merged, added: fresh.length };
+	for (const row of rows) {
+		try {
+			await createDeliveryObservation({
+				address: legacyAddressText(row),
+				actualCost: row.actualCost,
+				source: 'correction'
+			});
+			uploaded++;
+		} catch {
+			failed++;
+		}
+	}
+
+	const cleared = failed === 0;
+	if (cleared && isBrowser()) localStorage.removeItem(STORAGE_KEY);
+
+	return { found: rows.length, uploaded, failed, cleared };
 }
