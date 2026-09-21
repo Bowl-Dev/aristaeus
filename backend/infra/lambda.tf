@@ -16,9 +16,6 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "listDeliveryObservations",
     "createDeliveryObservation",
     "deleteDeliveryObservation",
-    "listCoupons",
-    "createCoupon",
-    "validateCoupon"
   ])
 
   name              = "/aws/lambda/${var.project_name}-${each.key}-${var.environment}"
@@ -382,81 +379,3 @@ resource "aws_lambda_function" "get_config" {
   }
 }
 
-# Coupons
-resource "aws_lambda_function" "list_coupons" {
-  function_name = "${var.project_name}-listCoupons-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/coupons.listCoupons"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL = var.database_url
-      NODE_ENV     = var.environment
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_lambda_function" "create_coupon" {
-  function_name = "${var.project_name}-createCoupon-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/coupons.createCoupon"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL = var.database_url
-      NODE_ENV     = var.environment
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_lambda_function" "validate_coupon" {
-  function_name = "${var.project_name}-validateCoupon-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/coupons.validateCouponCode"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL = var.database_url
-      NODE_ENV     = var.environment
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}

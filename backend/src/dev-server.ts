@@ -18,7 +18,6 @@ import { createOrder, getOrder, listOrders, adminUpdateOrderStatus } from './han
 import { checkPhone, deleteUser } from './handlers/users.js';
 import { getMenus } from './handlers/menus.js';
 import { getConfig } from './handlers/config.js';
-import { listCoupons, createCoupon, validateCouponCode } from './handlers/coupons.js';
 import {
 	estimateDeliveryCost,
 	listDeliveryObservations,
@@ -131,19 +130,6 @@ app.get('/api/orders/:id', wrapHandler(getOrder, ['id']));
 app.put('/api/orders/:orderId/status', wrapHandler(adminUpdateOrderStatus, ['orderId']));
 
 // ============================================
-// Coupons
-// ============================================
-
-// GET /api/coupons (list - admin)
-app.get('/api/coupons', wrapHandler(listCoupons));
-
-// POST /api/coupons (create - admin)
-app.post('/api/coupons', wrapHandler(createCoupon));
-
-// POST /api/coupons/validate (customer "Aplicar")
-app.post('/api/coupons/validate', wrapHandler(validateCouponCode));
-
-// ============================================
 // Delivery Cost Estimation (admin/ops)
 // ============================================
 
@@ -178,9 +164,6 @@ app.listen(PORT, () => {
 	console.log('  POST /api/orders');
 	console.log('  GET  /api/orders/:id');
 	console.log('  PUT  /api/orders/:orderId/status  (admin update)');
-	console.log('  GET  /api/coupons                 (list - admin)');
-	console.log('  POST /api/coupons                 (create - admin)');
-	console.log('  POST /api/coupons/validate        (apply a code to a cart)');
 	console.log('  GET  /health');
 	console.log('');
 });
