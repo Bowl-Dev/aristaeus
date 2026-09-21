@@ -11,6 +11,10 @@
 #                  The role needs s3:PutObject, s3:DeleteObject and s3:ListBucket on
 #                  the bucket, and cloudfront:CreateInvalidation on both distributions.
 
+# ponytail: CLAUDE.md's Deployment Guide still documents GitHub Pages, which this
+# workflow replaced with S3 + CloudFront. Ceiling: the docs walk a new contributor
+# into the wrong deploy. Upgrade: rewrite that section next time this file changes.
+
 name: Deploy Frontend
 
 on:

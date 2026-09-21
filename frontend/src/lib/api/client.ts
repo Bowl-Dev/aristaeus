@@ -208,16 +208,22 @@ export async function deleteDeliveryObservation(
 // Utility Types
 // ============================================
 
+// ponytail: AdminOrder, AdminOrderItem, ListOrdersParams, PaginatedOrdersResponse and
+// CheckPhoneResponse are re-declared here although @aristaeus/shared already exports
+// them, and ApiIngredientsResponse, ApiOrderResponse, DeliveryEstimateFigures and
+// getOrderStatus have no callers at all. Ceiling: the two copies drift silently.
+// Upgrade: import the shared types and delete the dead ones next time a response
+// shape changes.
+
 /**
  * How the address was located in the cadastre, in descending order of trust.
- * `street_segment` and `grid_fallback` mean the exact address was never found.
+ * `street_segment` means the exact address was never found.
  */
 export type DeliveryMatchTier =
 	| 'exact'
 	| 'nearest_number'
 	| 'nearest_cross'
 	| 'street_segment'
-	| 'grid_fallback'
 	| 'failed';
 
 export type DeliveryConfidence = 'high' | 'good' | 'medium' | 'low';
@@ -334,7 +340,6 @@ export interface AdminOrder {
 	totalFatG: number;
 	totalFiberG: number;
 	totalPrice: number;
-	assignedRobotId: number | null;
 	createdAt: string;
 	assignedAt: string | null;
 	startedAt: string | null;
@@ -387,7 +392,6 @@ export interface ApiOrderResponse {
 		totalFiberG: number;
 		totalWeightG: number;
 	};
-	assignedRobotId: number | null;
 	createdAt: string;
 	assignedAt: string | null;
 	startedAt: string | null;
@@ -399,3 +403,91 @@ export interface DeleteUserResponse {
 	message: string;
 	ordersDeleted: number;
 }
+
+// ============================================
+// Coupons
+// ============================================
+
+/** List all coupon campaigns (Marketing panel). */
+export async function listCoupons(): Promise<CouponsResponse> {
+	return apiFetch<CouponsResponse>('/api/coupons');
+}
+
+/** Create a coupon campaign. */
+export async function createCoupon(coupon: CreateCouponRequest): Promise<CouponRecord> {
+	return apiFetch<CouponRecord>('/api/coupons', {
+		method: 'POST',
+		body: JSON.stringify(coupon)
+	});
+}
+
+/** Check a code against the current cart. Nothing is redeemed by this call. */
+export async function validateCoupon(
+	request: ValidateCouponRequest
+): Promise<ValidateCouponResponse> {
+	return apiFetch<ValidateCouponResponse>('/api/coupons/validate', {
+		method: 'POST',
+		body: JSON.stringify(request)
+	});
+}
+
+/** Benefit types the backend can price. */
+export type CouponType = 'percent' | 'fixed' | 'free_shipping';
+
+/** Why a code did not apply; maps to `admin.coupons.reason.*` / `coupon.reason.*`. */
+export type CouponRejection =
+	| 'not_found'
+	| 'inactive'
+	| 'not_started'
+	| 'expired'
+	| 'budget_exhausted'
+	| 'not_first_purchase'
+	| 'min_bowls';
+
+export interface CouponRecord {
+	id: number;
+	code: string;
+	campaignName: string;
+	description: string | null;
+	type: CouponType;
+	value: number | null;
+	startsAt: string;
+	endsAt: string;
+	budgetTotal: number;
+	budgetRemaining: number;
+	minBowls: number;
+	firstPurchaseOnly: boolean;
+	active: boolean;
+	createdAt: string;
+}
+
+export interface CouponsResponse {
+	coupons: CouponRecord[];
+	count: number;
+}
+
+export interface CreateCouponRequest {
+	code: string;
+	campaignName: string;
+	description?: string;
+	type: CouponType;
+	value?: number;
+	startsAt: string;
+	endsAt: string;
+	budgetTotal: number;
+	minBowls: number;
+	firstPurchaseOnly: boolean;
+	active: boolean;
+}
+
+export interface ValidateCouponRequest {
+	code: string;
+	bowlCount: number;
+	subtotal: number;
+	deliveryFee?: number;
+	phone?: string;
+}
+
+export type ValidateCouponResponse =
+	| { valid: true; code: string; type: CouponType; value: number | null; discount: number }
+	| { valid: false; reason: CouponRejection; minBowls?: number };

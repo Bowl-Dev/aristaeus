@@ -13,8 +13,8 @@ const ASSETS_BASE_URL = 'https://aristaeus-assets.s3.us-east-1.amazonaws.com';
 
 /**
  * Convert an ingredient/menu name into a URL-safe slug matching the asset filenames.
- * Mirrors `frontend/src/lib/utils/slug.ts` but additionally strips accents so names
- * like "Salmón" → "salmon" line up with the files in `frontend/static/ingredients/`.
+ * Strips accents so names like "Salmón" → "salmon" line up with the files in
+ * `frontend/static/ingredients/`.
  */
 function toSlug(name: string): string {
 	return name
@@ -50,7 +50,6 @@ async function main() {
 	// Clear existing data
 	await prisma.orderItem.deleteMany();
 	await prisma.order.deleteMany();
-	await prisma.robot.deleteMany();
 	await prisma.menuIngredient.deleteMany();
 	await prisma.menu.deleteMany();
 	await prisma.ingredient.deleteMany();
@@ -472,17 +471,6 @@ async function main() {
 	}
 
 	console.log(`Created ${menuData.length} menus`);
-
-	// Seed test robot
-	const robot = await prisma.robot.create({
-		data: {
-			name: 'Kitchen Robot 01',
-			identifier: 'MOCK_ROBOT_001',
-			status: 'online'
-		}
-	});
-
-	console.log(`Created test robot: ${robot.name} (${robot.identifier})`);
 
 	// Seed singleton store config (orders not paused by default)
 	const storeConfig = await prisma.storeConfig.upsert({

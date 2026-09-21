@@ -47,6 +47,10 @@ export function computeBowlTotals(
  * Round a COP amount to the nearest 100, since 100 is the smallest coin
  * in Colombian currency. Mirrors the legacy app's pricing behaviour.
  */
+// ponytail: duplicated in backend/src/lib/nutrition.ts, as is the whole per-100g
+// nutrition/price loop, while the spec requires the two to agree exactly. Move both
+// into @aristaeus/shared before the pricing rules change again (see
+// docs/plans/PAYMENTS_WOMPI.md).
 export function roundToNearestCoin(amount: number): number {
 	return Math.round(amount / 100) * 100;
 }

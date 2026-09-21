@@ -31,10 +31,6 @@ vi.mock('../../lib/db.js', () => ({
 		orderItem: {
 			createMany: vi.fn()
 		},
-		robot: {
-			findFirst: vi.fn(),
-			update: vi.fn()
-		},
 		storeConfig: {
 			findFirst: vi.fn()
 		},
@@ -253,7 +249,6 @@ describe('Order Handlers', () => {
 
 			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
 			mockSuccessfulTransaction();
-			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const response = await createOrder(event, mockContext, () => {});
 
@@ -270,7 +265,6 @@ describe('Order Handlers', () => {
 
 			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
 			mockSuccessfulTransaction();
-			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const response = await createOrder(event, mockContext, () => {});
 
@@ -339,7 +333,6 @@ describe('Order Handlers', () => {
 				lastTx = mockTx as never;
 				return (callback as (tx: unknown) => unknown)(mockTx);
 			});
-			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const response = await createOrder(event, mockContext, () => {});
 
@@ -386,7 +379,6 @@ describe('Order Handlers', () => {
 
 			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
 			mockSuccessfulTransaction();
-			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const response = await createOrder(event, mockContext, () => {});
 
@@ -479,7 +471,6 @@ describe('Order Handlers', () => {
 
 			vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
 			mockSuccessfulTransaction();
-			vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 
 			const event = createMockEvent({
 				body: JSON.stringify(validOrderRequest)
@@ -514,7 +505,6 @@ describe('Order Handlers', () => {
 				if (valid) {
 					vi.mocked(prisma.ingredient.findMany).mockResolvedValue(mockIngredients as never);
 					mockSuccessfulTransaction();
-					vi.mocked(prisma.robot.findFirst).mockResolvedValue(null);
 				}
 
 				const response = await createOrder(event, mockContext, () => {});

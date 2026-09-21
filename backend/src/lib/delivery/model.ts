@@ -17,18 +17,9 @@
  * absorb the road detour factor (~1.2-1.5x great-circle) without needing a
  * routing API.
  *
- * ## What changed in v2
- *
- * v1 *invented* the legs: it mapped `calle`/`carrera` tokens to numbers and
- * multiplied by a flat 100 m per block. Bogota's block spacing is nowhere near
- * uniform, so those legs were wrong before the regression ever saw them.
- *
- * v2 measures the legs from real cadastral coordinates (see `geocode.ts`) via
- * {@link haversineLegs}. The regression itself is unchanged — it was never the
- * problem.
- *
- * The v1 grid math is retained at the bottom of this file as the labelled
- * `grid_fallback` path, used only when geocoding fails outright.
+ * The legs are measured from real cadastral coordinates (see `geocode.ts`) via
+ * {@link haversineLegs}. An address the cadastre cannot place gets no estimate
+ * at all — a guessed number is worse than none.
  *
  * ## Accuracy reporting
  *
@@ -266,23 +257,6 @@ export function estimateFromLegs(model: DeliveryModel, legs: Legs): DeliveryEsti
 }
 
 /**
- * In-sample mean absolute error, in COP. Kept for diagnostics and for the
- * v1-vs-v2 comparison; do **not** show it to users — use {@link looCvMae}.
- */
-export function meanAbsoluteError(
-	model: DeliveryModel,
-	observations: LegObservation[]
-): number | null {
-	if (observations.length === 0) return null;
-	const total = observations.reduce(
-		(sum, observation) =>
-			sum + Math.abs(estimateFromLegs(model, observation).cost - observation.actualCost),
-		0
-	);
-	return Math.round(total / observations.length);
-}
-
-/**
  * Leave-one-out cross-validated MAE, in COP — the honest "give or take"
  * figure. Each observation is predicted by a model fitted on the other N-1,
  * so the error reflects performance on an address the model has not seen.
@@ -310,72 +284,8 @@ export function looCvMae(observations: LegObservation[]): number | null {
 }
 
 // ============================================
-// v1 grid fallback
+// Seed data
 // ============================================
-
-/**
- * The original synthetic-grid geometry, retained *only* as the degraded path
- * used when the cadastral service cannot resolve an address. Results computed
- * this way must always be labelled `grid_fallback`.
- *
- * Its flaw is documented at the top of this file: it assumes a uniform 100 m
- * block, which Bogota does not have.
- */
-const BLOCK_METRES = 100;
-
-/** A Bogota grid address in v1's vocabulary. */
-export interface GridAddress {
-	calle: string;
-	carrera: string;
-	numero: number;
-}
-
-/** The kitchen, in v1 grid terms: Calle 125 # 18A-05. */
-export const GRID_ORIGIN: GridAddress = { calle: '125', carrera: '18a', numero: 5 };
-
-/**
- * Position of a street token on its axis, in block units.
- *
- * A suffix places the street inside the block that follows the number:
- * `145a` -> 145.25, `25bis` -> 25.5. Returns `null` for anything that is not
- * a Bogota street token.
- */
-export function parseStreetToken(token: string): number | null {
-	const match = String(token ?? '')
-		.trim()
-		.toLowerCase()
-		.match(/^(\d{1,3})\s*(bis|[a-h])?$/);
-	if (!match) return null;
-
-	const base = Number(match[1]);
-	const suffix = match[2];
-	if (!suffix) return base;
-	// `bis` is a single insertion, so it sits mid-block.
-	if (suffix === 'bis') return base + 0.5;
-	// a, b, c... are evenly spread across the block, never reaching the next one.
-	return base + (suffix.charCodeAt(0) - 96) / 4;
-}
-
-/** v1 street-following legs, from the synthetic grid. */
-export function gridLegs(address: GridAddress, origin: GridAddress = GRID_ORIGIN): Legs | null {
-	const calle = parseStreetToken(address.calle);
-	const carrera = parseStreetToken(address.carrera);
-	const originCalle = parseStreetToken(origin.calle);
-	const originCarrera = parseStreetToken(origin.carrera);
-	if (calle === null || carrera === null || originCalle === null || originCarrera === null) {
-		return null;
-	}
-
-	// The trailing number is a metre offset along the east-west axis, so it
-	// refines the carrera position rather than the calle position.
-	const eastMetres = carrera * BLOCK_METRES + address.numero;
-	const originEastMetres = originCarrera * BLOCK_METRES + origin.numero;
-
-	return {
-		northKm: (Math.abs(calle - originCalle) * BLOCK_METRES) / 1000,
-		eastKm: Math.abs(eastMetres - originEastMetres) / 1000
-	};
-}
 
 /**
  * The 20 past deliveries provided by Ops, kept verbatim — including the same
@@ -385,7 +295,13 @@ export function gridLegs(address: GridAddress, origin: GridAddress = GRID_ORIGIN
  * These seed `backend/prisma/seed-delivery.ts`, which geocodes each one so
  * seeds and corrections share a single coordinate basis.
  */
-export const SEED_OBSERVATIONS: Array<GridAddress & { actualCost: number }> = [
+export interface SeedAddress {
+	calle: string;
+	carrera: string;
+	numero: number;
+}
+
+export const SEED_OBSERVATIONS: Array<SeedAddress & { actualCost: number }> = [
 	{ calle: '146', carrera: '21', numero: 86, actualCost: 3700 },
 	{ calle: '119', carrera: '14', numero: 16, actualCost: 2800 },
 	{ calle: '122', carrera: '19', numero: 45, actualCost: 2800 },
@@ -409,18 +325,6 @@ export const SEED_OBSERVATIONS: Array<GridAddress & { actualCost: number }> = [
 ];
 
 /** Seed observations expressed as free-text addresses, for geocoding. */
-export function seedAddressText(seed: GridAddress): string {
+export function seedAddressText(seed: SeedAddress): string {
 	return `Calle ${seed.calle} # ${seed.carrera}-${seed.numero}`;
 }
-
-/**
- * The v1 grid model, fitted on the seed observations' synthetic legs. Used to
- * price `grid_fallback` results, which are in grid-km and must never be
- * scored with the geocoded model's coefficients.
- */
-export const GRID_MODEL: DeliveryModel = fitDeliveryModel(
-	SEED_OBSERVATIONS.flatMap((seed) => {
-		const legs = gridLegs(seed);
-		return legs ? [{ ...legs, actualCost: seed.actualCost, source: 'seed' as const }] : [];
-	})
-);

@@ -8,7 +8,7 @@ This document provides an overview of the Aristaeus project for AI assistants wo
 
 ## Project Overview
 
-Aristaeus is an automated bowl ordering system where users customize bowls through a web interface, orders are stored in a database, and kitchen robots (ESP32-based) retrieve and fulfill orders. The MVP focuses on order capture and data management with device communication abstraction for future robot integration.
+Aristaeus is a bowl ordering system: users customize bowls through a web interface, orders are stored in a database, and the kitchen fulfills them from the admin order view. Robot (ESP32) fulfilment was removed on 2026-09-17 — no device ever connected — so the system is order capture, pricing, delivery estimation and kitchen operations.
 
 ---
 
@@ -69,13 +69,10 @@ aristaeus/
 ├── .husky/                            # Husky pre-commit hooks
 ├── .gitignore                         # Root gitignore
 ├── CLAUDE.md                          # This file - AI assistant reference
-├── PROJECT_SPEC.md                    # Complete technical specification
 ├── docs/
-│   └── SDLC.md                        # Software development lifecycle guide
+│   └── plans/                         # Design notes for planned work
 │
 ├── frontend/                          # @aristaeus/frontend workspace
-│   ├── FRONTEND_IMPLEMENTATION.md     # Frontend architecture & implementation guide
-│   ├── README.md                      # SvelteKit project readme
 │   ├── package.json                   # Frontend-specific dependencies
 │   ├── svelte.config.js               # SvelteKit config (adapter-static)
 │   ├── .env.local                     # Local backend URL (committed)
@@ -100,7 +97,6 @@ aristaeus/
 │   │   │   │   ├── Footer.svelte          # Footer component
 │   │   │   │   └── __tests__/             # Component unit tests
 │   │   │   ├── utils/
-│   │   │   │   ├── imperialConversion.ts  # Weight unit conversion helpers
 │   │   │   │   ├── labelGenerator.ts      # PDF label generation (jspdf)
 │   │   │   │   └── __tests__/             # Utility unit tests
 │   │   │   ├── types/                 # Frontend-specific types
@@ -117,7 +113,7 @@ aristaeus/
 │   ├── .env.hosted.example            # Template for Aurora credentials
 │   ├── prisma/
 │   │   ├── schema.prisma              # Database schema
-│   │   ├── seed.ts                    # Database seed script (ingredients + robots)
+│   │   ├── seed.ts                    # Database seed script (ingredients)
 │   │   └── seed-menus.ts              # Separate menus seed script (5 curated menus)
 │   ├── infra/                         # Terraform infrastructure
 │   │   ├── main.tf                    # Main Terraform config
@@ -128,15 +124,13 @@ aristaeus/
 │   │   ├── outputs.tf                 # Terraform outputs
 │   │   └── backend.tf                 # Terraform backend config (S3 + DynamoDB)
 │   ├── scripts/
-│   │   ├── build-lambda.js            # Lambda build script (local)
-│   │   └── build-lambda.sh            # Lambda build script (used by CI)
+│   │   └── build-lambda.sh            # Lambda build script (local + CI)
 │   └── src/
 │       ├── dev-server.ts              # Express dev server for local development
 │       ├── handlers/
 │       │   ├── ingredients.ts         # GET /api/ingredients
 │       │   ├── menus.ts               # GET /api/menus
 │       │   ├── orders.ts              # Order CRUD handlers
-│       │   ├── robots.ts              # Robot API handlers
 │       │   ├── users.ts               # GET /api/users/check-phone, DELETE /api/users
 │       │   └── __tests__/             # Handler unit tests
 │       └── lib/
@@ -159,38 +153,6 @@ aristaeus/
         ├── deploy-frontend.yml        # GitHub Pages deployment
         └── deploy-backend.yml         # Backend deployment via Terraform
 ```
-
----
-
-## Key Specification Documents
-
-### 1. [PROJECT_SPEC.md](./PROJECT_SPEC.md)
-
-**The source of truth for the entire system.**
-
-- Complete database schema (ingredients, orders, order_items, robots)
-- API specifications (user-facing & robot-facing)
-- Business logic and order lifecycle
-- Nutritional calculation requirements
-- Security considerations
-- Deployment architecture
-
-**When to consult:** System architecture, database design, API contracts, business rules
-
----
-
-### 2. [frontend/FRONTEND_IMPLEMENTATION.md](./frontend/FRONTEND_IMPLEMENTATION.md)
-
-**Detailed frontend implementation guide.**
-
-- TypeScript type definitions
-- Component specifications
-- State management patterns (Svelte 5 runes)
-- Nutritional calculation logic (client-side)
-- Styling guidelines
-- Validation rules
-
-**When to consult:** Frontend development, component structure, client-side logic
 
 ---
 
@@ -218,10 +180,8 @@ aristaeus/
   - `POST /api/orders` - create new order
   - `GET /api/orders/{id}` - get order details
   - `PUT /api/orders/{orderId}/status` - admin status update
-  - `POST /api/orders/{orderId}/status` - robot status update
   - `GET /api/users/check-phone` - returning customer lookup
   - `DELETE /api/users` - delete user data (Law 1581 compliance)
-  - Robot registration, heartbeat, and next-order endpoints
 - **Menu system** - pre-configured bowl selections
   - `Menu` and `MenuIngredient` database models
   - 5 seeded menus with full ingredient recipes and pricing
@@ -244,7 +204,6 @@ aristaeus/
 
 ### 📋 Not Started (Out of Scope for MVP)
 
-- Robot abstraction layer testing with actual ESP32 devices
 - User authentication/accounts
 - Payment processing
 - Inventory/stock management
@@ -275,14 +234,14 @@ aristaeus/
 - **Minimum quantity:** 10g per ingredient
 - **Categories:** protein, base, vegetable, topping, dressing
 - **Availability:** Only show ingredients where `available = true`
-- **Sequence order:** Ingredients have assembly order for robot execution
+- **Sequence order:** Ingredients have an assembly order for the kitchen
 
 ### Order Status Lifecycle
 
 ```
-pending → queued → assigned → preparing → ready → completed
-                        ↓
-                     failed
+pending → preparing → ready → completed
+             ↓
+          failed / cancelled
 ```
 
 ---
@@ -437,15 +396,6 @@ The `.env` files are auto-generated when running `npm run dev:local`, `dev:hybri
 - `GET /api/orders` - List all orders (admin view)
 - `PUT /api/orders/{orderId}/status` - Update order status (admin)
 
-### Robot-Facing
-
-- `POST /api/robots/register` - Register new robot
-- `GET /api/robots/{robotId}/next-order` - Poll for next order
-- `POST /api/orders/{orderId}/status` - Update order status (robot)
-- `POST /api/robots/{robotId}/heartbeat` - Send heartbeat
-
-Full API spec: See PROJECT_SPEC.md
-
 ---
 
 ## Database Schema Quick Reference
@@ -480,7 +430,6 @@ quantity_grams, sequence_order
 ```sql
 id, bowl_size, customer_name, status,
 total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, total_weight_g,
-assigned_robot_id,
 created_at, assigned_at, started_at, completed_at
 ```
 
@@ -489,13 +438,6 @@ created_at, assigned_at, started_at, completed_at
 ```sql
 id, order_id, ingredient_id,
 quantity_grams, sequence_order
-```
-
-### Robots Table
-
-```sql
-id, name, identifier, status,
-current_order_id, last_heartbeat
 ```
 
 Full schema: See `backend/prisma/schema.prisma`
@@ -596,16 +538,17 @@ curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json
 
 ## Version History
 
-| Date       | Version | Changes                                                                                            |
-| ---------- | ------- | -------------------------------------------------------------------------------------------------- |
-| 2025-12-02 | 1.0     | Initial CLAUDE.md creation                                                                         |
-| 2025-12-14 | 1.1     | Converted to npm workspaces monorepo, added `@aristaeus/shared` package                            |
-| 2025-12-14 | 2.0     | Added serverless backend (Lambda + Prisma), GitHub Pages deployment                                |
-| 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                          |
-| 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed        |
-| 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                            |
-| 2026-02-21 | 3.2     | Added deployment checklist, lessons learned from checkPhone endpoint deployment                    |
-| 2026-03-26 | 3.3     | Menu system, pricing logic, Law 1581 compliance (users/privacy), 3-view UI, bowl sizes 250/450/600 |
+| Date       | Version | Changes                                                                                                     |
+| ---------- | ------- | ----------------------------------------------------------------------------------------------------------- |
+| 2025-12-02 | 1.0     | Initial CLAUDE.md creation                                                                                  |
+| 2025-12-14 | 1.1     | Converted to npm workspaces monorepo, added `@aristaeus/shared` package                                     |
+| 2025-12-14 | 2.0     | Added serverless backend (Lambda + Prisma), GitHub Pages deployment                                         |
+| 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                                   |
+| 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed                 |
+| 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                                     |
+| 2026-02-21 | 3.2     | Added deployment checklist, lessons learned from checkPhone endpoint deployment                             |
+| 2026-03-26 | 3.3     | Menu system, pricing logic, Law 1581 compliance (users/privacy), 3-view UI, bowl sizes 250/450/600          |
+| 2026-09-17 | 4.0     | Removed the robot subsystem and the v1 grid delivery fallback; folded the separate spec docs into this file |
 
 ---
 
@@ -619,12 +562,11 @@ When adding a new Lambda handler (e.g., `users.ts`), you must update **all** of 
 | --------------------------------- | ----------------------------------------------- |
 | `backend/src/handlers/[name].ts`  | The handler code                                |
 | `backend/src/dev-server.ts`       | Express route for local development             |
-| `backend/scripts/build-lambda.sh` | Add to esbuild entry points (**CI uses this**)  |
-| `backend/scripts/build-lambda.js` | Add to esbuild entry points (local builds)      |
+| `backend/scripts/build-lambda.sh` | Add to esbuild entry points                     |
 | `backend/infra/lambda.tf`         | CloudWatch log group + Lambda function resource |
 | `backend/infra/api_gateway.tf`    | Integration + Route + Lambda permission         |
 
-**Critical:** CI uses `build-lambda.sh`, not `build-lambda.js`. If you only update the JS file, local builds work but CI deployment fails with 500 errors because the handler code isn't bundled.
+**Critical:** a handler missing from `build-lambda.sh` is not bundled, so the deployed Lambda returns 500 even though local development works.
 
 ### Database Schema Changes
 
@@ -665,6 +607,6 @@ When changing database operations (e.g., replacing `user.upsert` with `user.find
 
 ---
 
-**Last Updated:** 2026-03-26
-**Project Status:** MVP Complete + Menu System
-**Current Phase:** Production Ready (Robot integration pending)
+**Last Updated:** 2026-09-17
+**Project Status:** MVP Complete + Menu System + Delivery Estimation
+**Current Phase:** Production

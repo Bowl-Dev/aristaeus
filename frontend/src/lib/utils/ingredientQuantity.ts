@@ -6,6 +6,9 @@ import { DRESSING_STEP_GRAMS } from '$lib/types';
  * Dressings are quantized to half-container steps (one tap = half a container,
  * {@link DRESSING_STEP_GRAMS}g); toppings step by 5g; everything else by 10g.
  */
+// ponytail: this and getInitialQuantity are two if-chains over the same three
+// categories. Collapse into one Record<category, {step, initial}> when a fourth
+// category rule appears.
 export function getQuantityIncrement(category: string): number {
 	if (category === 'dressing') return DRESSING_STEP_GRAMS;
 	if (category === 'topping') return 5;

@@ -15,6 +15,14 @@
 	// global Footer and locale toggle (the toggle would overlap the cart icon — ENG-48).
 	// The other routes (/admin/orders, /privacy, /privacy/delete) keep the global
 	// Footer (privacy link) and locale toggle.
+	// ponytail: three deferrals sit on this file.
+	// 1. The locale toggle (and so all of en.json, 476 lines) is reachable only from
+	//    /admin and /privacy — the customer app is Spanish by design. Delete the English
+	//    bundle if no English-speaking surface appears.
+	// 2. `text-surface-500` below plus the body rule in app.css are the only uses of
+	//    @skeletonlabs/skeleton + skeleton-svelte + the cerberus theme. Swap them for the
+	//    @theme tokens and drop both deps.
+	// 3. showFooter is just !isAppRoute — one name for one condition.
 	const isAppRoute = $derived($page.route.id === '/');
 	const showFooter = $derived(!isAppRoute);
 

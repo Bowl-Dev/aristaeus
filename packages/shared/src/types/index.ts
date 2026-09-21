@@ -121,24 +121,11 @@ export interface Order {
 	totalFatG: number | null;
 	totalFiberG: number | null;
 	totalWeightG: number | null;
-	assignedRobotId: number | null;
 	createdAt: string;
 	assignedAt: string | null;
 	startedAt: string | null;
 	completedAt: string | null;
 	totalPrice: number;
-}
-
-// Robot types
-export type RobotStatus = 'online' | 'offline' | 'busy' | 'error';
-
-export interface Robot {
-	id: number;
-	name: string;
-	identifier: string;
-	status: RobotStatus;
-	currentOrderId: number | null;
-	lastHeartbeat: string | null;
 }
 
 // Nutritional summary
@@ -238,7 +225,6 @@ export interface AdminOrder {
 	totalFatG: number;
 	totalFiberG: number;
 	totalPrice: number;
-	assignedRobotId: number | null;
 	createdAt: string;
 	assignedAt: string | null;
 	startedAt: string | null;

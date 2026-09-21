@@ -179,10 +179,6 @@ model Order {
   // Price to charge to the customer
   totalPrice      Decimal?  @map("total_price") @db.Decimal(7, 2)
 
-  // Robot assignment
-  assignedRobotId Int?      @map("assigned_robot_id")
-  assignedRobot   Robot?    @relation("AssignedOrders", fields: [assignedRobotId], references: [id])
-
   // Timestamps
   createdAt       DateTime  @default(now()) @map("created_at")
   assignedAt      DateTime? @map("assigned_at")
@@ -191,10 +187,8 @@ model Order {
 
   // Relations
   items           OrderItem[]
-  currentRobot    Robot?        @relation("CurrentOrder")
 
   @@index([status])
-  @@index([assignedRobotId])
   @@index([userId])
   @@index([addressId])
   @@map("orders")
@@ -211,7 +205,7 @@ model OrderItem {
 
   quantityGrams Decimal  @map("quantity_grams") @db.Decimal(7, 2)
 
-  // Assembly sequence (1, 2, 3... for robot execution order)
+  // Assembly sequence (1, 2, 3... for kitchen assembly order)
   sequenceOrder Int      @map("sequence_order")
 
   // Timestamps
@@ -223,35 +217,6 @@ model OrderItem {
 
   @@index([orderId])
   @@map("order_items")
-}
-
-// ============================================
-// Robot Registry (Device Abstraction Layer)
-// ============================================
-
-model Robot {
-  id              Int       @id @default(autoincrement())
-  name            String    @db.VarChar(100)
-  identifier      String    @unique @db.VarChar(100) // Device ID for authentication
-
-  // Status: 'online', 'offline', 'busy', 'error'
-  status          String    @default("offline") @db.VarChar(50)
-
-  // Current order being processed
-  currentOrderId  Int?      @unique @map("current_order_id")
-  currentOrder    Order?    @relation("CurrentOrder", fields: [currentOrderId], references: [id])
-
-  lastHeartbeat   DateTime? @map("last_heartbeat")
-
-  // Timestamps
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  // Relations - orders assigned to this robot
-  assignedOrders  Order[]   @relation("AssignedOrders")
-
-  @@index([status])
-  @@map("robots")
 }
 
 // ============================================
@@ -323,4 +288,45 @@ model DeliveryObservation {
 
   @@index([source])
   @@map("delivery_observations")
+}
+
+// ============================================
+// Promotional Coupons
+// ============================================
+
+model Coupon {
+  id                Int      @id @default(autoincrement())
+
+  // Identity (see the coupons spec doc, section 5)
+  code              String   @unique @db.VarChar(40) // stored and compared uppercase
+  campaignName      String   @map("campaign_name") @db.VarChar(200)
+  description       String?  @db.Text // internal note for Marketing
+
+  // Benefit. 'percent' uses value as 0-100, 'fixed' as COP,
+  // 'free_shipping' ignores it and discounts the delivery fee instead.
+  type              String   @db.VarChar(20)
+  value             Decimal? @db.Decimal(10, 2)
+
+  // Vigencia
+  startsAt          DateTime @map("starts_at")
+  endsAt            DateTime @map("ends_at")
+
+  // Presupuesto. Every redemption draws down budgetRemaining by the COP actually
+  // granted; at zero the coupon stops validating.
+  budgetTotal       Decimal  @map("budget_total") @db.Decimal(12, 2)
+  budgetRemaining   Decimal  @map("budget_remaining") @db.Decimal(12, 2)
+
+  // Reglas de negocio. Two rules, so two columns.
+  minBowls          Int      @default(1) @map("min_bowls")
+  firstPurchaseOnly Boolean  @default(false) @map("first_purchase_only")
+
+  // Estado — the manual Marketing on/off switch. Expiry and an exhausted budget
+  // are derived at validation time, so nothing depends on a job having run.
+  active            Boolean  @default(true)
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@map("coupons")
 }

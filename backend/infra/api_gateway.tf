@@ -85,34 +85,6 @@ resource "aws_apigatewayv2_integration" "admin_update_order_status" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_integration" "register_robot" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.register_robot.invoke_arn
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_integration" "get_next_order" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.get_next_order.invoke_arn
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_integration" "update_order_status" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.update_order_status.invoke_arn
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_integration" "robot_heartbeat" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.robot_heartbeat.invoke_arn
-  payload_format_version = "2.0"
-}
-
 resource "aws_apigatewayv2_integration" "check_phone" {
   api_id                 = aws_apigatewayv2_api.main.id
   integration_type       = "AWS_PROXY"
@@ -206,34 +178,6 @@ resource "aws_apigatewayv2_route" "admin_update_order_status" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "PUT /api/orders/{orderId}/status"
   target    = "integrations/${aws_apigatewayv2_integration.admin_update_order_status.id}"
-}
-
-# POST /api/robots/register
-resource "aws_apigatewayv2_route" "register_robot" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "POST /api/robots/register"
-  target    = "integrations/${aws_apigatewayv2_integration.register_robot.id}"
-}
-
-# GET /api/robots/{robotId}/next-order
-resource "aws_apigatewayv2_route" "get_next_order" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "GET /api/robots/{robotId}/next-order"
-  target    = "integrations/${aws_apigatewayv2_integration.get_next_order.id}"
-}
-
-# POST /api/orders/{orderId}/status
-resource "aws_apigatewayv2_route" "update_order_status" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "POST /api/orders/{orderId}/status"
-  target    = "integrations/${aws_apigatewayv2_integration.update_order_status.id}"
-}
-
-# POST /api/robots/{robotId}/heartbeat
-resource "aws_apigatewayv2_route" "robot_heartbeat" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "POST /api/robots/{robotId}/heartbeat"
-  target    = "integrations/${aws_apigatewayv2_integration.robot_heartbeat.id}"
 }
 
 # GET /api/users/check-phone
@@ -336,38 +280,6 @@ resource "aws_lambda_permission" "admin_update_order_status" {
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
 
-resource "aws_lambda_permission" "register_robot" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.register_robot.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
-}
-
-resource "aws_lambda_permission" "get_next_order" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.get_next_order.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
-}
-
-resource "aws_lambda_permission" "update_order_status" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.update_order_status.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
-}
-
-resource "aws_lambda_permission" "robot_heartbeat" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.robot_heartbeat.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
-}
-
 resource "aws_lambda_permission" "check_phone" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
@@ -428,6 +340,76 @@ resource "aws_lambda_permission" "delete_delivery_observation" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.delete_delivery_observation.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+# ============================================
+# Coupons
+# ============================================
+
+resource "aws_apigatewayv2_integration" "list_coupons" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.list_coupons.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "create_coupon" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.create_coupon.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_integration" "validate_coupon" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.validate_coupon.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# GET /api/coupons (list - admin)
+resource "aws_apigatewayv2_route" "list_coupons" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/coupons"
+  target    = "integrations/${aws_apigatewayv2_integration.list_coupons.id}"
+}
+
+# POST /api/coupons (create - admin)
+resource "aws_apigatewayv2_route" "create_coupon" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/coupons"
+  target    = "integrations/${aws_apigatewayv2_integration.create_coupon.id}"
+}
+
+# POST /api/coupons/validate
+resource "aws_apigatewayv2_route" "validate_coupon" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/coupons/validate"
+  target    = "integrations/${aws_apigatewayv2_integration.validate_coupon.id}"
+}
+
+resource "aws_lambda_permission" "list_coupons" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.list_coupons.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "create_coupon" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_coupon.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "validate_coupon" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.validate_coupon.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }

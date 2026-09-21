@@ -105,7 +105,7 @@ This project uses **AWS HTTP API v2** (`aws_apigatewayv2_api`), NOT the older RE
 | ZIP file           | `../dist/lambda.zip` (all handlers in one bundle)                               |
 | `source_code_hash` | `filebase64sha256("../dist/lambda.zip")` — triggers redeployment on code change |
 
-All Lambdas share a single ZIP. The esbuild bundler in `build-lambda.sh` / `build-lambda.js` produces one ZIP with all handlers.
+All Lambdas share a single ZIP. The esbuild bundler in `build-lambda.sh` produces one ZIP with all handlers.
 
 ## CORS Configuration
 
@@ -142,7 +142,7 @@ Update `var.cors_allowed_origins` in `variables.tf` when adding new frontend ori
 2. Terraform apply uploads the ZIP
 3. CI runs `npx prisma migrate deploy` against production database
 
-**Critical:** CI uses `build-lambda.sh`, not `build-lambda.js`. Always update both, but the `.sh` file is what runs in GitHub Actions.
+**Critical:** `build-lambda.sh` runs both locally (`npm run build:backend`) and in GitHub Actions.
 
 **Frontend deployment:** GitHub Actions workflow on push to `main` → SvelteKit static build → GitHub Pages.
 
@@ -166,7 +166,7 @@ Migration files live in `backend/prisma/migrations/`. They must be committed and
 
 Checklist when local works but production fails:
 
-1. **Check both build scripts:** `build-lambda.sh` AND `build-lambda.js` must include the new handler entry point
+1. **Check the build script:** `build-lambda.sh` must include the new handler entry point
 2. **Check migrations:** Schema change without migration file → 500 on endpoints using new columns
 3. **Check all 5 Terraform resources:** Log group set entry + `aws_lambda_function` + integration + route + permission
 4. **Check CloudWatch logs:** AWS Console → CloudWatch → Log groups → `/aws/lambda/aristaeus-{handlerName}`
@@ -181,7 +181,6 @@ Checklist when local works but production fails:
 - Outputs: `backend/infra/outputs.tf`
 - Terraform backend (state): `backend/infra/backend.tf`
 - Build script (CI): `backend/scripts/build-lambda.sh`
-- Build script (local): `backend/scripts/build-lambda.js`
 - CI workflows: `.github/workflows/`
 - Prisma migrations: `backend/prisma/migrations/`
 

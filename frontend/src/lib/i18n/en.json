@@ -251,9 +251,18 @@
 		"title": "Delivery Information",
 		"subtitle": "Complete your details to receive your order",
 		"form": {
-			"name": { "label": "Full Name", "placeholder": "Enter your name" },
-			"phone": { "label": "Phone", "placeholder": "+57 300 123 4567" },
-			"address": { "label": "Delivery Address", "placeholder": "Street, number, apt" },
+			"name": {
+				"label": "Full Name",
+				"placeholder": "Enter your name"
+			},
+			"phone": {
+				"label": "Phone",
+				"placeholder": "+57 300 123 4567"
+			},
+			"address": {
+				"label": "Delivery Address",
+				"placeholder": "Street, number, apt"
+			},
 			"instructions": {
 				"label": "Delivery Instructions or Coupons (Optional)",
 				"placeholder": "Additional references, special instructions..."
@@ -289,6 +298,10 @@
 			"deliveryCalculator": {
 				"title": "Delivery Calculator",
 				"description": "Estimate delivery costs for an order address."
+			},
+			"coupons": {
+				"title": "Coupons",
+				"description": "Create discount campaigns and review their budget."
 			}
 		},
 		"deliveryCalculator": {
@@ -317,7 +330,7 @@
 				"cached": "From cache",
 				"observations": "Fitted on {count} recorded courier charges.",
 				"empty": "Enter an address to see an estimate.",
-				"noEstimate": "No estimate. The address could not be located and the street grid did not apply either."
+				"noEstimate": "No estimate — the address could not be located in the cadastre. Enter the courier price by hand."
 			},
 			"tier": {
 				"exact": {
@@ -335,10 +348,6 @@
 				"streetSegment": {
 					"badge": "Street only — address not found",
 					"note": "We found the street but not the address on it, so this is the middle of the whole street. On a long street that can be kilometres away from the real destination."
-				},
-				"gridFallback": {
-					"badge": "Guessed from the street grid",
-					"note": "The address was not found at all. This number comes from the old approximate grid, which assumes every block is 100 m — it is not a real location."
 				},
 				"failed": {
 					"badge": "Not located",
@@ -390,6 +399,56 @@
 				"running": "Uploading…",
 				"done": "Uploaded {count} correction(s). This browser's old store has been cleared.",
 				"failed": "{failed} correction(s) could not be uploaded, so nothing was cleared. Try again."
+			}
+		},
+		"coupons": {
+			"title": "Coupons",
+			"subtitle": "Create and review promotional campaigns.",
+			"loadFailed": "Could not load coupons.",
+			"saveFailed": "Could not create the coupon.",
+			"type": {
+				"percent": "Percentage off",
+				"fixed": "Fixed amount off",
+				"free_shipping": "Free shipping"
+			},
+			"status": {
+				"live": "Live",
+				"scheduled": "Scheduled",
+				"expired": "Expired",
+				"exhausted": "Budget spent",
+				"inactive": "Inactive"
+			},
+			"form": {
+				"title": "New coupon",
+				"code": "Coupon code",
+				"campaign": "Campaign name",
+				"description": "Internal note (optional)",
+				"type": "Benefit type",
+				"percent": "Percentage (%)",
+				"amount": "Amount (COP)",
+				"freeShippingNote": "The discount is the delivery fee for the order, so there is no amount to set.",
+				"startsAt": "Starts",
+				"endsAt": "Ends",
+				"budget": "Campaign budget (COP)",
+				"budgetHint": "Each redemption draws this down by the discount granted. At zero the coupon stops working.",
+				"minBowls": "Minimum bowls",
+				"firstPurchaseOnly": "First purchase only",
+				"active": "Active",
+				"submit": "Create coupon",
+				"saving": "Creating…",
+				"saved": "Coupon {code} created."
+			},
+			"list": {
+				"title": "Campaigns",
+				"loading": "Loading coupons…",
+				"empty": "No coupons yet.",
+				"code": "Code",
+				"benefit": "Benefit",
+				"window": "Valid",
+				"budget": "Budget left",
+				"status": "Status",
+				"minBowls": "Min {count} bowls.",
+				"firstOnly": "First purchase only."
 			}
 		}
 	},

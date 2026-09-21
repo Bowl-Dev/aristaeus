@@ -23,6 +23,9 @@ export type {
 export { BOWL_SIZES } from '@aristaeus/shared';
 export { BOWL_SIZE_PRICES } from '@aristaeus/shared';
 
+// ponytail: BOWL_SIZE_LABELS and DRESSING_CONTAINER_GRAMS have no callers, and the
+// labels are untranslated English besides. Delete both when the size picker copy
+// is next touched.
 // Frontend-specific constants
 export const BOWL_SIZE_LABELS: Record<import('@aristaeus/shared').BowlSize, string> = {
 	250: 'Small (250g)',

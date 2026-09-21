@@ -22,6 +22,8 @@ function categoryRank(category: string): number {
 // The label reads in the same category order as the Builder and the kitchen
 // view (CATEGORY_ORDER), not in robot assembly order. `sequenceOrder` still
 // breaks ties so items within a category keep their assembly sequence.
+// ponytail: hand-rolled "a, b y c" joining; Intl.ListFormat('es') does it, including
+// the cases this does not (one item, empty). Swap when the label copy next changes.
 export function buildIngredientList(items: AdminOrderItem[]): string {
 	const sorted = [...items].sort(
 		(a, b) =>

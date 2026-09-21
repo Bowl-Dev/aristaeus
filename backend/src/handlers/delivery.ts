@@ -13,13 +13,11 @@ import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
 import { success, created, badRequest, notFound, serverError } from '../lib/response.js';
-import { parseAddress, formatAddress, type ParsedAddress } from '../lib/delivery/address.js';
+import { parseAddress, formatAddress } from '../lib/delivery/address.js';
 import { geocodeAddress, KITCHEN_ORIGIN, type MatchTier } from '../lib/delivery/geocode.js';
 import {
 	estimateFromLegs,
 	fitDeliveryModel,
-	gridLegs,
-	GRID_MODEL,
 	haversineLegs,
 	looCvMae,
 	type LegObservation,
@@ -83,34 +81,6 @@ async function loadObservations(): Promise<LegObservation[]> {
 }
 
 /**
- * Fall back to the v1 synthetic-grid geometry when the cadastral service
- * cannot resolve the address.
- *
- * Grid legs are in a different coordinate basis from geocoded legs, so they
- * must be priced with {@link GRID_MODEL} — the model fitted on grid legs —
- * never with the model fitted on real coordinates. The result is always
- * labelled `grid_fallback`.
- */
-function gridFallbackEstimate(address: ParsedAddress) {
-	// v1 spoke in calle/carrera; map the parsed address onto that vocabulary.
-	const legs = gridLegs({
-		calle: address.street.toLowerCase(),
-		carrera: address.cross.toLowerCase(),
-		numero: address.number
-	});
-	if (!legs) return null;
-
-	const estimate = estimateFromLegs(GRID_MODEL, legs);
-	return {
-		...estimate,
-		matchTier: 'grid_fallback' as MatchTier,
-		confidence: 'low' as const,
-		resolvedPlate: null,
-		coordinates: null
-	};
-}
-
-/**
  * POST /api/delivery/estimate
  * Body: { address: string }
  */
@@ -139,44 +109,17 @@ export const estimateDeliveryCost: APIGatewayProxyHandler = async (event) => {
 
 		if (!geocoded) {
 			// A truncated search proves nothing about the address — say so, rather
-			// than implying it is absent from the cadastre.
-			const message = searchTruncated
-				? 'The address lookup ran out of time before finishing. This estimate uses the ' +
-					'approximate street grid; retry for a precise result.'
-				: 'Address could not be located in the cadastre. This estimate uses the approximate street grid.';
-
-			const fallback = gridFallbackEstimate(address);
-			if (!fallback) {
-				return success({
-					estimate: null,
-					matchTier: 'failed',
-					confidence: 'low',
-					searchTruncated,
-					address: formatAddress(address),
-					message: searchTruncated
-						? 'The address lookup ran out of time and the grid fallback did not apply. Please retry.'
-						: 'Address could not be located and the grid fallback did not apply.'
-				});
-			}
+			// than implying it is absent from the cadastre. Either way there is no
+			// estimate: a guessed price is worse than none.
 			return success({
-				estimate: {
-					cost: fallback.cost,
-					northKm: fallback.northKm,
-					eastKm: fallback.eastKm,
-					totalKm: fallback.totalKm,
-					minFareApplied: fallback.minFareApplied
-				},
-				matchTier: fallback.matchTier,
-				confidence: fallback.confidence,
+				estimate: null,
+				matchTier: 'failed',
+				confidence: 'low',
 				searchTruncated,
-				resolvedPlate: null,
-				coordinates: null,
-				// The grid model is fitted on grid legs, so its accuracy figure is
-				// the grid model's, not the geocoded model's.
-				accuracyCop: null,
-				observationCount: observations.length,
 				address: formatAddress(address),
-				message
+				message: searchTruncated
+					? 'The address lookup ran out of time before finishing. Please retry.'
+					: 'Address could not be located in the cadastre. Enter the courier price by hand.'
 			});
 		}
 

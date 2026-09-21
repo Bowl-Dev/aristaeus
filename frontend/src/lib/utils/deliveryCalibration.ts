@@ -11,6 +11,9 @@
  * this file can be deleted.
  */
 
+// ponytail: a one-shot migration living on as permanent code, delete it (plus the
+// banner in the calculator page and its test) once every ops browser has run it.
+
 import { createDeliveryObservation } from '$lib/api/client';
 
 const STORAGE_KEY = 'aristaeus.delivery.calibration.v1';

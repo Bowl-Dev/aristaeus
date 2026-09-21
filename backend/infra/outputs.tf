@@ -62,9 +62,5 @@ output "lambda_function_names" {
     create_order              = aws_lambda_function.create_order.function_name
     get_order                 = aws_lambda_function.get_order.function_name
     admin_update_order_status = aws_lambda_function.admin_update_order_status.function_name
-    register_robot            = aws_lambda_function.register_robot.function_name
-    get_next_order            = aws_lambda_function.get_next_order.function_name
-    update_order_status       = aws_lambda_function.update_order_status.function_name
-    robot_heartbeat           = aws_lambda_function.robot_heartbeat.function_name
   }
 }

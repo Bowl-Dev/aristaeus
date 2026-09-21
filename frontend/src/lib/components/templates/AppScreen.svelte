@@ -1,4 +1,8 @@
 <script lang="ts">
+	// ponytail: the atoms/molecules/organisms/templates split gives GrabBar, HeroCopy,
+	// ScreenHeading, HeroBackdrop, BackButton, CartIconButton, IconCircle and OptionCard
+	// exactly one caller each. Ceiling: a four-file hop to read one screen. Upgrade:
+	// inline any wrapper that still has a single caller when its screen is next touched.
 	import type { Snippet } from 'svelte';
 	import AppHeader from '../organisms/AppHeader.svelte';
 	import ScreenHeading from '../organisms/ScreenHeading.svelte';

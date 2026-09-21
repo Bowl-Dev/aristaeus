@@ -14,17 +14,11 @@ import type {
 
 // Import handlers
 import { getIngredients } from './handlers/ingredients.js';
-import {
-	createOrder,
-	getOrder,
-	listOrders,
-	updateOrderStatus,
-	adminUpdateOrderStatus
-} from './handlers/orders.js';
-import { registerRobot, getNextOrder, heartbeat } from './handlers/robots.js';
+import { createOrder, getOrder, listOrders, adminUpdateOrderStatus } from './handlers/orders.js';
 import { checkPhone, deleteUser } from './handlers/users.js';
 import { getMenus } from './handlers/menus.js';
 import { getConfig } from './handlers/config.js';
+import { listCoupons, createCoupon, validateCouponCode } from './handlers/coupons.js';
 import {
 	estimateDeliveryCost,
 	listDeliveryObservations,
@@ -40,7 +34,10 @@ app.use(cors());
 app.use(express.json());
 
 /**
- * Convert Express request to API Gateway event
+ * Convert an Express request into the slice of an API Gateway event the handlers
+ * actually read: body, path parameters and query string. The rest of the shape
+ * (requestContext, identity, multi-value maps) is cast rather than filled with
+ * nulls — nothing reads it, and a wrong null is not better than an absent one.
  */
 function createApiGatewayEvent(
 	req: Request,
@@ -49,66 +46,11 @@ function createApiGatewayEvent(
 	return {
 		body: req.body ? JSON.stringify(req.body) : null,
 		headers: req.headers as Record<string, string>,
-		multiValueHeaders: {},
 		httpMethod: req.method,
-		isBase64Encoded: false,
 		path: req.path,
-		pathParameters: pathParams || null,
-		queryStringParameters: (req.query as Record<string, string>) || null,
-		multiValueQueryStringParameters: null,
-		stageVariables: null,
-		requestContext: {
-			accountId: 'local',
-			apiId: 'local',
-			authorizer: null,
-			protocol: 'HTTP/1.1',
-			httpMethod: req.method,
-			identity: {
-				accessKey: null,
-				accountId: null,
-				apiKey: null,
-				apiKeyId: null,
-				caller: null,
-				clientCert: null,
-				cognitoAuthenticationProvider: null,
-				cognitoAuthenticationType: null,
-				cognitoIdentityId: null,
-				cognitoIdentityPoolId: null,
-				principalOrgId: null,
-				sourceIp: req.ip || '127.0.0.1',
-				user: null,
-				userAgent: req.get('user-agent') || null,
-				userArn: null
-			},
-			path: req.path,
-			stage: 'local',
-			requestId: `local-${Date.now()}`,
-			requestTimeEpoch: Date.now(),
-			resourceId: 'local',
-			resourcePath: req.path
-		},
-		resource: req.path
-	};
-}
-
-/**
- * Create mock Lambda context
- */
-function createContext(): Context {
-	return {
-		callbackWaitsForEmptyEventLoop: true,
-		functionName: 'local-dev',
-		functionVersion: '1',
-		invokedFunctionArn: 'local',
-		memoryLimitInMB: '256',
-		awsRequestId: `local-${Date.now()}`,
-		logGroupName: 'local',
-		logStreamName: 'local',
-		getRemainingTimeInMillis: () => 30000,
-		done: () => {},
-		fail: () => {},
-		succeed: () => {}
-	};
+		pathParameters: pathParams ?? null,
+		queryStringParameters: (req.query as Record<string, string>) ?? null
+	} as unknown as APIGatewayProxyEvent;
 }
 
 /**
@@ -131,9 +73,8 @@ function wrapHandler(handler: APIGatewayProxyHandler, pathParamNames?: string[])
 				req,
 				Object.keys(pathParams).length > 0 ? pathParams : undefined
 			);
-			const context = createContext();
-
-			const result = (await handler(event, context, () => {})) as APIGatewayProxyResult;
+			// No handler reads the Lambda context.
+			const result = (await handler(event, {} as Context, () => {})) as APIGatewayProxyResult;
 
 			// Set headers
 			if (result.headers) {
@@ -190,6 +131,19 @@ app.get('/api/orders/:id', wrapHandler(getOrder, ['id']));
 app.put('/api/orders/:orderId/status', wrapHandler(adminUpdateOrderStatus, ['orderId']));
 
 // ============================================
+// Coupons
+// ============================================
+
+// GET /api/coupons (list - admin)
+app.get('/api/coupons', wrapHandler(listCoupons));
+
+// POST /api/coupons (create - admin)
+app.post('/api/coupons', wrapHandler(createCoupon));
+
+// POST /api/coupons/validate (customer "Aplicar")
+app.post('/api/coupons/validate', wrapHandler(validateCouponCode));
+
+// ============================================
 // Delivery Cost Estimation (admin/ops)
 // ============================================
 
@@ -204,22 +158,6 @@ app.post('/api/delivery/observations', wrapHandler(createDeliveryObservation));
 
 // DELETE /api/delivery/observations/:id
 app.delete('/api/delivery/observations/:id', wrapHandler(deleteDeliveryObservation, ['id']));
-
-// ============================================
-// Robot-Facing APIs
-// ============================================
-
-// POST /api/robots/register
-app.post('/api/robots/register', wrapHandler(registerRobot));
-
-// GET /api/robots/:robotId/next-order
-app.get('/api/robots/:robotId/next-order', wrapHandler(getNextOrder, ['robotId']));
-
-// POST /api/orders/:orderId/status
-app.post('/api/orders/:orderId/status', wrapHandler(updateOrderStatus, ['orderId']));
-
-// POST /api/robots/:robotId/heartbeat
-app.post('/api/robots/:robotId/heartbeat', wrapHandler(heartbeat, ['robotId']));
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -240,10 +178,9 @@ app.listen(PORT, () => {
 	console.log('  POST /api/orders');
 	console.log('  GET  /api/orders/:id');
 	console.log('  PUT  /api/orders/:orderId/status  (admin update)');
-	console.log('  POST /api/orders/:orderId/status  (robot update)');
-	console.log('  POST /api/robots/register');
-	console.log('  GET  /api/robots/:robotId/next-order');
-	console.log('  POST /api/robots/:robotId/heartbeat');
+	console.log('  GET  /api/coupons                 (list - admin)');
+	console.log('  POST /api/coupons                 (create - admin)');
+	console.log('  POST /api/coupons/validate        (apply a code to a cart)');
 	console.log('  GET  /health');
 	console.log('');
 });

@@ -10,16 +10,15 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "adminUpdateOrderStatus",
     "checkPhone",
     "deleteUser",
-    "registerRobot",
-    "getNextOrder",
-    "updateOrderStatus",
-    "robotHeartbeat",
     "getMenus",
     "getConfig",
     "estimateDeliveryCost",
     "listDeliveryObservations",
     "createDeliveryObservation",
-    "deleteDeliveryObservation"
+    "deleteDeliveryObservation",
+    "listCoupons",
+    "createCoupon",
+    "validateCoupon"
   ])
 
   name              = "/aws/lambda/${var.project_name}-${each.key}-${var.environment}"
@@ -140,110 +139,6 @@ resource "aws_lambda_function" "admin_update_order_status" {
   function_name = "${var.project_name}-adminUpdateOrderStatus-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
   handler       = "handlers/orders.adminUpdateOrderStatus"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL = var.database_url
-      NODE_ENV     = var.environment
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_lambda_function" "register_robot" {
-  function_name = "${var.project_name}-registerRobot-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/robots.registerRobot"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL = var.database_url
-      NODE_ENV     = var.environment
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_lambda_function" "get_next_order" {
-  function_name = "${var.project_name}-getNextOrder-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/robots.getNextOrder"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL = var.database_url
-      NODE_ENV     = var.environment
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_lambda_function" "update_order_status" {
-  function_name = "${var.project_name}-updateOrderStatus-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/orders.updateOrderStatus"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL = var.database_url
-      NODE_ENV     = var.environment
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_lambda_function" "robot_heartbeat" {
-  function_name = "${var.project_name}-robotHeartbeat-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/robots.heartbeat"
   runtime       = "nodejs20.x"
   timeout       = 30
   memory_size   = 256
@@ -465,6 +360,85 @@ resource "aws_lambda_function" "get_config" {
   function_name = "${var.project_name}-getConfig-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
   handler       = "handlers/config.getConfig"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# Coupons
+resource "aws_lambda_function" "list_coupons" {
+  function_name = "${var.project_name}-listCoupons-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/coupons.listCoupons"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "create_coupon" {
+  function_name = "${var.project_name}-createCoupon-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/coupons.createCoupon"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "validate_coupon" {
+  function_name = "${var.project_name}-validateCoupon-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/coupons.validateCouponCode"
   runtime       = "nodejs20.x"
   timeout       = 30
   memory_size   = 256

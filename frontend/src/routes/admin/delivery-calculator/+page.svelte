@@ -36,9 +36,13 @@
 		nearest_number: 'good',
 		nearest_cross: 'medium',
 		street_segment: 'low',
-		grid_fallback: 'low',
 		failed: 'low'
 	};
+
+	// ponytail: TIER_LEVEL re-derives client-side the `confidence` the estimate response
+	// already carries (confidenceFor() in backend/src/handlers/delivery.ts). Ceiling: two
+	// tier→severity tables to keep in step. Upgrade: read result.confidence and delete
+	// this map when a tier is next added or removed.
 
 	/** Match tier -> i18n key segment. */
 	const TIER_KEY: Record<DeliveryMatchTier, string> = {
@@ -46,7 +50,6 @@
 		nearest_number: 'nearestNumber',
 		nearest_cross: 'nearestCross',
 		street_segment: 'streetSegment',
-		grid_fallback: 'gridFallback',
 		failed: 'failed'
 	};
 

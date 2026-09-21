@@ -16,11 +16,10 @@ When adding a new Lambda endpoint, you MUST update ALL of these files — missin
 | `backend/src/handlers/[name].ts`  | The handler function                                  |
 | `backend/src/dev-server.ts`       | Express route for local dev                           |
 | `backend/scripts/build-lambda.sh` | Add to esbuild entry points **(CI uses this)**        |
-| `backend/scripts/build-lambda.js` | Add to esbuild entry points (local builds)            |
 | `backend/infra/lambda.tf`         | CloudWatch log group + `aws_lambda_function` resource |
 | `backend/infra/api_gateway.tf`    | Integration + Route + Lambda permission               |
 
-**Critical:** CI uses `build-lambda.sh`, NOT `build-lambda.js`. If you only update the `.js` file, local builds succeed but CI deployment silently fails — the handler is missing from the Lambda ZIP and returns 500 errors in production.
+**Critical:** a handler missing from `build-lambda.sh` is absent from the Lambda ZIP, so the deployed endpoint returns 500 even though local development works.
 
 ## Canonical Handler Pattern
 
@@ -104,20 +103,6 @@ export const BOWL_SIZES: readonly BowlSize[] = [250, 450, 600] as const;
 
 Do NOT use 320, 480, or other values. The shared types package is the source of truth.
 
-## Robot Status Transitions
-
-Only these transitions are valid for robot-driven status updates:
-
-```typescript
-const STATUS_TRANSITIONS: Record<string, string[]> = {
-	assigned: ['preparing'],
-	preparing: ['ready', 'failed'],
-	ready: ['completed']
-};
-```
-
-Admin can override to any status via `PUT /api/orders/{orderId}/status`. Robot uses `POST /api/orders/{orderId}/status` and is bound by `STATUS_TRANSITIONS`.
-
 ## Nutritional Calculation
 
 - **Formula:** `(ingredientValuePer100g * quantityGrams) / 100`
@@ -151,12 +136,12 @@ npx prisma migrate dev --name descriptive_name
 ## Order Status Lifecycle
 
 ```
-pending → queued → assigned → preparing → ready → completed
-                                    ↓
-                                  failed
+pending → preparing → ready → completed
+             ↓
+          failed / cancelled
 ```
 
-`cancelled` is admin-only. Terminal states: `completed`, `failed`, `cancelled` — these free the assigned robot.
+Every transition goes through `PUT /api/orders/{orderId}/status` (admin). Terminal states: `completed`, `failed`, `cancelled`.
 
 ## Key File Locations
 

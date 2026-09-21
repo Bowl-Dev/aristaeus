@@ -116,13 +116,7 @@ export interface LatLng {
  * How confident we are in the coordinates, in descending order. Never degrade
  * silently: the tier is always returned so the UI can label it.
  */
-export type MatchTier =
-	| 'exact'
-	| 'nearest_number'
-	| 'nearest_cross'
-	| 'street_segment'
-	| 'grid_fallback'
-	| 'failed';
+export type MatchTier = 'exact' | 'nearest_number' | 'nearest_cross' | 'street_segment' | 'failed';
 
 export interface GeocodeResult {
 	lat: number;
@@ -328,9 +322,9 @@ class Budget {
  * succeeds.
  *
  * `result` is `null` when every tier failed *or* when the budget ran out
- * before a match was found; `searchTruncated` distinguishes the two. Callers
- * should use the grid fallback in both cases, but must label a truncated
- * search as provisional.
+ * before a match was found; `searchTruncated` distinguishes the two. Neither
+ * yields an estimate, but a truncated search must be offered as worth
+ * retrying rather than reported as an unknown address.
  */
 export async function geocodeAddress(
 	address: ParsedAddress,

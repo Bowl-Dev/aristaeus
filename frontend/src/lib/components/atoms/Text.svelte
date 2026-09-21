@@ -1,4 +1,6 @@
 <script lang="ts">
+	// ponytail: no callers — every consumer writes its own <p> classes. Delete unless
+	// the next screen actually renders through it.
 	import type { Snippet } from 'svelte';
 
 	type Variant = 'body' | 'caption' | 'muted' | 'subtitle';

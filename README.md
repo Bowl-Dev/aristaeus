@@ -1,6 +1,6 @@
-# Aristaeus - Automated Bowl Kitchen System
+# Aristaeus - Bowl Kitchen System
 
-An automated bowl ordering system where users customize bowls through a web interface, orders are stored in a database, and kitchen robots retrieve and fulfill orders.
+A bowl ordering system: users customize bowls through a web interface, orders are stored in a database, and the kitchen fulfills them from the admin order view.
 
 **Live Demo:** [https://bowl-dev.github.io/aristaeus/](https://bowl-dev.github.io/aristaeus/)
 
@@ -14,7 +14,6 @@ An automated bowl ordering system where users customize bowls through a web inte
 - **Pre-configured Menus** - Select from 5 chef-curated bowl recipes with full nutritional info
 - **Order Management** - Submit orders and track status through completion
 - **Admin Dashboard** - View all orders and manage their status
-- **Robot API** - RESTful endpoints for kitchen robot integration
 - **Internationalization** - English and Spanish language support
 
 ---
@@ -161,15 +160,6 @@ npm run format                 # Run Prettier
 | GET    | `/api/orders`                  | List all orders     |
 | PUT    | `/api/orders/{orderId}/status` | Update order status |
 
-### Robot API
-
-| Method | Endpoint                           | Description         |
-| ------ | ---------------------------------- | ------------------- |
-| POST   | `/api/robots/register`             | Register new robot  |
-| GET    | `/api/robots/{robotId}/next-order` | Poll for next order |
-| POST   | `/api/orders/{orderId}/status`     | Update order status |
-| POST   | `/api/robots/{robotId}/heartbeat`  | Send heartbeat      |
-
 ---
 
 ## Deployment
@@ -205,8 +195,6 @@ terraform apply
 ## Documentation
 
 - **[CLAUDE.md](./CLAUDE.md)** - AI assistant reference guide
-- **[PROJECT_SPEC.md](./PROJECT_SPEC.md)** - Complete technical specification
-- **[frontend/FRONTEND_IMPLEMENTATION.md](./frontend/FRONTEND_IMPLEMENTATION.md)** - Frontend architecture guide
 
 ---
 

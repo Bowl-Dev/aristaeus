@@ -14,6 +14,7 @@ export function ingredientName(ing: Localized): string {
 	return pickEnglish(get(locale)) ? ing.nameEn : ing.nameEs;
 }
 
+// ponytail: no callers. Delete unless a localized non-ingredient label needs it.
 export function pickName(nameEs: string, nameEn: string): string {
 	return pickEnglish(get(locale)) ? nameEn : nameEs;
 }

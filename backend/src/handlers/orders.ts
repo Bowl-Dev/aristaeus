@@ -3,7 +3,6 @@
  * GET /api/orders - List all orders (admin)
  * POST /api/orders - Create a new order
  * GET /api/orders/{id} - Get order details
- * POST /api/orders/{orderId}/status - Update order status (robot API)
  * PUT /api/orders/{orderId}/status - Update order status (admin API)
  */
 
@@ -16,7 +15,6 @@ import {
 	badRequest,
 	notFound,
 	serverError,
-	conflict,
 	serviceUnavailable
 } from '../lib/response.js';
 import { calculateNutrition } from '../lib/nutrition.js';
@@ -77,11 +75,6 @@ const createOrderSchema = z.object({
 	deliveryInstructions: z.string().max(500).optional()
 });
 
-const updateStatusSchema = z.object({
-	robotId: z.number().int().positive(),
-	status: z.enum(['preparing', 'ready', 'completed', 'failed'])
-});
-
 const adminUpdateStatusSchema = z.object({
 	status: z.enum([
 		'pending',
@@ -94,13 +87,6 @@ const adminUpdateStatusSchema = z.object({
 		'failed'
 	])
 });
-
-// Valid status transitions
-const STATUS_TRANSITIONS: Record<string, string[]> = {
-	assigned: ['preparing'],
-	preparing: ['ready', 'failed'],
-	ready: ['completed']
-};
 
 /**
  * POST /api/orders
@@ -256,12 +242,9 @@ export const createOrder: APIGatewayProxyHandler = async (event) => {
 			return newOrder;
 		});
 
-		// Try to assign to an available robot
-		const assignedOrder = await tryAssignRobot(order.id);
-
 		return created({
 			orderId: order.id,
-			status: assignedOrder?.status ?? order.status,
+			status: order.status,
 			createdAt: order.createdAt.toISOString()
 		});
 	} catch (error) {
@@ -335,7 +318,6 @@ export const getOrder: APIGatewayProxyHandler = async (event) => {
 				totalWeightG: order.totalWeightG?.toNumber() ?? 0,
 				totalPrice: order.totalPrice?.toNumber() ?? 0
 			},
-			assignedRobotId: order.assignedRobotId,
 			createdAt: order.createdAt.toISOString(),
 			assignedAt: order.assignedAt?.toISOString() ?? null,
 			startedAt: order.startedAt?.toISOString() ?? null,
@@ -418,7 +400,6 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 				totalFatG: order.totalFatG?.toNumber() ?? 0,
 				totalFiberG: order.totalFiberG?.toNumber() ?? 0,
 				totalPrice: order.totalPrice?.toNumber() ?? 0,
-				assignedRobotId: order.assignedRobotId,
 				createdAt: order.createdAt.toISOString(),
 				assignedAt: order.assignedAt?.toISOString() ?? null,
 				startedAt: order.startedAt?.toISOString() ?? null,
@@ -436,7 +417,7 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 
 /**
  * PUT /api/orders/{orderId}/status
- * Admin updates order status (no robot restrictions)
+ * Admin updates order status
  */
 export const adminUpdateOrderStatus: APIGatewayProxyHandler = async (event) => {
 	try {
@@ -474,7 +455,6 @@ export const adminUpdateOrderStatus: APIGatewayProxyHandler = async (event) => {
 			startedAt?: Date | null;
 			completedAt?: Date | null;
 			assignedAt?: Date | null;
-			assignedRobotId?: number | null;
 		} = { status };
 
 		// Set timestamps based on status
@@ -482,22 +462,11 @@ export const adminUpdateOrderStatus: APIGatewayProxyHandler = async (event) => {
 			updateData.startedAt = new Date();
 		} else if (status === 'completed' || status === 'failed' || status === 'cancelled') {
 			updateData.completedAt = new Date();
-			// Free the robot if assigned
-			if (order.assignedRobotId) {
-				await prisma.robot.update({
-					where: { id: order.assignedRobotId },
-					data: {
-						currentOrderId: null,
-						status: 'online'
-					}
-				});
-			}
 		} else if (status === 'pending') {
 			// Reset timestamps when going back to pending
 			updateData.startedAt = null;
 			updateData.completedAt = null;
 			updateData.assignedAt = null;
-			updateData.assignedRobotId = null;
 		}
 
 		await prisma.order.update({
@@ -515,141 +484,3 @@ export const adminUpdateOrderStatus: APIGatewayProxyHandler = async (event) => {
 		return serverError('Failed to update order status');
 	}
 };
-
-/**
- * POST /api/orders/{orderId}/status
- * Robot updates order status
- */
-export const updateOrderStatus: APIGatewayProxyHandler = async (event) => {
-	try {
-		const orderId = parseInt(event.pathParameters?.orderId ?? '');
-
-		if (isNaN(orderId)) {
-			return badRequest('Invalid order ID');
-		}
-
-		if (!event.body) {
-			return badRequest('Request body is required');
-		}
-
-		const body = JSON.parse(event.body);
-		const parseResult = updateStatusSchema.safeParse(body);
-
-		if (!parseResult.success) {
-			return badRequest('Validation failed', parseResult.error.flatten());
-		}
-
-		const { robotId, status } = parseResult.data;
-
-		// Get current order
-		const order = await prisma.order.findUnique({
-			where: { id: orderId }
-		});
-
-		if (!order) {
-			return notFound(`Order ${orderId} not found`);
-		}
-
-		// Validate robot is assigned to this order
-		if (order.assignedRobotId !== robotId) {
-			return conflict(`Robot ${robotId} is not assigned to order ${orderId}`);
-		}
-
-		// Validate status transition
-		const allowedTransitions = STATUS_TRANSITIONS[order.status] ?? [];
-		if (!allowedTransitions.includes(status)) {
-			return badRequest(
-				`Invalid status transition: ${order.status} -> ${status}. Allowed: ${allowedTransitions.join(', ')}`
-			);
-		}
-
-		// Build update data based on new status
-		const updateData: {
-			status: string;
-			startedAt?: Date;
-			completedAt?: Date;
-		} = { status };
-
-		if (status === 'preparing') {
-			updateData.startedAt = new Date();
-		} else if (status === 'completed' || status === 'failed') {
-			updateData.completedAt = new Date();
-		}
-
-		// Update order and potentially free the robot
-		await prisma.$transaction(async (tx) => {
-			await tx.order.update({
-				where: { id: orderId },
-				data: updateData
-			});
-
-			// If order is terminal, free the robot
-			if (status === 'completed' || status === 'failed') {
-				await tx.robot.update({
-					where: { id: robotId },
-					data: {
-						currentOrderId: null,
-						status: 'online'
-					}
-				});
-			}
-		});
-
-		return success({
-			success: true,
-			currentStatus: status
-		});
-	} catch (error) {
-		console.error('Error updating order status:', error);
-		return serverError('Failed to update order status');
-	}
-};
-
-/**
- * Try to assign an order to an available robot
- */
-async function tryAssignRobot(orderId: number) {
-	try {
-		// Find available robot
-		const availableRobot = await prisma.robot.findFirst({
-			where: {
-				status: 'online',
-				currentOrderId: null
-			},
-			orderBy: {
-				lastHeartbeat: 'desc'
-			}
-		});
-
-		if (!availableRobot) {
-			return null;
-		}
-
-		// Assign order to robot in a transaction
-		const updatedOrder = await prisma.$transaction(async (tx) => {
-			const order = await tx.order.update({
-				where: { id: orderId },
-				data: {
-					status: 'queued',
-					assignedRobotId: availableRobot.id,
-					assignedAt: new Date()
-				}
-			});
-
-			await tx.robot.update({
-				where: { id: availableRobot.id },
-				data: {
-					currentOrderId: orderId,
-					status: 'busy'
-				}
-			});
-
-			return order;
-		});
-
-		return updatedOrder;
-	} catch (error) {
-		console.error('Error assigning robot:', error);
-		return null;
-	}
-}

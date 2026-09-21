@@ -5,6 +5,9 @@
 
 import type { APIGatewayProxyResult } from 'aws-lambda';
 
+// ponytail: seven near-identical builders around one object literal. Ceiling: each
+// new status code copies the boilerplate again. Upgrade: collapse to json(status,
+// body) when the next status code is needed.
 const defaultHeaders = {
 	'Content-Type': 'application/json',
 	'Access-Control-Allow-Origin': '*',

@@ -5,8 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "tsx watch src/dev-server.ts",
-		"build": "tsc && node scripts/build-lambda.js",
-		"build:lambda": "node scripts/build-lambda.js",
+		"build": "tsc && bash scripts/build-lambda.sh",
+		"build:lambda": "bash scripts/build-lambda.sh",
 		"db:generate": "prisma generate",
 		"db:push": "prisma db push",
 		"db:migrate": "prisma migrate dev",

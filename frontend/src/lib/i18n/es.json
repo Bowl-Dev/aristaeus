@@ -251,9 +251,18 @@
 		"title": "Información de Entrega",
 		"subtitle": "Completa tus datos para recibir tu pedido",
 		"form": {
-			"name": { "label": "Nombre Completo", "placeholder": "Ingresa tu nombre" },
-			"phone": { "label": "Teléfono", "placeholder": "+57 300 123 4567" },
-			"address": { "label": "Dirección de Entrega", "placeholder": "Calle, número, apto" },
+			"name": {
+				"label": "Nombre Completo",
+				"placeholder": "Ingresa tu nombre"
+			},
+			"phone": {
+				"label": "Teléfono",
+				"placeholder": "+57 300 123 4567"
+			},
+			"address": {
+				"label": "Dirección de Entrega",
+				"placeholder": "Calle, número, apto"
+			},
 			"instructions": {
 				"label": "Instrucciones de Entrega o Cupones (Opcional)",
 				"placeholder": "Referencias adicionales, indicaciones especiales..."
@@ -289,6 +298,10 @@
 			"deliveryCalculator": {
 				"title": "Calculadora de Domicilios",
 				"description": "Estima el costo de domicilio para una dirección de pedido."
+			},
+			"coupons": {
+				"title": "Cupones",
+				"description": "Crea campañas de descuento y revisa su presupuesto."
 			}
 		},
 		"deliveryCalculator": {
@@ -317,7 +330,7 @@
 				"cached": "Desde caché",
 				"observations": "Ajustado con {count} cobros registrados.",
 				"empty": "Escribe una dirección para ver el estimado.",
-				"noEstimate": "Sin estimado. No pudimos ubicar la dirección y tampoco aplicó la malla vial aproximada."
+				"noEstimate": "Sin estimado: no pudimos ubicar la dirección en el catastro. Registra el precio del domiciliario a mano."
 			},
 			"tier": {
 				"exact": {
@@ -335,10 +348,6 @@
 				"streetSegment": {
 					"badge": "Solo la vía — no encontramos la dirección",
 					"note": "Encontramos la vía pero no la dirección sobre ella, así que este punto es la mitad de toda la vía. En una vía larga eso puede quedar a kilómetros del destino real."
-				},
-				"gridFallback": {
-					"badge": "Calculado con la malla aproximada",
-					"note": "No encontramos la dirección. Este número sale de la malla vieja, que asume cuadras de 100 m: no corresponde a una ubicación real."
 				},
 				"failed": {
 					"badge": "Sin ubicar",
@@ -390,6 +399,56 @@
 				"running": "Subiendo…",
 				"done": "Se subieron {count} corrección(es). Ya se limpió el almacenamiento viejo de este navegador.",
 				"failed": "No se pudieron subir {failed} corrección(es), así que no se borró nada. Vuelve a intentarlo."
+			}
+		},
+		"coupons": {
+			"title": "Cupones",
+			"subtitle": "Crea y revisa campañas promocionales.",
+			"loadFailed": "No se pudieron cargar los cupones.",
+			"saveFailed": "No se pudo crear el cupón.",
+			"type": {
+				"percent": "Descuento en porcentaje",
+				"fixed": "Descuento de valor fijo",
+				"free_shipping": "Envío gratis"
+			},
+			"status": {
+				"live": "Activo",
+				"scheduled": "Programado",
+				"expired": "Expirado",
+				"exhausted": "Presupuesto agotado",
+				"inactive": "Inactivo"
+			},
+			"form": {
+				"title": "Nuevo cupón",
+				"code": "Código del cupón",
+				"campaign": "Nombre de la campaña",
+				"description": "Descripción interna (opcional)",
+				"type": "Tipo de beneficio",
+				"percent": "Porcentaje (%)",
+				"amount": "Valor (COP)",
+				"freeShippingNote": "El descuento es el costo de domicilio del pedido, así que no hay un valor que definir.",
+				"startsAt": "Inicia",
+				"endsAt": "Finaliza",
+				"budget": "Presupuesto de la campaña (COP)",
+				"budgetHint": "Cada uso descuenta de este presupuesto el valor otorgado. En cero, el cupón deja de funcionar.",
+				"minBowls": "Mínimo de bowls",
+				"firstPurchaseOnly": "Solo primera compra",
+				"active": "Activo",
+				"submit": "Crear cupón",
+				"saving": "Creando…",
+				"saved": "Cupón {code} creado."
+			},
+			"list": {
+				"title": "Campañas",
+				"loading": "Cargando cupones…",
+				"empty": "Aún no hay cupones.",
+				"code": "Código",
+				"benefit": "Beneficio",
+				"window": "Vigencia",
+				"budget": "Presupuesto restante",
+				"status": "Estado",
+				"minBowls": "Mínimo {count} bowls.",
+				"firstOnly": "Solo primera compra."
 			}
 		}
 	},

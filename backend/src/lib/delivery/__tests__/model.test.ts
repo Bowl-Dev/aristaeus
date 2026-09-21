@@ -5,12 +5,7 @@ import {
 	fitDeliveryModel,
 	estimateFromLegs,
 	rawCost,
-	meanAbsoluteError,
 	looCvMae,
-	parseStreetToken,
-	gridLegs,
-	GRID_MODEL,
-	GRID_ORIGIN,
 	SEED_OBSERVATIONS,
 	seedAddressText,
 	CARRERA_BEARING_DEG,
@@ -208,66 +203,17 @@ describe('estimateFromLegs', () => {
 	});
 });
 
-describe('meanAbsoluteError and looCvMae', () => {
-	const observations = SEED_OBSERVATIONS.flatMap((s) => {
-		const legs = gridLegs(s);
-		return legs ? [{ ...legs, actualCost: s.actualCost, source: 'seed' as const }] : [];
-	});
-
-	it('reports zero in-sample error for a perfectly fitting model', () => {
-		const perfect = { intercept: 3000, ratePerKmNS: 0, ratePerKmEW: 0, minFare: 0 };
-		expect(meanAbsoluteError(perfect, [seed(1, 1, 3000), seed(2, 2, 3000)])).toBe(0);
-	});
-
-	it('returns null with no observations', () => {
-		expect(meanAbsoluteError(FALLBACK_MODEL, [])).toBeNull();
-	});
-
+describe('looCvMae', () => {
 	it('needs enough observations to leave one out', () => {
 		expect(looCvMae([seed(1, 1, 3000), seed(2, 2, 4000)])).toBeNull();
 	});
 
-	// The whole point of switching away from in-sample error: with 20 rows and
-	// 3 free parameters, in-sample error flatters the model.
-	it('reports a larger error than the in-sample figure', () => {
-		const inSample = meanAbsoluteError(fitDeliveryModel(observations), observations)!;
-		const crossValidated = looCvMae(observations)!;
-		expect(crossValidated).toBeGreaterThan(inSample);
-	});
-});
-
-describe('grid fallback (v1 geometry)', () => {
-	it('parses street tokens, placing suffixes inside the block', () => {
-		expect(parseStreetToken('145')).toBe(145);
-		expect(parseStreetToken('145a')).toBe(145.25);
-		expect(parseStreetToken('25bis')).toBe(25.5);
-		expect(parseStreetToken(' 18A ')).toBe(18.25);
-	});
-
-	it('returns null for tokens it cannot read', () => {
-		expect(parseStreetToken('')).toBeNull();
-		expect(parseStreetToken('abc')).toBeNull();
-		expect(parseStreetToken('1234')).toBeNull();
-	});
-
-	it('is zero at the origin', () => {
-		expect(gridLegs(GRID_ORIGIN)).toEqual({ northKm: 0, eastKm: 0 });
-	});
-
-	it('measures a calle delta on the north-south axis', () => {
-		const legs = gridLegs({ calle: '135', carrera: '18a', numero: 5 })!;
-		expect(legs.northKm).toBeCloseTo(1.0, 6);
-		expect(legs.eastKm).toBeCloseTo(0, 6);
-	});
-
-	it('returns null for an unparseable address', () => {
-		expect(gridLegs({ calle: 'xyz', carrera: '18a', numero: 5 })).toBeNull();
-	});
-
-	it('produces a usable model from the seed grid legs', () => {
-		expect(GRID_MODEL.minFare).toBe(2800);
-		expect(GRID_MODEL.ratePerKmNS).toBeGreaterThan(0);
-		expect(GRID_MODEL.ratePerKmEW).toBeGreaterThan(0);
+	// Held-out error is what the figure is for: noisy prices must score worse
+	// than prices that sit on a straight line.
+	it('scores noisy observations worse than collinear ones', () => {
+		const line = [1, 2, 3, 4, 5, 6].map((km) => seed(km, 0, 2000 + 500 * km));
+		const noisy = line.map((o, i) => (i === 3 ? seed(o.northKm, 0, 6000) : o));
+		expect(looCvMae(noisy)!).toBeGreaterThan(looCvMae(line)!);
 	});
 });
 

@@ -12,6 +12,11 @@
 		children: Snippet<[() => void]>;
 	} = $props();
 
+	// ponytail: hand-rolled focus trap, Tab cycling, Escape handling and backdrop —
+	// <dialog>.showModal() ships all of it plus ::backdrop and background inert, and
+	// CenterModal/ThnksModal/ConfirmModal/LandingModal/PauseModal repeat the pattern.
+	// Ceiling: our trap only sees elements present at mount. Upgrade: port to <dialog>
+	// the next time a modal gains dynamic content or an a11y bug is reported.
 	let closing = $state(false);
 	let sheetEl = $state<HTMLDivElement | null>(null);
 
