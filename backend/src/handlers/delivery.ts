@@ -6,7 +6,7 @@
  * POST   /api/delivery/observations      - record an actual courier charge
  * DELETE /api/delivery/observations/{id} - remove a recorded charge
  *
- * Admin/ops only. Customer checkout is unchanged.
+ * Admin/ops only. Checkout prices delivery through the same path, see lib/delivery/estimate.ts.
  */
 
 import type { APIGatewayProxyHandler } from 'aws-lambda';
@@ -15,14 +15,8 @@ import prisma from '../lib/db.js';
 import { success, created, badRequest, notFound, serverError } from '../lib/response.js';
 import { parseAddress, formatAddress } from '../lib/delivery/address.js';
 import { geocodeAddress, KITCHEN_ORIGIN, type MatchTier } from '../lib/delivery/geocode.js';
-import {
-	estimateFromLegs,
-	fitDeliveryModel,
-	haversineLegs,
-	looCvMae,
-	type LegObservation,
-	type Legs
-} from '../lib/delivery/model.js';
+import { fitDeliveryModel, haversineLegs, looCvMae } from '../lib/delivery/model.js';
+import { estimateDelivery, loadObservations } from '../lib/delivery/estimate.js';
 
 const estimateSchema = z.object({
 	address: z.string().min(1, 'Address is required').max(255)
@@ -49,38 +43,6 @@ function confidenceFor(tier: MatchTier): 'high' | 'good' | 'medium' | 'low' {
 }
 
 /**
- * Load the training set from Postgres.
- *
- * Legs are recomputed from `lat`/`lng` whenever those are present, so a change
- * to the kitchen origin or the grid bearing does not leave stale distances in
- * the training data. The stored `north_km`/`east_km` are only a fallback.
- */
-async function loadObservations(): Promise<LegObservation[]> {
-	const rows = await prisma.deliveryObservation.findMany();
-
-	const observations: LegObservation[] = [];
-	for (const row of rows) {
-		let legs: Legs | null = null;
-		if (row.lat !== null && row.lng !== null) {
-			legs = haversineLegs(KITCHEN_ORIGIN, {
-				lat: row.lat.toNumber(),
-				lng: row.lng.toNumber()
-			});
-		} else if (row.northKm !== null && row.eastKm !== null) {
-			legs = { northKm: row.northKm.toNumber(), eastKm: row.eastKm.toNumber() };
-		}
-		if (!legs) continue;
-
-		observations.push({
-			...legs,
-			actualCost: row.actualCost,
-			source: row.source === 'correction' ? 'correction' : 'seed'
-		});
-	}
-	return observations;
-}
-
-/**
  * POST /api/delivery/estimate
  * Body: { address: string }
  */
@@ -94,18 +56,13 @@ export const estimateDeliveryCost: APIGatewayProxyHandler = async (event) => {
 			return badRequest('Validation failed', parseResult.error.flatten());
 		}
 
-		const address = parseAddress(parseResult.data.address);
-		if (!address) {
+		const result = await estimateDelivery(parseResult.data.address);
+		if (!result) {
 			return badRequest(
 				'Could not parse the address. Expected a Bogota address such as "Calle 125 # 18A-05".'
 			);
 		}
-
-		const observations = await loadObservations();
-		const model = fitDeliveryModel(observations);
-		const accuracy = looCvMae(observations);
-
-		const { result: geocoded, searchTruncated } = await geocodeAddress(address);
+		const { address, geocoded, searchTruncated, estimate, accuracy, observationCount } = result;
 
 		if (!geocoded) {
 			// A truncated search proves nothing about the address — say so, rather
@@ -123,9 +80,6 @@ export const estimateDeliveryCost: APIGatewayProxyHandler = async (event) => {
 			});
 		}
 
-		const legs = haversineLegs(KITCHEN_ORIGIN, { lat: geocoded.lat, lng: geocoded.lng });
-		const estimate = estimateFromLegs(model, legs);
-
 		return success({
 			estimate,
 			matchTier: geocoded.matchTier,
@@ -136,7 +90,7 @@ export const estimateDeliveryCost: APIGatewayProxyHandler = async (event) => {
 			cached: geocoded.cached,
 			/** Leave-one-out cross-validated MAE in COP — the "give or take" figure. */
 			accuracyCop: accuracy,
-			observationCount: observations.length,
+			observationCount,
 			address: formatAddress(address)
 		});
 	} catch (error) {
