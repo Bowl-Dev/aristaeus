@@ -6,6 +6,7 @@
 		type AdminOrder,
 		type AdminOrderItem
 	} from '$lib/api/client';
+	import type { OrderStatus } from '$lib/types';
 	import { resolve } from '$app/paths';
 	import { generateLabel } from '$lib/utils/labelGenerator';
 	import { _ } from 'svelte-i18n';
@@ -24,7 +25,7 @@
 	let totalOrders = $state(0);
 
 	// Filter state
-	let statusFilter = $state<string>('pending');
+	let statusFilter = $state<OrderStatus | 'all'>('pending');
 
 	// Derived pagination values
 	const totalPages = $derived(Math.ceil(totalOrders / itemsPerPage));
@@ -38,7 +39,9 @@
 		dressing: 'Dressing'
 	};
 
-	const availableStatuses = [
+	const availableStatuses: OrderStatus[] = [
+		'awaiting_payment',
+		'payment_failed',
 		'pending',
 		'queued',
 		'assigned',
@@ -57,7 +60,9 @@
 		ready: 'bg-green-500 text-white',
 		completed: 'bg-emerald-600 text-white',
 		cancelled: 'bg-gray-400 text-white',
-		failed: 'bg-red-500 text-white'
+		failed: 'bg-red-500 text-white',
+		awaiting_payment: 'bg-amber-300 text-black',
+		payment_failed: 'bg-red-700 text-white'
 	};
 
 	async function loadOrders() {
@@ -91,7 +96,7 @@
 		loadOrders();
 	});
 
-	function handleFilterChange(newStatus: string) {
+	function handleFilterChange(newStatus: OrderStatus | 'all') {
 		statusFilter = newStatus;
 		currentPage = 1;
 	}
@@ -215,11 +220,11 @@
 						id="status-filter"
 						class="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
 						value={statusFilter}
-						onchange={(e) => handleFilterChange(e.currentTarget.value)}
+						onchange={(e) => handleFilterChange(e.currentTarget.value as OrderStatus | 'all')}
 					>
 						<option value="all">All</option>
 						{#each availableStatuses as status (status)}
-							<option value={status}>{status}</option>
+							<option value={status}>{status.replaceAll('_', ' ')}</option>
 						{/each}
 					</select>
 				</div>
@@ -283,12 +288,19 @@
 						<!-- Order Header -->
 						<div class="p-4 sm:p-5 border-b border-gray-100">
 							<div class="flex items-center justify-between mb-3">
-								<span class="text-lg font-bold text-gray-900">Order #{order.id}</span>
+								<span class="text-lg font-bold text-gray-900">
+									{#if order.orderNumber}
+										AG-{order.orderNumber}
+										<span class="text-sm font-medium text-gray-400">#{order.id}</span>
+									{:else}
+										Order #{order.id}
+									{/if}
+								</span>
 								<span
 									class="px-2.5 py-1 {statusColors[order.status] ||
 										'bg-gray-500 text-white'} text-xs font-semibold uppercase rounded-full"
 								>
-									{order.status}
+									{order.status.replaceAll('_', ' ')}
 								</span>
 							</div>
 							<div class="flex flex-wrap items-center gap-2 text-sm text-gray-500">
@@ -425,7 +437,7 @@
 								onchange={(e) => handleStatusUpdate(order.id, e.currentTarget.value)}
 							>
 								{#each availableStatuses as status (status)}
-									<option value={status}>{status}</option>
+									<option value={status}>{status.replaceAll('_', ' ')}</option>
 								{/each}
 							</select>
 						</div>

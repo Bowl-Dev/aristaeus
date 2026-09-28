@@ -40,11 +40,6 @@
 			"note": "+$300"
 		}
 	},
-	"thnks": {
-		"title": "Thank you for choosing us!",
-		"message": "We're already preparing your bowl with great care. We'll message you on WhatsApp shortly to confirm the final price, including shipping, and process payment.",
-		"dismiss": "Got it"
-	},
 	"pause": {
 		"title": "We're cooking up something amazing.",
 		"body": [
@@ -264,23 +259,32 @@
 				"placeholder": "Street, number, apt"
 			},
 			"instructions": {
-				"label": "Delivery Instructions or Coupons (Optional)",
+				"label": "Delivery Instructions (Optional)",
 				"placeholder": "Additional references, special instructions..."
 			}
 		},
 		"summary": {
 			"title": "Order Summary",
-			"shippingNote": "Shipping cost is calculated once the order is confirmed, based on distance. This information will be communicated during the payment process."
+			"subtotal": "Subtotal",
+			"shipping": "Delivery fee",
+			"service": "Service fee",
+			"total": "Total",
+			"addressHint": "Enter your address",
+			"quoting": "Calculating…"
 		},
-		"confirm": "Confirm Order — {price}",
-		"confirming": "Sending...",
+		"confirm": "Pay now - {price}",
+		"confirming": "Redirecting to payment…",
 		"error": "Something went wrong sending your order. Check your connection and try again.",
-		"partialError": "{failed} of {total} orders failed: {reason}",
 		"errors": {
 			"nameRequired": "Please enter your name",
 			"phoneInvalid": "Phone must be 10 digits",
-			"addressRequired": "Please enter a delivery address"
-		}
+			"addressRequired": "Please enter a delivery address",
+			"addressNotFound": "We couldn't locate this address. Check it and try again (e.g. Calle 125 # 18A-05, Apto 302).",
+			"quoteFailed": "We couldn't calculate your order total. Please try again.",
+			"ordersPaused": "We're not taking orders right now. Come back soon!",
+			"paymentsUnavailable": "Payments are unavailable right now. Please try again later."
+		},
+		"confirmNoPrice": "Pay now"
 	},
 	"admin": {
 		"printLabel": "Print Label",
@@ -448,8 +452,18 @@
 				"budget": "Budget left",
 				"status": "Status",
 				"minBowls": "Min {count} bowls.",
-				"firstOnly": "First purchase only."
-			}
+				"firstOnly": "First purchase only.",
+				"activate": "Activate",
+				"deactivate": "Deactivate"
+			},
+			"auth": {
+				"title": "Admin access",
+				"label": "Admin token",
+				"submit": "Sign in",
+				"invalid": "Invalid token. Please try again.",
+				"signOut": "Sign out"
+			},
+			"toggleFailed": "Couldn't change the coupon's status."
 		}
 	},
 	"footer": {
@@ -530,6 +544,62 @@
 			"errorNotFound": "We could not find an account associated with this phone number.",
 			"warning": "Warning: This action is permanent and will delete all your data, including order history.",
 			"backToPrivacy": "Back to Privacy Policy"
+		}
+	},
+	"coupon": {
+		"label": "Discount Coupon",
+		"placeholder": "Enter your coupon",
+		"apply": "Apply",
+		"applying": "Applying…",
+		"needsAddress": "Enter your delivery address to apply the coupon.",
+		"applied": {
+			"percent": "Coupon applied! {value}% off",
+			"fixed": "Coupon applied! {amount} off",
+			"free_shipping": "Coupon applied! Free delivery"
+		},
+		"row": {
+			"percent": "Discount {value}%",
+			"fixed": "Discount",
+			"free_shipping": "Free delivery"
+		},
+		"reason": {
+			"not_found": "Coupon not found",
+			"expired": "Coupon expired",
+			"not_first_purchase": "This coupon only applies to your first purchase",
+			"min_bowls": "You need to buy at least {count} bowls to use this coupon",
+			"inactive": "This coupon is no longer available",
+			"not_started": "This coupon is no longer available",
+			"budget_exhausted": "This coupon is no longer available"
+		}
+	},
+	"order": {
+		"number": "Order number",
+		"status": "Status",
+		"eta": "Estimated time",
+		"home": "Back to home",
+		"refresh": "Refresh status",
+		"paid": {
+			"eyebrow": "Order confirmed",
+			"title": "Thanks for your order!",
+			"message": "We're preparing your bowl with great care. We'll let you know as soon as it's ready.",
+			"status": "Being prepared"
+		},
+		"pending": {
+			"eyebrow": "Confirming payment",
+			"title": "We're confirming your payment",
+			"message": "This can take a few minutes. There's no need to pay again; you can refresh the status in a moment.",
+			"status": "Confirming payment"
+		},
+		"failed": {
+			"eyebrow": "Payment not approved",
+			"title": "Your payment was not approved",
+			"message": "You were not charged. You can go back home and place your order again.",
+			"status": "Payment declined"
+		},
+		"notFound": {
+			"eyebrow": "Order not found",
+			"title": "We couldn't find your order",
+			"message": "The link is invalid or the order doesn't exist. If you already paid, message us and we'll look into it."
 		}
 	}
 }

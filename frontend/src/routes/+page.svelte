@@ -18,13 +18,11 @@
 	import Builder from '$lib/components/Builder.svelte';
 	import Cart from '$lib/components/Cart.svelte';
 	import Delivery from '$lib/components/Delivery.svelte';
-	import ThnksModal from '$lib/components/ThnksModal.svelte';
 	import PauseModal from '$lib/components/PauseModal.svelte';
 
 	// View state
 	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'delivery'>('landing');
 	let showLandingModal = $state(false);
-	let showThanks = $state(false);
 
 	// Service-paused state (fail-open: stays false unless backend says otherwise)
 	let ordersPaused = $state(false);
@@ -240,22 +238,7 @@
 		onEditBowl={handleEditBowl}
 	/>
 {:else if view === 'delivery'}
-	<Delivery
-		{ingredients}
-		{bowls}
-		{cartCount}
-		onBack={() => (view = 'cart')}
-		onOrderSuccess={() => {
-			bowls = [];
-			clearSelection();
-			showThanks = true;
-			view = 'landing';
-		}}
-	/>
-{/if}
-
-{#if showThanks}
-	<ThnksModal onDismiss={() => (showThanks = false)} />
+	<Delivery {ingredients} {bowls} {cartCount} onBack={() => (view = 'cart')} />
 {/if}
 
 {#if showPauseModal}

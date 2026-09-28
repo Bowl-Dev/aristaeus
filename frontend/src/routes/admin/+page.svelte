@@ -18,6 +18,13 @@
 			titleKey: 'admin.hub.deliveryCalculator.title',
 			descriptionKey: 'admin.hub.deliveryCalculator.description',
 			ready: false
+		},
+		{
+			route: '/admin/coupons',
+			icon: '🏷️',
+			titleKey: 'admin.hub.coupons.title',
+			descriptionKey: 'admin.hub.coupons.description',
+			ready: true
 		}
 	] as const;
 </script>

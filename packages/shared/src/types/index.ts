@@ -166,37 +166,6 @@ export interface BowlConfiguration {
 	selectedIngredients: SelectedIngredient[];
 }
 
-// API request/response types
-export interface CreateOrderRequest {
-	bowlSize: BowlSize;
-	customer: CustomerInfo;
-	items: Array<{
-		ingredientId: number;
-		quantityGrams: number;
-	}>;
-	includeCutlery?: boolean;
-	updateUserData?: boolean;
-	deliveryInstructions?: string;
-}
-
-export interface CreateOrderResponse {
-	orderId: number;
-	status: OrderStatus;
-	estimatedWaitTimeMinutes?: number;
-}
-
-export interface OrderStatusResponse {
-	orderId: number;
-	status: OrderStatus;
-	address?: ColombianAddress;
-	deliveryInstructions?: string | null;
-	nutritionalSummary: NutritionalSummary;
-	createdAt: string;
-	assignedAt: string | null;
-	startedAt: string | null;
-	completedAt: string | null;
-}
-
 // ============================================
 // Admin API Types
 // ============================================

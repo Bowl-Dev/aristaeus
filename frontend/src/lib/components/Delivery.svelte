@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
-	import type { Ingredient, BowlSize, CreateOrderRequest } from '$lib/types';
-	import { computeBowlTotals, bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
-	import { DEFAULT_DELIVERY_LOCALE, CUTLERY_PRICE } from '$lib/constants';
-	import { createOrder, ApiError } from '$lib/api/client';
+	import type {
+		Ingredient,
+		BowlSize,
+		CheckoutBowl,
+		CheckoutQuote,
+		CouponRejection
+	} from '$lib/types';
+	import { computeBowlTotals, bowlBasePrice, formatCOP } from '$lib/utils/bowl';
+	import { CUTLERY_PRICE, roundToNearestCoin } from '$lib/types';
+	import { getCheckoutQuote, createCheckout, ApiError } from '$lib/api/client';
+	import { wompiCheckoutUrl } from '$lib/utils/wompi';
 	import { resolve } from '$app/paths';
 	import AppScreen from './templates/AppScreen.svelte';
 	import FormInput from './molecules/FormInput.svelte';
-	import Card from './molecules/Card.svelte';
+	import CouponField from './molecules/CouponField.svelte';
+	import CheckoutSummary from './organisms/CheckoutSummary.svelte';
 
 	interface BowlSnapshot {
 		bowlSize: BowlSize;
@@ -21,10 +29,9 @@
 		bowls: BowlSnapshot[];
 		cartCount?: number;
 		onBack: () => void;
-		onOrderSuccess: () => void;
 	}
 
-	let { ingredients, bowls, cartCount, onBack, onOrderSuccess }: Props = $props();
+	let { ingredients, bowls, cartCount, onBack }: Props = $props();
 
 	// Form state
 	let name = $state('');
@@ -32,7 +39,23 @@
 	let deliveryAddress = $state('');
 	let deliveryInstructions = $state('');
 	let submitting = $state(false);
-	let submitError = $state<string | null>(null);
+	let formError = $state<string | null>(null);
+
+	// Coupon + server quote. `couponCode` is the code sent with every quote; the
+	// latest accepted quote decides whether it applied.
+	let couponInput = $state('');
+	let couponCode = $state<string | null>(null);
+	let couponError = $state<string | null>(null);
+	let quote = $state<CheckoutQuote | null>(null);
+	let quotedAddress = $state('');
+	let quoting = $state(false);
+	let addressError = $state<string | null>(null);
+	// Bumped per request so an older, slower response never overwrites a newer one.
+	let quoteSeq = 0;
+
+	// A quote only counts for the address it was made for.
+	const freshQuote = $derived(quote && quotedAddress === deliveryAddress.trim() ? quote : null);
+	const appliedCoupon = $derived(freshQuote?.coupon ?? null);
 
 	// Per-field validation. Errors surface only after the first submit attempt,
 	// then clear as each field is edited.
@@ -66,79 +89,145 @@
 				: $_('size.large');
 	}
 
-	function computeBowlUnit(bowl: BowlSnapshot) {
+	// Display-only unit prices; every amount below the bowl lines comes from the server quote.
+	function unitPrice(bowl: BowlSnapshot) {
 		const totals = computeBowlTotals(bowl.items, ingredients);
 		const cutlery = bowl.includeCutlery ? CUTLERY_PRICE : 0;
-		return {
-			...totals,
-			unitPrice: roundToNearestCoin(
-				bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice + cutlery
-			)
-		};
+		return roundToNearestCoin(bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice + cutlery);
 	}
 
-	const bowlData = $derived(
-		bowls.map((b, i) => {
-			const unit = computeBowlUnit(b);
-			return {
-				...unit,
-				bowlSize: b.bowlSize,
-				quantity: b.quantity,
-				totalPrice: unit.unitPrice * b.quantity,
-				index: i
-			};
-		})
+	const lines = $derived(
+		bowls.map((b, i) => ({
+			label: `${$_('cart.bowl.title', { values: { n: i + 1, size: sizeLabel(b.bowlSize) } })} × ${b.quantity}`,
+			amount: unitPrice(b) * b.quantity
+		}))
+	);
+	const clientSubtotal = $derived(lines.reduce((acc, l) => acc + l.amount, 0));
+
+	const checkoutBowls = $derived<CheckoutBowl[]>(
+		bowls.map((b) => ({
+			bowlSize: b.bowlSize,
+			items: Array.from(b.items, ([ingredientId, quantityGrams]) => ({
+				ingredientId,
+				quantityGrams
+			})),
+			includeCutlery: b.includeCutlery,
+			quantity: b.quantity
+		}))
 	);
 
-	const grandTotal = $derived(bowlData.reduce((acc, b) => acc + b.totalPrice, 0));
+	function rejectionMessage(r: { reason: CouponRejection; minBowls?: number }) {
+		return $_(`coupon.reason.${r.reason}`, { values: { count: r.minBowls ?? 0 } });
+	}
+
+	const isApiError = (e: unknown, status: number, message: string) =>
+		e instanceof ApiError && e.status === status && e.message === message;
+
+	async function requestQuote() {
+		const seq = ++quoteSeq;
+		const address = deliveryAddress.trim();
+		if (!address) {
+			quoting = false;
+			return;
+		}
+		quoting = true;
+		try {
+			const q = await getCheckoutQuote({
+				address,
+				bowls: checkoutBowls,
+				couponCode: couponCode ?? undefined,
+				phone: phone.length === 10 ? phone : undefined
+			});
+			if (seq !== quoteSeq) return;
+			quote = q;
+			quotedAddress = address;
+			addressError = null;
+			formError = null;
+			if (q.couponRejection) {
+				couponError = rejectionMessage(q.couponRejection);
+				couponCode = null;
+			}
+		} catch (e) {
+			if (seq !== quoteSeq) return;
+			quote = null;
+			if (isApiError(e, 400, 'address_not_found')) {
+				addressError = $_('delivery.errors.addressNotFound');
+			} else {
+				formError = $_('delivery.errors.quoteFailed');
+			}
+		} finally {
+			if (seq === quoteSeq) quoting = false;
+		}
+	}
+
+	function onAddressBlur() {
+		if (deliveryAddress.trim() && !freshQuote) requestQuote();
+	}
+
+	function applyCoupon() {
+		couponError = null;
+		if (!deliveryAddress.trim()) {
+			couponError = $_('coupon.needsAddress');
+			return;
+		}
+		couponCode = couponInput.trim();
+		requestQuote();
+	}
+
+	// Editing the code after it was sent drops it and re-prices without it.
+	function onCouponEdit() {
+		couponError = null;
+		if (couponCode !== null) {
+			couponCode = null;
+			requestQuote();
+		}
+	}
+
+	const couponSuccess = $derived(
+		appliedCoupon && freshQuote
+			? $_(`coupon.applied.${appliedCoupon.type}`, {
+					values: { value: appliedCoupon.value ?? 0, amount: formatCOP(freshQuote.discount) }
+				})
+			: undefined
+	);
 
 	async function handleSubmit() {
 		hasSubmitted = true;
-		if (!validate()) return;
+		if (!validate() || !freshQuote) return;
 
 		submitting = true;
-		submitError = null;
-
-		// One CreateOrderRequest per (bowl × quantity). Backend has no bulk endpoint yet.
-		const requests: CreateOrderRequest[] = [];
-		for (const bowl of bowls) {
-			const payload: CreateOrderRequest = {
-				bowlSize: bowl.bowlSize,
-				customer: {
-					name: name.trim(),
-					phone: phone.trim(),
-					address: {
-						streetAddress: deliveryAddress.trim(),
-						...DEFAULT_DELIVERY_LOCALE
-					}
-				},
-				items: Array.from(bowl.items.entries()).map(([ingredientId, quantityGrams]) => ({
-					ingredientId,
-					quantityGrams
-				})),
-				includeCutlery: bowl.includeCutlery,
-				deliveryInstructions: deliveryInstructions.trim() || undefined
-			};
-			for (let i = 0; i < bowl.quantity; i++) requests.push(payload);
-		}
-
+		formError = null;
+		const trimmedPhone = phone.trim();
 		try {
-			const results = await Promise.allSettled(requests.map((r) => createOrder(r)));
-			const failures = results.filter((r) => r.status === 'rejected');
-			if (failures.length === 0) {
-				onOrderSuccess();
-				return;
-			}
-			const first = failures[0] as PromiseRejectedResult;
-			const reason = first.reason instanceof ApiError ? first.reason.message : $_('delivery.error');
-			submitError =
-				failures.length === requests.length
-					? reason
-					: $_('delivery.partialError', {
-							values: { failed: failures.length, total: requests.length, reason }
-						});
-		} finally {
+			const checkout = await createCheckout({
+				address: deliveryAddress.trim(),
+				bowls: checkoutBowls,
+				couponCode: appliedCoupon?.code,
+				phone: trimmedPhone,
+				customer: { name: name.trim(), phone: trimmedPhone },
+				deliveryInstructions: deliveryInstructions.trim() || undefined
+			});
+			const redirectUrl = `${window.location.origin}${resolve('/order')}?c=${encodeURIComponent(checkout.checkoutId)}`;
+			// Stay in the submitting state while the browser leaves for Wompi.
+			window.location.assign(wompiCheckoutUrl(checkout, redirectUrl));
+		} catch (e) {
 			submitting = false;
+			if (isApiError(e, 409, 'coupon_rejected')) {
+				couponError = rejectionMessage(
+					(e as ApiError).details as { reason: CouponRejection; minBowls?: number }
+				);
+				couponCode = null;
+				requestQuote();
+			} else if (isApiError(e, 400, 'address_not_found')) {
+				quote = null;
+				addressError = $_('delivery.errors.addressNotFound');
+			} else if (isApiError(e, 503, 'ordersPaused')) {
+				formError = $_('delivery.errors.ordersPaused');
+			} else if (isApiError(e, 503, 'payments_unavailable')) {
+				formError = $_('delivery.errors.paymentsUnavailable');
+			} else {
+				formError = $_('delivery.error');
+			}
 		}
 	}
 </script>
@@ -199,7 +288,8 @@
 			label={$_('delivery.form.address.label')}
 			bind:value={deliveryAddress}
 			placeholder={$_('delivery.form.address.placeholder')}
-			error={errors.address}
+			error={errors.address ?? addressError ?? undefined}
+			onblur={onAddressBlur}
 			required
 		/>
 
@@ -211,52 +301,46 @@
 			placeholder={$_('delivery.form.instructions.placeholder')}
 		/>
 
-		<!-- Order Summary Card (scrolls with the form fields) -->
-		<Card gap="gap-2">
-			<p class="m-0 text-sm font-bold uppercase tracking-[0.5px] text-text-black">
-				{$_('delivery.summary.title')}
-			</p>
-			{#each bowlData as bowl, i (i)}
-				<div class="flex items-center justify-between">
-					<span class="text-sm text-text-muted">
-						Bowl {i + 1} - {sizeLabel(bowl.bowlSize)}
-						{#if bowl.quantity > 1}
-							× {bowl.quantity}
-						{/if}
-					</span>
-					<span class="text-sm font-semibold text-text-black">{formatCOP(bowl.totalPrice)}</span>
-				</div>
-			{/each}
-			<div class="mt-1 flex items-center justify-between border-t border-strokes pt-2">
-				<span class="text-sm font-bold uppercase tracking-[0.5px] text-text-black">
-					{$_('cart.total.label')}
-				</span>
-				<span class="text-base font-bold text-dark-green">{formatCOP(grandTotal)}</span>
-			</div>
-			<p class="m-0 mt-1 rounded-lg bg-strokes/30 px-3 py-2 text-xs leading-snug text-text-muted">
-				{$_('delivery.summary.shippingNote')}
-			</p>
-		</Card>
+		<CouponField
+			bind:value={couponInput}
+			pending={quoting && couponCode !== null}
+			success={couponSuccess}
+			error={couponError ?? undefined}
+			onApply={applyCoupon}
+			onEdit={onCouponEdit}
+		/>
+
+		<CheckoutSummary
+			{lines}
+			quote={freshQuote}
+			subtotal={clientSubtotal}
+			hint={quoting ? $_('delivery.summary.quoting') : $_('delivery.summary.addressHint')}
+		/>
 	</div>
 
 	<!-- Error message + CTA + consent notice — pinned at the bottom of the viewport -->
 	<div class="flex flex-col gap-3 px-5 pb-10 pt-3">
-		<!-- Error message -->
-		{#if submitError}
-			<p class="m-0 text-center text-sm text-red-500">{submitError}</p>
+		{#if formError}
+			<p class="m-0 text-center text-sm text-red-500" role="alert">{formError}</p>
 		{/if}
 
-		<!-- CTA Button -->
 		<button
 			type="button"
-			disabled={submitting || !name.trim() || phone.length !== 10 || !deliveryAddress.trim()}
+			disabled={submitting ||
+				quoting ||
+				!freshQuote ||
+				!name.trim() ||
+				phone.length !== 10 ||
+				!deliveryAddress.trim()}
 			onclick={handleSubmit}
 			class="w-full cursor-pointer rounded-full border-none bg-dark-green px-6 py-4 text-sm font-bold text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
 		>
 			{#if submitting}
 				{$_('delivery.confirming')}
+			{:else if freshQuote}
+				{$_('delivery.confirm', { values: { price: formatCOP(freshQuote.total) } })}
 			{:else}
-				{$_('delivery.confirm', { values: { price: formatCOP(grandTotal) } })}
+				{$_('delivery.confirmNoPrice')}
 			{/if}
 		</button>
 

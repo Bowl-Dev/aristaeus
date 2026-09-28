@@ -2,7 +2,8 @@
 	import { _ } from 'svelte-i18n';
 	import { base } from '$app/paths';
 	import type { Menu } from '$lib/types';
-	import { bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
+	import { bowlBasePrice, formatCOP } from '$lib/utils/bowl';
+	import { roundToNearestCoin } from '$lib/types';
 	import Heading from './atoms/Heading.svelte';
 	import Button from './atoms/Button.svelte';
 	import NutritionalInfo from './molecules/NutritionalInfo.svelte';

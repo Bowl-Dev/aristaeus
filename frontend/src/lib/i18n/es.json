@@ -40,11 +40,6 @@
 			"note": "+$300"
 		}
 	},
-	"thnks": {
-		"title": "¡Gracias por elegirnos!",
-		"message": "Ya estamos preparando tu bowl con mucho cuidado. En breve te escribiremos por WhatsApp para confirmar el precio final, incluyendo el costo de envío, y realizar el pago.",
-		"dismiss": "Entendido"
-	},
 	"pause": {
 		"title": "Estamos preparando algo increíble.",
 		"body": [
@@ -264,23 +259,32 @@
 				"placeholder": "Calle, número, apto"
 			},
 			"instructions": {
-				"label": "Instrucciones de Entrega o Cupones (Opcional)",
+				"label": "Instrucciones de Entrega (Opcional)",
 				"placeholder": "Referencias adicionales, indicaciones especiales..."
 			}
 		},
 		"summary": {
 			"title": "Resumen del Pedido",
-			"shippingNote": "El costo de envío se calcula una vez confirmado el pedido según la distancia. Esta información será comunicada durante el proceso de pago."
+			"subtotal": "Subtotal",
+			"shipping": "Costo de envío",
+			"service": "Tarifa de servicio",
+			"total": "Total",
+			"addressHint": "Ingresa tu dirección",
+			"quoting": "Calculando…"
 		},
-		"confirm": "Confirmar Pedido — {price}",
-		"confirming": "Enviando...",
+		"confirm": "Pagar ahora - {price}",
+		"confirming": "Redirigiendo al pago…",
 		"error": "Ocurrió un problema al enviar tu pedido. Revisa tu conexión e intenta de nuevo.",
-		"partialError": "{failed} de {total} pedidos fallaron: {reason}",
 		"errors": {
 			"nameRequired": "Ingresa tu nombre",
 			"phoneInvalid": "El teléfono debe tener 10 dígitos",
-			"addressRequired": "Ingresa una dirección de entrega"
-		}
+			"addressRequired": "Ingresa una dirección de entrega",
+			"addressNotFound": "No pudimos ubicar esta dirección. Revísala e inténtalo de nuevo (ej. Calle 125 # 18A-05, Apto 302).",
+			"quoteFailed": "No pudimos calcular el total de tu pedido. Inténtalo de nuevo.",
+			"ordersPaused": "En este momento no estamos recibiendo pedidos. ¡Vuelve pronto!",
+			"paymentsUnavailable": "Los pagos no están disponibles en este momento. Inténtalo de nuevo más tarde."
+		},
+		"confirmNoPrice": "Pagar ahora"
 	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",
@@ -448,8 +452,18 @@
 				"budget": "Presupuesto restante",
 				"status": "Estado",
 				"minBowls": "Mínimo {count} bowls.",
-				"firstOnly": "Solo primera compra."
-			}
+				"firstOnly": "Solo primera compra.",
+				"activate": "Activar",
+				"deactivate": "Desactivar"
+			},
+			"auth": {
+				"title": "Acceso de administrador",
+				"label": "Token de administrador",
+				"submit": "Entrar",
+				"invalid": "Token inválido. Inténtalo de nuevo.",
+				"signOut": "Cerrar sesión"
+			},
+			"toggleFailed": "No se pudo cambiar el estado del cupón."
 		}
 	},
 	"footer": {
@@ -530,6 +544,62 @@
 			"errorNotFound": "No encontramos una cuenta asociada a este número de teléfono.",
 			"warning": "Advertencia: Esta acción es permanente y eliminará todos sus datos, incluyendo historial de pedidos.",
 			"backToPrivacy": "Volver a Política de Privacidad"
+		}
+	},
+	"coupon": {
+		"label": "Cupón de Descuento",
+		"placeholder": "Ingresa tu cupón",
+		"apply": "Aplicar",
+		"applying": "Aplicando…",
+		"needsAddress": "Ingresa tu dirección de entrega para aplicar el cupón.",
+		"applied": {
+			"percent": "¡Cupón aplicado! {value}% de descuento",
+			"fixed": "¡Cupón aplicado! {amount} de descuento",
+			"free_shipping": "¡Cupón aplicado! Envío gratis"
+		},
+		"row": {
+			"percent": "Descuento {value}%",
+			"fixed": "Descuento",
+			"free_shipping": "Envío gratis"
+		},
+		"reason": {
+			"not_found": "Cupón no encontrado",
+			"expired": "Cupón expirado",
+			"not_first_purchase": "Este cupón solo aplica para la primera compra",
+			"min_bowls": "Debes comprar mínimo {count} bowls para utilizar este cupón",
+			"inactive": "Este cupón ya no se encuentra disponible",
+			"not_started": "Este cupón ya no se encuentra disponible",
+			"budget_exhausted": "Este cupón ya no se encuentra disponible"
+		}
+	},
+	"order": {
+		"number": "Número de pedido",
+		"status": "Estado",
+		"eta": "Tiempo estimado",
+		"home": "Volver al inicio",
+		"refresh": "Actualizar estado",
+		"paid": {
+			"eyebrow": "Pedido confirmado",
+			"title": "¡Gracias por tu pedido!",
+			"message": "Estamos preparando tu bowl con mucho cuidado. Te notificaremos en cuanto esté listo.",
+			"status": "En preparación"
+		},
+		"pending": {
+			"eyebrow": "Confirmando pago",
+			"title": "Estamos confirmando tu pago",
+			"message": "Esto puede tardar unos minutos. No es necesario que pagues de nuevo; puedes actualizar el estado en un momento.",
+			"status": "Confirmando pago"
+		},
+		"failed": {
+			"eyebrow": "Pago no aprobado",
+			"title": "Tu pago no fue aprobado",
+			"message": "No se realizó ningún cobro. Puedes volver al inicio y armar tu pedido de nuevo.",
+			"status": "Pago rechazado"
+		},
+		"notFound": {
+			"eyebrow": "Pedido no encontrado",
+			"title": "No encontramos tu pedido",
+			"message": "El enlace no es válido o el pedido no existe. Si ya pagaste, escríbenos y lo revisamos."
 		}
 	}
 }

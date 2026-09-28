@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildIngredientList } from '../labelGenerator';
-import type { AdminOrderItem } from '$lib/api/client';
+import type { AdminOrderItem, IngredientCategory } from '$lib/types';
 
 function item(
 	nameEs: string,
@@ -12,7 +12,7 @@ function item(
 		ingredientName: nameEs,
 		ingredientNameEs: nameEs,
 		ingredientNameEn: nameEs,
-		ingredientCategory,
+		ingredientCategory: ingredientCategory as IngredientCategory,
 		quantityGrams,
 		sequenceOrder
 	};
