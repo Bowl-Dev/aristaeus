@@ -208,6 +208,28 @@ describe('Delivery', () => {
 		expect(getCta(container).textContent).toMatch(/7\.600/);
 	});
 
+	it('re-checks an applied coupon when the phone changes (first-purchase rule)', async () => {
+		getCheckoutQuoteMock.mockResolvedValueOnce(baseQuote).mockResolvedValue({
+			...baseQuote,
+			discount: 200,
+			total: 7600,
+			coupon: { code: 'ALGRAMO10', type: 'percent', value: 10 }
+		});
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'ALGRAMO10');
+		await fireEvent.click(getApply(container));
+		await waitFor(() => expect(container.textContent).toContain('¡Cupón aplicado!'));
+		const phone = $(container, '#delivery-phone');
+		await fireEvent.input(phone, { target: { value: '3109876543' } });
+		await fireEvent.blur(phone);
+		await waitFor(() => expect(getCheckoutQuoteMock).toHaveBeenCalledTimes(3));
+		expect(getCheckoutQuoteMock.mock.calls[2][0]).toMatchObject({
+			couponCode: 'ALGRAMO10',
+			phone: '3109876543'
+		});
+	});
+
 	it('editing an applied coupon removes it and re-quotes without it', async () => {
 		getCheckoutQuoteMock
 			.mockResolvedValueOnce(baseQuote)

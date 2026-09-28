@@ -279,6 +279,7 @@
 			bind:value={phone}
 			placeholder={$_('delivery.form.phone.placeholder')}
 			error={errors.phone}
+			onblur={() => couponCode !== null && requestQuote()}
 			required
 		/>
 
