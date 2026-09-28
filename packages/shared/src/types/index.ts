@@ -90,6 +90,17 @@ export type BowlSizePrice = 1200 | 1300 | 1400; //Bowl packaging prices in COP
 export const BOWL_SIZES: readonly BowlSize[] = [250, 450, 600] as const;
 export const BOWL_SIZE_PRICES: readonly BowlSizePrice[] = [1200, 1300, 1400] as const;
 
+// Flat surcharge (COP) added to a bowl when the customer opts to include cutlery.
+export const CUTLERY_PRICE = 300;
+
+/**
+ * Round a COP amount to the nearest 100, since 100 is the smallest coin in
+ * Colombian currency. The one copy client and server both price with.
+ */
+export function roundToNearestCoin(amount: number): number {
+	return Math.round(amount / 100) * 100;
+}
+
 // Order types
 export type OrderStatus =
 	| 'pending'
@@ -99,7 +110,11 @@ export type OrderStatus =
 	| 'ready'
 	| 'completed'
 	| 'cancelled'
-	| 'failed';
+	| 'failed'
+	// Created by a checkout, not yet paid — the kitchen must not start these.
+	| 'awaiting_payment'
+	// The checkout's payment was declined, voided, errored or abandoned.
+	| 'payment_failed';
 
 export interface OrderItem {
 	id: number;
@@ -250,4 +265,127 @@ export interface CheckPhoneResponse {
 		email: string | null;
 		address: ColombianAddress | null;
 	};
+}
+
+// ============================================
+// Checkout (Wompi) API Types
+// ============================================
+
+export interface CheckoutBowl {
+	bowlSize: BowlSize;
+	items: Array<{ ingredientId: number; quantityGrams: number }>;
+	includeCutlery: boolean;
+	quantity: number;
+}
+
+/** POST /api/checkout/quote — prices a cart. No writes. */
+export interface CheckoutQuoteRequest {
+	/** Free-form Bogotá address, e.g. "Calle 125 # 18A-05, Apto 302". */
+	address: string;
+	bowls: CheckoutBowl[];
+	couponCode?: string;
+	/** Needed for first-purchase-only coupons. */
+	phone?: string;
+}
+
+export interface AppliedCoupon {
+	code: string;
+	type: CouponType;
+	value: number | null;
+}
+
+/**
+ * All amounts in COP, each a multiple of 100.
+ * total = subtotal + deliveryFee - discount + serviceFee
+ */
+export interface CheckoutQuote {
+	subtotal: number;
+	deliveryFee: number;
+	discount: number;
+	serviceFee: number;
+	total: number;
+	coupon: AppliedCoupon | null;
+	/** Set when a couponCode was sent and did not apply. */
+	couponRejection: { reason: CouponRejection; minBowls?: number } | null;
+}
+
+/** POST /api/checkout — creates the checkout + its orders, returns Wompi params. */
+export interface CreateCheckoutRequest extends CheckoutQuoteRequest {
+	customer: { name: string; phone: string };
+	deliveryInstructions?: string;
+}
+
+export interface CreateCheckoutResponse {
+	checkoutId: string;
+	/** Shown as AG-#### */
+	orderNumber: number;
+	/** Wompi Web Checkout params. The frontend adds `redirect-url` itself. */
+	reference: string;
+	amountInCents: number;
+	currency: 'COP';
+	signature: string;
+	publicKey: string;
+}
+
+export type PaymentStatus = 'awaiting_payment' | 'paid' | 'payment_failed';
+
+/** GET /api/checkout/{id} */
+export interface CheckoutStatusResponse {
+	checkoutId: string;
+	orderNumber: number;
+	paymentStatus: PaymentStatus;
+	total: number;
+}
+
+// ============================================
+// Coupon API Types
+// ============================================
+
+/** Benefit types the backend can price. */
+export type CouponType = 'percent' | 'fixed' | 'free_shipping';
+
+/** Why a code did not apply; maps to `coupon.reason.*` in i18n. */
+export type CouponRejection =
+	| 'not_found'
+	| 'inactive'
+	| 'not_started'
+	| 'expired'
+	| 'budget_exhausted'
+	| 'not_first_purchase'
+	| 'min_bowls';
+
+export interface CouponRecord {
+	id: number;
+	code: string;
+	campaignName: string;
+	description: string | null;
+	type: CouponType;
+	value: number | null;
+	startsAt: string;
+	endsAt: string;
+	budgetTotal: number;
+	budgetRemaining: number;
+	minBowls: number;
+	firstPurchaseOnly: boolean;
+	active: boolean;
+	createdAt: string;
+}
+
+export interface CouponsResponse {
+	coupons: CouponRecord[];
+	count: number;
+}
+
+export interface CreateCouponRequest {
+	code: string;
+	campaignName: string;
+	description?: string;
+	type: CouponType;
+	value?: number;
+	startsAt: string;
+	endsAt: string;
+	budgetTotal: number;
+	minBowls: number;
+	firstPurchaseOnly: boolean;
+	active: boolean;
 }
