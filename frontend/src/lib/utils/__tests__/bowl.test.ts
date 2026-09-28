@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeBowlTotals, bowlBasePrice, roundToNearestCoin, formatCOP } from '../bowl';
-import type { Ingredient } from '$lib/types';
+import { computeBowlTotals, bowlBasePrice, formatCOP } from '../bowl';
+import { type Ingredient, roundToNearestCoin } from '$lib/types';
 
 const rice: Ingredient = {
 	id: 1,

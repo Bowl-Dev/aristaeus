@@ -6,11 +6,20 @@
 import type {
 	Ingredient,
 	Menu,
-	CreateOrderRequest,
-	CreateOrderResponse,
-	OrderStatusResponse,
-	ColombianAddress
-} from '@aristaeus/shared';
+	ListOrdersParams,
+	PaginatedOrdersResponse,
+	CheckPhoneResponse,
+	CheckoutQuoteRequest,
+	CheckoutQuote,
+	CreateCheckoutRequest,
+	CreateCheckoutResponse,
+	CheckoutStatusResponse,
+	CouponRecord,
+	CouponsResponse,
+	CreateCouponRequest
+} from '$lib/types';
+
+export type { AdminOrder, AdminOrderItem } from '$lib/types';
 
 // API base URL - configured via environment variable.
 // In development: http://localhost:3000
@@ -87,21 +96,31 @@ export async function getMenus(): Promise<Menu[]> {
 	return response.menus;
 }
 
-/**
- * Create a new order
- */
-export async function createOrder(order: CreateOrderRequest): Promise<CreateOrderResponse> {
-	return apiFetch<CreateOrderResponse>('/api/orders', {
+// ============================================
+// Checkout (Wompi)
+// ============================================
+
+/** Price a cart server-side. Nothing is written; a rejected coupon still answers 200. */
+export async function getCheckoutQuote(request: CheckoutQuoteRequest): Promise<CheckoutQuote> {
+	return apiFetch<CheckoutQuote>('/api/checkout/quote', {
 		method: 'POST',
-		body: JSON.stringify(order)
+		body: JSON.stringify(request)
 	});
 }
 
-/**
- * Get order status by ID
- */
-export async function getOrderStatus(orderId: number): Promise<OrderStatusResponse> {
-	return apiFetch<OrderStatusResponse>(`/api/orders/${orderId}`);
+/** Create the checkout and its orders; returns the Wompi Web Checkout params. */
+export async function createCheckout(
+	request: CreateCheckoutRequest
+): Promise<CreateCheckoutResponse> {
+	return apiFetch<CreateCheckoutResponse>('/api/checkout', {
+		method: 'POST',
+		body: JSON.stringify(request)
+	});
+}
+
+/** Payment status of a checkout, for the /order return page. */
+export async function getCheckoutStatus(checkoutId: string): Promise<CheckoutStatusResponse> {
+	return apiFetch<CheckoutStatusResponse>(`/api/checkout/${encodeURIComponent(checkoutId)}`);
 }
 
 /**
@@ -208,13 +227,6 @@ export async function deleteDeliveryObservation(
 // Utility Types
 // ============================================
 
-// ponytail: AdminOrder, AdminOrderItem, ListOrdersParams, PaginatedOrdersResponse and
-// CheckPhoneResponse are re-declared here although @aristaeus/shared already exports
-// them, and ApiIngredientsResponse, ApiOrderResponse, DeliveryEstimateFigures and
-// getOrderStatus have no callers at all. Ceiling: the two copies drift silently.
-// Upgrade: import the shared types and delete the dead ones next time a response
-// shape changes.
-
 /**
  * How the address was located in the cadastre, in descending order of trust.
  * `street_segment` means the exact address was never found.
@@ -308,96 +320,6 @@ export interface DeliveryObservationCreated {
 	recordedAt: string;
 }
 
-export interface AdminOrderUser {
-	id: string;
-	name: string;
-	phone: string;
-	email: string | null;
-	address: ColombianAddress;
-}
-
-export interface AdminOrderItem {
-	ingredientName: string;
-	ingredientNameEs: string;
-	ingredientNameEn: string;
-	ingredientCategory: string;
-	quantityGrams: number;
-	sequenceOrder: number;
-}
-
-export interface AdminOrder {
-	id: number;
-	bowlSize: number;
-	includeCutlery: boolean;
-	user: AdminOrderUser;
-	deliveryInstructions?: string | null;
-	status: string;
-	items: AdminOrderItem[];
-	totalWeightG: number;
-	totalCalories: number;
-	totalProteinG: number;
-	totalCarbsG: number;
-	totalFatG: number;
-	totalFiberG: number;
-	totalPrice: number;
-	createdAt: string;
-	assignedAt: string | null;
-	startedAt: string | null;
-	completedAt: string | null;
-}
-
-export interface ListOrdersParams {
-	status?: string;
-	limit?: number;
-	offset?: number;
-}
-
-export interface PaginatedOrdersResponse {
-	orders: AdminOrder[];
-	total: number;
-	limit: number;
-	offset: number;
-}
-
-export interface CheckPhoneResponse {
-	exists: boolean;
-	user?: {
-		name: string;
-		email: string | null;
-		address: ColombianAddress;
-	};
-}
-
-export interface ApiIngredientsResponse {
-	ingredients: Ingredient[];
-}
-
-export interface ApiOrderResponse {
-	id: number;
-	bowlSize: number;
-	user: AdminOrderUser;
-	status: string;
-	items: Array<{
-		ingredientName: string;
-		ingredientNameEs: string;
-		ingredientNameEn: string;
-		quantityGrams: number;
-		sequenceOrder: number;
-	}>;
-	nutritionalSummary: {
-		totalCalories: number;
-		totalProteinG: number;
-		totalCarbsG: number;
-		totalFatG: number;
-		totalFiberG: number;
-		totalWeightG: number;
-	};
-	createdAt: string;
-	assignedAt: string | null;
-	startedAt: string | null;
-	completedAt: string | null;
-}
-
 export interface DeleteUserResponse {
 	success: boolean;
 	message: string;
@@ -405,89 +327,37 @@ export interface DeleteUserResponse {
 }
 
 // ============================================
-// Coupons
+// Coupons (admin — every call carries the x-admin-token header)
 // ============================================
 
-/** List all coupon campaigns (Marketing panel). */
-export async function listCoupons(): Promise<CouponsResponse> {
-	return apiFetch<CouponsResponse>('/api/coupons');
+const adminHeaders = (token: string) => ({ 'x-admin-token': token });
+
+/** List all coupon campaigns. */
+export async function listCoupons(token: string): Promise<CouponsResponse> {
+	return apiFetch<CouponsResponse>('/api/coupons', { headers: adminHeaders(token) });
 }
 
 /** Create a coupon campaign. */
-export async function createCoupon(coupon: CreateCouponRequest): Promise<CouponRecord> {
+export async function createCoupon(
+	coupon: CreateCouponRequest,
+	token: string
+): Promise<CouponRecord> {
 	return apiFetch<CouponRecord>('/api/coupons', {
 		method: 'POST',
+		headers: adminHeaders(token),
 		body: JSON.stringify(coupon)
 	});
 }
 
-/** Check a code against the current cart. Nothing is redeemed by this call. */
-export async function validateCoupon(
-	request: ValidateCouponRequest
-): Promise<ValidateCouponResponse> {
-	return apiFetch<ValidateCouponResponse>('/api/coupons/validate', {
-		method: 'POST',
-		body: JSON.stringify(request)
+/** Activate or deactivate a coupon — the only edit the API allows. */
+export async function updateCoupon(
+	id: number,
+	patch: { active: boolean },
+	token: string
+): Promise<CouponRecord> {
+	return apiFetch<CouponRecord>(`/api/coupons/${id}`, {
+		method: 'PATCH',
+		headers: adminHeaders(token),
+		body: JSON.stringify(patch)
 	});
 }
-
-/** Benefit types the backend can price. */
-export type CouponType = 'percent' | 'fixed' | 'free_shipping';
-
-/** Why a code did not apply; maps to `admin.coupons.reason.*` / `coupon.reason.*`. */
-export type CouponRejection =
-	| 'not_found'
-	| 'inactive'
-	| 'not_started'
-	| 'expired'
-	| 'budget_exhausted'
-	| 'not_first_purchase'
-	| 'min_bowls';
-
-export interface CouponRecord {
-	id: number;
-	code: string;
-	campaignName: string;
-	description: string | null;
-	type: CouponType;
-	value: number | null;
-	startsAt: string;
-	endsAt: string;
-	budgetTotal: number;
-	budgetRemaining: number;
-	minBowls: number;
-	firstPurchaseOnly: boolean;
-	active: boolean;
-	createdAt: string;
-}
-
-export interface CouponsResponse {
-	coupons: CouponRecord[];
-	count: number;
-}
-
-export interface CreateCouponRequest {
-	code: string;
-	campaignName: string;
-	description?: string;
-	type: CouponType;
-	value?: number;
-	startsAt: string;
-	endsAt: string;
-	budgetTotal: number;
-	minBowls: number;
-	firstPurchaseOnly: boolean;
-	active: boolean;
-}
-
-export interface ValidateCouponRequest {
-	code: string;
-	bowlCount: number;
-	subtotal: number;
-	deliveryFee?: number;
-	phone?: string;
-}
-
-export type ValidateCouponResponse =
-	| { valid: true; code: string; type: CouponType; value: number | null; discount: number }
-	| { valid: false; reason: CouponRejection; minBowls?: number };

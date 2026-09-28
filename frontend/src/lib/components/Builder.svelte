@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { BOWL_SIZES, type Ingredient, type BowlSize } from '$lib/types';
+	import { BOWL_SIZES, roundToNearestCoin, type Ingredient, type BowlSize } from '$lib/types';
 	import AppScreen from './templates/AppScreen.svelte';
 	import CategoryAccordion from './molecules/CategoryAccordion.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
 	import ConfirmModal from './organisms/ConfirmModal.svelte';
-	import { computeBowlTotals, formatCOP, roundToNearestCoin, bowlBasePrice } from '$lib/utils/bowl';
+	import { computeBowlTotals, formatCOP, bowlBasePrice } from '$lib/utils/bowl';
 	import {
 		getQuantityIncrement,
 		getInitialQuantity,
