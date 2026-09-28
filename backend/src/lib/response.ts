@@ -49,13 +49,26 @@ export function notFound(message: string): APIGatewayProxyResult {
 	};
 }
 
-export function conflict(message: string): APIGatewayProxyResult {
+export function unauthorized(message = 'Unauthorized'): APIGatewayProxyResult {
+	return {
+		statusCode: 401,
+		headers: defaultHeaders,
+		body: JSON.stringify({
+			error: 'Unauthorized',
+			message
+		})
+	};
+}
+
+/** `extra` fields are merged into the body, e.g. `{ reason }` for a rejected coupon. */
+export function conflict(message: string, extra?: Record<string, unknown>): APIGatewayProxyResult {
 	return {
 		statusCode: 409,
 		headers: defaultHeaders,
 		body: JSON.stringify({
 			error: 'Conflict',
-			message
+			message,
+			...extra
 		})
 	};
 }

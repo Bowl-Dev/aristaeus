@@ -101,6 +101,7 @@ model User {
   // Relations
   addresses     Address[]
   orders        Order[]
+  checkouts     Checkout[]
 
   @@map("users")
 }
@@ -161,8 +162,8 @@ model Order {
   bowlSize        Int       @map("bowl_size") // 250, 450, or 600 grams
 
   // Status lifecycle
-  // pending -> queued -> assigned -> preparing -> ready -> completed
-  // Possible: cancelled, failed
+  // awaiting_payment -> pending -> preparing -> ready -> completed
+  // Possible: cancelled, failed, payment_failed
   status          String    @default("pending") @db.VarChar(50)
 
   // Cutlery preference
@@ -185,12 +186,17 @@ model Order {
   startedAt       DateTime? @map("started_at")
   completedAt     DateTime? @map("completed_at")
 
+  // The checkout (Wompi payment) this order belongs to; null for pre-checkout orders
+  checkoutId      String?   @map("checkout_id") @db.Uuid
+  checkout        Checkout? @relation(fields: [checkoutId], references: [id])
+
   // Relations
   items           OrderItem[]
 
   @@index([status])
   @@index([userId])
   @@index([addressId])
+  @@index([checkoutId])
   @@map("orders")
 }
 
@@ -327,6 +333,45 @@ model Coupon {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
+  checkouts         Checkout[]
+
   @@index([active])
   @@map("coupons")
+}
+
+// ============================================
+// Checkout (one Wompi payment for N orders)
+// ============================================
+
+model Checkout {
+  id            String    @id @default(uuid()) @db.Uuid // also the Wompi reference
+  userId        String    @map("user_id") @db.Uuid
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Shown as AG-####. The sequence starts at 1000 (see the migration).
+  orderNumber   Int       @unique @default(autoincrement()) @map("order_number")
+
+  // Integer COP. total = subtotal + deliveryFee - discount + serviceFee
+  subtotal      Int
+  deliveryFee   Int       @map("delivery_fee")
+  discount      Int       @default(0)
+  serviceFee    Int       @map("service_fee")
+  total         Int
+
+  couponId      Int?      @map("coupon_id")
+  coupon        Coupon?   @relation(fields: [couponId], references: [id])
+
+  /// 'awaiting_payment' | 'paid' | 'payment_failed'
+  paymentStatus String    @default("awaiting_payment") @map("payment_status") @db.VarChar(30)
+  wompiTxId     String?   @map("wompi_tx_id") @db.VarChar(64)
+  paymentMethod String?   @map("payment_method") @db.VarChar(30)
+  paidAt        DateTime? @map("paid_at")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  orders        Order[]
+
+  @@index([userId])
+  @@index([couponId, paymentStatus])
+  @@map("checkouts")
 }

@@ -5,7 +5,7 @@
 
 import type { Ingredient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { BOWL_SIZES, BOWL_SIZE_PRICES, type BowlSize } from '@aristaeus/shared';
+import { BOWL_SIZES, BOWL_SIZE_PRICES, roundToNearestCoin, type BowlSize } from '@aristaeus/shared';
 
 export interface NutritionalSummary {
 	totalCalories: number;
@@ -75,14 +75,6 @@ export function calculateNutrition(
 		totalWeightG: round(totals.totalWeightG),
 		totalPrice: roundToNearestCoin(totals.totalPrice)
 	};
-}
-
-/**
- * Round a COP amount to the nearest 100, since 100 is the smallest coin
- * in Colombian currency.
- */
-function roundToNearestCoin(value: number): number {
-	return Math.round(value / 100) * 100;
 }
 
 function toNumber(value: Decimal | number | null): number {
