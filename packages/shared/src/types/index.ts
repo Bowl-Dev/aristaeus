@@ -221,6 +221,8 @@ export interface AdminOrderItem {
 // Admin order view with user details
 export interface AdminOrder {
 	id: number;
+	/** The checkout's AG-#### number; null for orders placed before checkout existed. */
+	orderNumber: number | null;
 	bowlSize: number;
 	includeCutlery: boolean;
 	user: {
