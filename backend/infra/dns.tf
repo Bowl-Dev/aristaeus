@@ -2,7 +2,7 @@
 #
 # One Route 53 zone holds every environment. Terraform reads that zone. It does not
 # create it, for two reasons:
-#   1. The CI workflow passes only database_url, environment and aws_region. A flag
+#   1. The CI workflow passes only secrets, environment and aws_region. A flag
 #      that controls the zone would read as false in CI and destroy the zone.
 #   2. A shared zone must outlive any single environment. `terraform destroy` on dev
 #      must never delete the DNS records of prod.

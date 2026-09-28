@@ -24,6 +24,34 @@ variable "database_url" {
   sensitive   = true
 }
 
+variable "wompi_public_key" {
+  description = "Wompi public key. Empty until the keys exist; handlers fail closed."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "wompi_integrity_secret" {
+  description = "Wompi integrity secret (signs checkout amounts). Empty until the keys exist; handlers fail closed."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "wompi_events_secret" {
+  description = "Wompi events secret (verifies webhook checksums). Empty until the keys exist; handlers fail closed."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "admin_token" {
+  description = "Shared secret for the x-admin-token header on coupon admin endpoints. Empty: those endpoints answer 401."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "domain_name" {
   description = "Root domain for this environment (prod: algramo.app, dev: dev.algramo.app)"
   type        = string

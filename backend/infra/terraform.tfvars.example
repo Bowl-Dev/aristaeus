@@ -31,3 +31,15 @@ hosted_zone_name = "algramo.app"
 # Keep this false until the orders API has authentication.
 # The admin distribution still exists and answers on its CloudFront domain.
 admin_dns_enabled = false
+
+# ============================================
+# Payments (Wompi) and coupon admin
+# ============================================
+
+# Leave empty until the Wompi keys exist. Checkout answers 503 payments_unavailable.
+wompi_public_key       = ""
+wompi_integrity_secret = ""
+wompi_events_secret    = ""
+
+# Value of the x-admin-token header for the coupon admin endpoints. Empty: 401.
+admin_token = ""

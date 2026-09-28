@@ -6,8 +6,8 @@ resource "aws_apigatewayv2_api" "main" {
 
   cors_configuration {
     allow_origins     = var.cors_allowed_origins
-    allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers     = ["Content-Type", "Authorization"]
+    allow_methods     = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    allow_headers     = ["Content-Type", "Authorization", "x-admin-token"]
     expose_headers    = []
     max_age           = 300
     allow_credentials = false
@@ -54,13 +54,6 @@ resource "aws_apigatewayv2_integration" "get_ingredients" {
   api_id                 = aws_apigatewayv2_api.main.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.get_ingredients.invoke_arn
-  payload_format_version = "2.0"
-}
-
-resource "aws_apigatewayv2_integration" "create_order" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.create_order.invoke_arn
   payload_format_version = "2.0"
 }
 
@@ -152,13 +145,6 @@ resource "aws_apigatewayv2_route" "get_ingredients" {
   target    = "integrations/${aws_apigatewayv2_integration.get_ingredients.id}"
 }
 
-# POST /api/orders
-resource "aws_apigatewayv2_route" "create_order" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "POST /api/orders"
-  target    = "integrations/${aws_apigatewayv2_integration.create_order.id}"
-}
-
 # GET /api/orders (list all - admin)
 resource "aws_apigatewayv2_route" "list_orders" {
   api_id    = aws_apigatewayv2_api.main.id
@@ -244,14 +230,6 @@ resource "aws_lambda_permission" "get_ingredients" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_ingredients.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
-}
-
-resource "aws_lambda_permission" "create_order" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.create_order.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
@@ -344,3 +322,160 @@ resource "aws_lambda_permission" "delete_delivery_observation" {
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
 
+# ============================================
+# Checkout (Wompi) + coupons
+# ============================================
+
+resource "aws_apigatewayv2_integration" "quote_checkout" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.quote_checkout.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# POST /api/checkout/quote (price a cart, no writes)
+resource "aws_apigatewayv2_route" "quote_checkout" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/checkout/quote"
+  target    = "integrations/${aws_apigatewayv2_integration.quote_checkout.id}"
+}
+
+resource "aws_lambda_permission" "quote_checkout" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.quote_checkout.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_apigatewayv2_integration" "create_checkout" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.create_checkout.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# POST /api/checkout (create checkout + orders, sign for Wompi)
+resource "aws_apigatewayv2_route" "create_checkout" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/checkout"
+  target    = "integrations/${aws_apigatewayv2_integration.create_checkout.id}"
+}
+
+resource "aws_lambda_permission" "create_checkout" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_checkout.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_apigatewayv2_integration" "get_checkout" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.get_checkout.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# GET /api/checkout/{id} (checkout payment status)
+resource "aws_apigatewayv2_route" "get_checkout" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/checkout/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.get_checkout.id}"
+}
+
+resource "aws_lambda_permission" "get_checkout" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_checkout.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_apigatewayv2_integration" "wompi_webhook" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.wompi_webhook.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# POST /api/payments/webhook (Wompi events; no route auth, the event checksum is the auth)
+resource "aws_apigatewayv2_route" "wompi_webhook" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/payments/webhook"
+  target    = "integrations/${aws_apigatewayv2_integration.wompi_webhook.id}"
+}
+
+resource "aws_lambda_permission" "wompi_webhook" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.wompi_webhook.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_apigatewayv2_integration" "list_coupons" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.list_coupons.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# GET /api/coupons (admin, x-admin-token)
+resource "aws_apigatewayv2_route" "list_coupons" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/coupons"
+  target    = "integrations/${aws_apigatewayv2_integration.list_coupons.id}"
+}
+
+resource "aws_lambda_permission" "list_coupons" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.list_coupons.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_apigatewayv2_integration" "create_coupon" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.create_coupon.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# POST /api/coupons (admin, x-admin-token)
+resource "aws_apigatewayv2_route" "create_coupon" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/coupons"
+  target    = "integrations/${aws_apigatewayv2_integration.create_coupon.id}"
+}
+
+resource "aws_lambda_permission" "create_coupon" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_coupon.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
+resource "aws_apigatewayv2_integration" "update_coupon" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.update_coupon.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# PATCH /api/coupons/{id} (admin, x-admin-token)
+resource "aws_apigatewayv2_route" "update_coupon" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PATCH /api/coupons/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.update_coupon.id}"
+}
+
+resource "aws_lambda_permission" "update_coupon" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.update_coupon.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
