@@ -455,7 +455,12 @@
 				"active": "Activo",
 				"submit": "Crear cupón",
 				"saving": "Creando…",
-				"saved": "Cupón {code} creado."
+				"saved": "Cupón {code} creado.",
+				"editTitle": "Editar cupón {code}",
+				"update": "Guardar cambios",
+				"cancel": "Cancelar",
+				"updated": "Cupón {code} actualizado.",
+				"lockedHint": "Este cupón ya fue usado: el código, el tipo y el valor no se pueden cambiar."
 			},
 			"list": {
 				"title": "Campañas",
@@ -469,7 +474,11 @@
 				"minBowls": "Mínimo {count} bowls.",
 				"firstOnly": "Solo primera compra.",
 				"activate": "Activar",
-				"deactivate": "Desactivar"
+				"deactivate": "Desactivar",
+				"redemptions": "Redenciones",
+				"edit": "Editar",
+				"delete": "Eliminar",
+				"confirmDelete": "¿Eliminar el cupón {code}? Esta acción no se puede deshacer."
 			},
 			"auth": {
 				"title": "Acceso de administrador",
@@ -478,7 +487,13 @@
 				"invalid": "Token inválido. Inténtalo de nuevo.",
 				"signOut": "Cerrar sesión"
 			},
-			"toggleFailed": "No se pudo cambiar el estado del cupón."
+			"toggleFailed": "No se pudo cambiar el estado del cupón.",
+			"errors": {
+				"coupon_in_use": "Este cupón ya fue usado: no se puede eliminar ni cambiar su código, tipo o valor.",
+				"coupon_code_taken": "Ya existe un cupón con ese código.",
+				"budget_below_redeemed": "El presupuesto no puede ser menor que lo que ya se ha redimido."
+			},
+			"deleteFailed": "No se pudo eliminar el cupón."
 		}
 	},
 	"footer": {

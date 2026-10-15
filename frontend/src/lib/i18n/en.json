@@ -455,7 +455,12 @@
 				"active": "Active",
 				"submit": "Create coupon",
 				"saving": "Creating…",
-				"saved": "Coupon {code} created."
+				"saved": "Coupon {code} created.",
+				"editTitle": "Edit coupon {code}",
+				"update": "Save changes",
+				"cancel": "Cancel",
+				"updated": "Coupon {code} updated.",
+				"lockedHint": "This coupon has been used: its code, type and value can no longer change."
 			},
 			"list": {
 				"title": "Campaigns",
@@ -469,7 +474,11 @@
 				"minBowls": "Min {count} bowls.",
 				"firstOnly": "First purchase only.",
 				"activate": "Activate",
-				"deactivate": "Deactivate"
+				"deactivate": "Deactivate",
+				"redemptions": "Redemptions",
+				"edit": "Edit",
+				"delete": "Delete",
+				"confirmDelete": "Delete coupon {code}? This cannot be undone."
 			},
 			"auth": {
 				"title": "Admin access",
@@ -478,7 +487,13 @@
 				"invalid": "Invalid token. Please try again.",
 				"signOut": "Sign out"
 			},
-			"toggleFailed": "Couldn't change the coupon's status."
+			"toggleFailed": "Couldn't change the coupon's status.",
+			"errors": {
+				"coupon_in_use": "This coupon has been used: it can't be deleted, and its code, type and value can't change.",
+				"coupon_code_taken": "A coupon with that code already exists.",
+				"budget_below_redeemed": "The budget can't be lower than what has already been redeemed."
+			},
+			"deleteFailed": "Could not delete the coupon."
 		}
 	},
 	"footer": {

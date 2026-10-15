@@ -16,7 +16,8 @@ import type {
 	CheckoutStatusResponse,
 	CouponRecord,
 	CouponsResponse,
-	CreateCouponRequest
+	CreateCouponRequest,
+	UpdateCouponRequest
 } from '$lib/types';
 
 export type { AdminOrder, AdminOrderItem } from '$lib/types';
@@ -349,15 +350,26 @@ export async function createCoupon(
 	});
 }
 
-/** Activate or deactivate a coupon — the only edit the API allows. */
+/** Edit a coupon. code/type/value are locked (409 coupon_in_use) once it has redemptions. */
 export async function updateCoupon(
 	id: number,
-	patch: { active: boolean },
+	patch: UpdateCouponRequest,
 	token: string
 ): Promise<CouponRecord> {
 	return apiFetch<CouponRecord>(`/api/coupons/${id}`, {
 		method: 'PATCH',
 		headers: adminHeaders(token),
 		body: JSON.stringify(patch)
+	});
+}
+
+/** Delete an unused coupon (409 coupon_in_use once redeemed). */
+export async function deleteCoupon(
+	id: number,
+	token: string
+): Promise<{ deleted: true; id: number }> {
+	return apiFetch<{ deleted: true; id: number }>(`/api/coupons/${id}`, {
+		method: 'DELETE',
+		headers: adminHeaders(token)
 	});
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { _ } from 'svelte-i18n';
-	import { listCoupons, createCoupon, updateCoupon, ApiError } from '$lib/api/client';
+	import { listCoupons, createCoupon, updateCoupon, deleteCoupon, ApiError } from '$lib/api/client';
 	import type { CouponRecord, CouponType } from '$lib/types';
 	import { couponStatus } from '$lib/utils/coupons';
 	import { formatCOP } from '$lib/utils/bowl';
@@ -33,8 +33,12 @@
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let togglingId = $state<number | null>(null);
+	let deletingId = $state<number | null>(null);
 
-	// Create form
+	// Create / edit form. `editing` is the coupon being edited; null means create mode.
+	let editing = $state<CouponRecord | null>(null);
+	// Code, type and value can't change once a checkout has used the coupon.
+	const locked = $derived((editing?.redemptions ?? 0) > 0);
 	let campaignName = $state('');
 	let code = $state('');
 	let description = $state('');
@@ -87,42 +91,109 @@
 		token = t;
 	}
 
+	const KNOWN_ERRORS = ['coupon_in_use', 'coupon_code_taken', 'budget_below_redeemed'];
+
+	// Server error codes we have copy for; anything else is appended to the fallback.
+	function errorText(e: unknown, fallbackKey: string): string {
+		const reason = e instanceof ApiError ? e.message : '';
+		return KNOWN_ERRORS.includes(reason)
+			? $_(`admin.coupons.errors.${reason}`)
+			: `${$_(fallbackKey)} ${reason}`.trim();
+	}
+
+	// yyyy-mm-dd of an instant in Bogotá time, for <input type="date">.
+	const bogotaDate = (iso: string) =>
+		new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(iso));
+
+	function resetForm() {
+		editing = null;
+		code = '';
+		campaignName = '';
+		description = '';
+		value = null;
+	}
+
+	function startEdit(c: CouponRecord) {
+		editing = c;
+		code = c.code;
+		campaignName = c.campaignName;
+		description = c.description ?? '';
+		type = c.type;
+		value = c.value;
+		startDate = bogotaDate(c.startsAt);
+		endDate = bogotaDate(c.endsAt);
+		budgetTotal = c.budgetTotal;
+		minBowls = c.minBowls;
+		firstPurchaseOnly = c.firstPurchaseOnly;
+		active = c.active;
+		saveMessage = null;
+		saveError = null;
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
 	async function submitCoupon(e: SubmitEvent) {
 		e.preventDefault();
 		saving = true;
 		saveMessage = null;
 		saveError = null;
+		const fields = {
+			code: code.trim(),
+			campaignName: campaignName.trim(),
+			type,
+			// Bogotá has no DST, so -05:00 is always right.
+			startsAt: `${startDate}T00:00:00-05:00`,
+			endsAt: `${endDate}T23:59:59-05:00`,
+			budgetTotal: budgetTotal ?? 0,
+			minBowls,
+			firstPurchaseOnly,
+			active
+		};
 		try {
-			const created = await createCoupon(
-				{
-					code: code.trim(),
-					campaignName: campaignName.trim(),
-					description: description.trim() || undefined,
-					type,
-					value: type === 'free_shipping' ? undefined : (value ?? undefined),
-					// Bogotá has no DST, so -05:00 is always right.
-					startsAt: `${startDate}T00:00:00-05:00`,
-					endsAt: `${endDate}T23:59:59-05:00`,
-					budgetTotal: budgetTotal ?? 0,
-					minBowls,
-					firstPurchaseOnly,
-					active
-				},
-				token
-			);
-			coupons = [created, ...coupons];
-			saveMessage = $_('admin.coupons.form.saved', { values: { code: created.code } });
-			code = '';
-			campaignName = '';
-			description = '';
-			value = null;
-		} catch (e) {
-			if (!handleAuthError(e)) {
-				const reason = e instanceof ApiError ? e.message : '';
-				saveError = `${$_('admin.coupons.saveFailed')} ${reason}`.trim();
+			if (editing) {
+				// Full field set: unchanged locked fields pass the server's in-use check.
+				const updated = await updateCoupon(
+					editing.id,
+					{
+						...fields,
+						description: description.trim() || null,
+						value: type === 'free_shipping' ? null : value
+					},
+					token
+				);
+				coupons = coupons.map((c) => (c.id === updated.id ? updated : c));
+				saveMessage = $_('admin.coupons.form.updated', { values: { code: updated.code } });
+			} else {
+				const created = await createCoupon(
+					{
+						...fields,
+						description: description.trim() || undefined,
+						value: type === 'free_shipping' ? undefined : (value ?? undefined)
+					},
+					token
+				);
+				coupons = [created, ...coupons];
+				saveMessage = $_('admin.coupons.form.saved', { values: { code: created.code } });
 			}
+			resetForm();
+		} catch (e) {
+			if (!handleAuthError(e)) saveError = errorText(e, 'admin.coupons.saveFailed');
 		} finally {
 			saving = false;
+		}
+	}
+
+	async function removeCoupon(c: CouponRecord) {
+		if (!confirm($_('admin.coupons.list.confirmDelete', { values: { code: c.code } }))) return;
+		deletingId = c.id;
+		error = null;
+		try {
+			await deleteCoupon(c.id, token);
+			if (editing?.id === c.id) resetForm();
+			await loadCoupons();
+		} catch (e) {
+			if (!handleAuthError(e)) error = errorText(e, 'admin.coupons.deleteFailed');
+		} finally {
+			deletingId = null;
 		}
 	}
 
@@ -226,7 +297,14 @@
 				class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 mb-6 flex flex-col gap-4"
 				onsubmit={submitCoupon}
 			>
-				<h2 class="text-lg font-semibold text-gray-900">{$_('admin.coupons.form.title')}</h2>
+				<h2 class="text-lg font-semibold text-gray-900">
+					{editing
+						? $_('admin.coupons.form.editTitle', { values: { code: editing.code } })
+						: $_('admin.coupons.form.title')}
+				</h2>
+				{#if locked}
+					<p class="text-sm text-amber-700">{$_('admin.coupons.form.lockedHint')}</p>
+				{/if}
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					<label class={labelClass}>
 						{$_('admin.coupons.form.campaign')}
@@ -239,6 +317,7 @@
 							value={code}
 							oninput={(e) => (code = e.currentTarget.value.toUpperCase())}
 							pattern={'[A-Z0-9_\\-]{3,40}'}
+							disabled={locked}
 							required
 						/>
 					</label>
@@ -248,7 +327,7 @@
 					</label>
 					<label class={labelClass}>
 						{$_('admin.coupons.form.type')}
-						<select class={inputClass} bind:value={type}>
+						<select class={inputClass} bind:value={type} disabled={locked}>
 							<option value="percent">{$_('admin.coupons.type.percent')}</option>
 							<option value="fixed">{$_('admin.coupons.type.fixed')}</option>
 							<option value="free_shipping">{$_('admin.coupons.type.free_shipping')}</option>
@@ -270,6 +349,7 @@
 								min="1"
 								max={type === 'percent' ? 100 : undefined}
 								step="1"
+								disabled={locked}
 								required
 							/>
 						</label>
@@ -328,14 +408,27 @@
 				{#if saveError}
 					<p class="text-sm text-red-600">{saveError}</p>
 				{/if}
-				<div>
+				<div class="flex gap-3">
 					<button
 						type="submit"
 						class="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50"
 						disabled={saving}
 					>
-						{saving ? $_('admin.coupons.form.saving') : $_('admin.coupons.form.submit')}
+						{saving
+							? $_('admin.coupons.form.saving')
+							: editing
+								? $_('admin.coupons.form.update')
+								: $_('admin.coupons.form.submit')}
 					</button>
+					{#if editing}
+						<button
+							type="button"
+							class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+							onclick={resetForm}
+						>
+							{$_('admin.coupons.form.cancel')}
+						</button>
+					{/if}
 				</div>
 			</form>
 
@@ -361,6 +454,7 @@
 								<th class="px-4 py-2">{$_('admin.coupons.list.benefit')}</th>
 								<th class="px-4 py-2">{$_('admin.coupons.list.window')}</th>
 								<th class="px-4 py-2">{$_('admin.coupons.list.budget')}</th>
+								<th class="px-4 py-2">{$_('admin.coupons.list.redemptions')}</th>
 								<th class="px-4 py-2">{$_('admin.coupons.list.status')}</th>
 								<th class="px-4 py-2"></th>
 							</tr>
@@ -390,6 +484,7 @@
 									<td class="px-4 py-3 whitespace-nowrap">
 										{formatCOP(c.budgetRemaining)} / {formatCOP(c.budgetTotal)}
 									</td>
+									<td class="px-4 py-3">{c.redemptions}</td>
 									<td class="px-4 py-3">
 										<span
 											class="px-2.5 py-1 {statusColors[
@@ -399,7 +494,23 @@
 											{$_(`admin.coupons.status.${status}`)}
 										</span>
 									</td>
-									<td class="px-4 py-3 text-right">
+									<td class="px-4 py-3 text-right whitespace-nowrap">
+										<button
+											class="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 hover:bg-gray-50"
+											onclick={() => startEdit(c)}
+										>
+											{$_('admin.coupons.list.edit')}
+										</button>
+										<button
+											class="px-3 py-1.5 bg-white border border-red-200 rounded-xl text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+											disabled={c.redemptions > 0 || deletingId === c.id}
+											title={c.redemptions > 0
+												? $_('admin.coupons.errors.coupon_in_use')
+												: undefined}
+											onclick={() => removeCoupon(c)}
+										>
+											{$_('admin.coupons.list.delete')}
+										</button>
 										<button
 											class="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
 											disabled={togglingId === c.id}

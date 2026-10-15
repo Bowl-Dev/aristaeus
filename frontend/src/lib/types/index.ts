@@ -32,7 +32,8 @@ export type {
 	CouponRejection,
 	CouponRecord,
 	CouponsResponse,
-	CreateCouponRequest
+	CreateCouponRequest,
+	UpdateCouponRequest
 } from '@aristaeus/shared';
 
 export { BOWL_SIZES, BOWL_SIZE_PRICES, CUTLERY_PRICE, roundToNearestCoin } from '@aristaeus/shared';
