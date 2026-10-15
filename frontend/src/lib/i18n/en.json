@@ -270,7 +270,8 @@
 			"service": "Service fee",
 			"total": "Total",
 			"addressHint": "Enter your address",
-			"quoting": "Calculating…"
+			"quoting": "Calculating…",
+			"free": "Free"
 		},
 		"confirm": "Place order – {price}",
 		"confirming": "Placing order…",
@@ -283,7 +284,22 @@
 			"quoteFailed": "We couldn't calculate your order total. Please try again.",
 			"ordersPaused": "We're not taking orders right now. Come back soon!"
 		},
-		"confirmNoPrice": "Place order"
+		"confirmNoPrice": "Place order",
+		"feeInfo": {
+			"open": "More about the delivery fee",
+			"note": "🛵 The delivery fee is calculated from your delivery zone and may differ from the courier's price.",
+			"learnMore": "Learn more",
+			"title": "Why might the delivery fee be different? 🛵",
+			"p1": "At alGramo we calculate your delivery fee from the area of Bogotá you're in, using an average of our delivery partners' rates as a reference.",
+			"p2": "We work with external couriers such as Yango, whose prices can change with demand, availability and other factors.",
+			"p3": "So when you track your order, you might see a different amount from what you paid at alGramo, either higher or lower.",
+			"calloutTitle": "What happens to the difference?",
+			"calloutBefore": "The amount you paid at checkout ",
+			"calloutBold": "does not change",
+			"calloutAfter": ". If the courier charges more, alGramo covers the difference. If it charges less, the rate you accepted when placing your order stays the same.",
+			"closing": "💚 This way you know what you'll pay from the start, with no surprises or extra charges when the courier's rate changes!",
+			"ok": "Got it"
+		}
 	},
 	"admin": {
 		"printLabel": "Print Label",
