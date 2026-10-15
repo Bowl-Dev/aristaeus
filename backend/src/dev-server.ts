@@ -14,12 +14,9 @@ import type {
 } from 'aws-lambda';
 
 // Import handlers
-import prisma from './lib/db.js';
-import { eventChecksum } from './lib/wompi.js';
 import { getIngredients } from './handlers/ingredients.js';
 import { getOrder, listOrders, adminUpdateOrderStatus } from './handlers/orders.js';
 import { quoteCheckout, createCheckout, getCheckout } from './handlers/checkout.js';
-import { wompiWebhook } from './handlers/payments.js';
 import { listCoupons, createCoupon, updateCoupon } from './handlers/coupons.js';
 import { checkPhone, deleteUser } from './handlers/users.js';
 import { getMenus } from './handlers/menus.js';
@@ -32,7 +29,7 @@ import {
 } from './handlers/delivery.js';
 
 // Load backend/.env (copied from .env.local / .env.hosted by the dev:* scripts).
-// Prisma only reads DATABASE_URL from it; the handlers also need WOMPI_* and
+// Prisma only reads DATABASE_URL from it; the handlers also need
 // ADMIN_TOKEN, which they read per request, so loading after the imports is fine.
 if (existsSync('.env')) {
 	for (const line of readFileSync('.env', 'utf8').split('\n')) {
@@ -143,57 +140,12 @@ app.get('/api/orders/:id', wrapHandler(getOrder, ['id']));
 app.put('/api/orders/:orderId/status', wrapHandler(adminUpdateOrderStatus, ['orderId']));
 
 // ============================================
-// Checkout + Payments (Wompi)
+// Checkout
 // ============================================
 
 app.post('/api/checkout/quote', wrapHandler(quoteCheckout));
 app.post('/api/checkout', wrapHandler(createCheckout));
 app.get('/api/checkout/:id', wrapHandler(getCheckout, ['id']));
-app.post('/api/payments/webhook', wrapHandler(wompiWebhook));
-
-// Dev only: pretend Wompi settled a checkout. Builds a transaction.updated event
-// signed with WOMPI_EVENTS_SECRET and feeds it to the real webhook handler.
-// Body: { checkoutId, status: 'APPROVED' | 'DECLINED' }
-const webhook = wrapHandler(wompiWebhook);
-app.post('/dev/wompi/simulate', async (req, res) => {
-	const { checkoutId, status } = req.body ?? {};
-	if (status !== 'APPROVED' && status !== 'DECLINED') {
-		res.status(400).json({ message: "status must be 'APPROVED' or 'DECLINED'" });
-		return;
-	}
-	const checkout = await prisma.checkout
-		.findUnique({ where: { id: String(checkoutId) } })
-		.catch(() => null);
-	if (!checkout) {
-		res.status(404).json({ message: 'Checkout not found' });
-		return;
-	}
-
-	const event = {
-		event: 'transaction.updated',
-		data: {
-			transaction: {
-				id: `dev-${Date.now()}`,
-				reference: checkout.id,
-				amount_in_cents: checkout.total * 100,
-				currency: 'COP',
-				status,
-				payment_method_type: 'CARD'
-			}
-		},
-		environment: 'test',
-		timestamp: Math.floor(Date.now() / 1000),
-		sent_at: new Date().toISOString(),
-		signature: {
-			properties: ['transaction.id', 'transaction.status', 'transaction.amount_in_cents'],
-			checksum: ''
-		}
-	};
-	event.signature.checksum = eventChecksum(event, process.env.WOMPI_EVENTS_SECRET ?? '');
-
-	req.body = event;
-	await webhook(req, res);
-});
 
 // ============================================
 // Coupons (admin, x-admin-token)
@@ -240,8 +192,6 @@ app.listen(PORT, () => {
 	console.log('  POST /api/checkout/quote');
 	console.log('  POST /api/checkout');
 	console.log('  GET  /api/checkout/:id');
-	console.log('  POST /api/payments/webhook        (Wompi events)');
-	console.log('  POST /dev/wompi/simulate          (dev: fake a signed Wompi event)');
 	console.log('  GET  /api/coupons                 (admin, x-admin-token)');
 	console.log('  POST /api/coupons                 (admin, x-admin-token)');
 	console.log('  PATCH /api/coupons/:id            (admin, x-admin-token)');

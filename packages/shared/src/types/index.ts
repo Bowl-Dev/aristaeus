@@ -110,11 +110,7 @@ export type OrderStatus =
 	| 'ready'
 	| 'completed'
 	| 'cancelled'
-	| 'failed'
-	// Created by a checkout, not yet paid — the kitchen must not start these.
-	| 'awaiting_payment'
-	// The checkout's payment was declined, voided, errored or abandoned.
-	| 'payment_failed';
+	| 'failed';
 
 export interface OrderItem {
 	id: number;
@@ -239,7 +235,7 @@ export interface CheckPhoneResponse {
 }
 
 // ============================================
-// Checkout (Wompi) API Types
+// Checkout API Types
 // ============================================
 
 export interface CheckoutBowl {
@@ -280,7 +276,7 @@ export interface CheckoutQuote {
 	couponRejection: { reason: CouponRejection; minBowls?: number } | null;
 }
 
-/** POST /api/checkout — creates the checkout + its orders, returns Wompi params. */
+/** POST /api/checkout — creates the checkout + its orders. */
 export interface CreateCheckoutRequest extends CheckoutQuoteRequest {
 	customer: { name: string; phone: string };
 	deliveryInstructions?: string;
@@ -290,15 +286,10 @@ export interface CreateCheckoutResponse {
 	checkoutId: string;
 	/** Shown as AG-#### */
 	orderNumber: number;
-	/** Wompi Web Checkout params. The frontend adds `redirect-url` itself. */
-	reference: string;
-	amountInCents: number;
-	currency: 'COP';
-	signature: string;
-	publicKey: string;
 }
 
-export type PaymentStatus = 'awaiting_payment' | 'paid' | 'payment_failed';
+/** No in-app payment yet: every checkout is `not_required`. */
+export type PaymentStatus = 'not_required';
 
 /** GET /api/checkout/{id} */
 export interface CheckoutStatusResponse {

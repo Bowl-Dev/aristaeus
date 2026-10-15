@@ -21,9 +21,7 @@ const adminUpdateStatusSchema = z.object({
 		'ready',
 		'completed',
 		'cancelled',
-		'failed',
-		'awaiting_payment',
-		'payment_failed'
+		'failed'
 	])
 });
 

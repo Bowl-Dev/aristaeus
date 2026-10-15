@@ -1,11 +1,11 @@
 /**
- * Checkout API Handlers (Wompi Web Checkout)
- * POST /api/checkout/quote - price a cart (no writes but the coupon's lazy release)
- * POST /api/checkout       - create the checkout + its orders, return signed Wompi params
- * GET  /api/checkout/{id}  - payment status
+ * Checkout API Handlers
+ * POST /api/checkout/quote - price a cart (no writes)
+ * POST /api/checkout       - create the checkout + its orders
+ * GET  /api/checkout/{id}  - checkout status
  *
- * Orders are created as `awaiting_payment`; only the payments webhook moves
- * them into the kitchen queue.
+ * No in-app payment yet: orders go straight to `pending` (the kitchen queue)
+ * and the checkout is `not_required`.
  */
 
 import type { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
@@ -31,7 +31,6 @@ import {
 import { priceBowl, computeTotals } from '../lib/pricing.js';
 import { getDeliveryFee } from '../lib/delivery/estimate.js';
 import { evaluateCoupon, reserveBudget } from '../lib/coupons.js';
-import { signIntegrity } from '../lib/wompi.js';
 
 const MIN_QUANTITY_GRAMS = 5;
 
@@ -169,12 +168,6 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 			console.error('Error reading store config (failing open):', configError);
 		}
 
-		const publicKey = process.env.WOMPI_PUBLIC_KEY;
-		const integritySecret = process.env.WOMPI_INTEGRITY_SECRET;
-		if (!publicKey || !integritySecret || !process.env.WOMPI_EVENTS_SECRET) {
-			return serviceUnavailable('payments_unavailable');
-		}
-
 		if (!event.body) return badRequest('Request body is required');
 
 		const parseResult = createSchema.safeParse(JSON.parse(event.body));
@@ -218,6 +211,7 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 							discount: quote.discount,
 							serviceFee: quote.serviceFee,
 							total: quote.total,
+							paymentStatus: 'not_required',
 							couponId: coupon?.id ?? null
 						}
 					});
@@ -237,7 +231,7 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 									deliveryPostalCode: savedAddress.postalCode,
 									deliveryInstructions: deliveryInstructions ?? null,
 									bowlSize: bowl.bowlSize,
-									status: 'awaiting_payment',
+									status: 'pending',
 									includeCutlery: bowl.includeCutlery,
 									totalCalories: nutrition.totalCalories,
 									totalProteinG: nutrition.totalProteinG,
@@ -268,15 +262,9 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 			throw error;
 		}
 
-		const amountInCents = checkout.total * 100;
 		const response: CreateCheckoutResponse = {
 			checkoutId: checkout.id,
-			orderNumber: checkout.orderNumber,
-			reference: checkout.id,
-			amountInCents,
-			currency: 'COP',
-			signature: signIntegrity(checkout.id, amountInCents, integritySecret),
-			publicKey
+			orderNumber: checkout.orderNumber
 		};
 		return created(response);
 	} catch (error) {

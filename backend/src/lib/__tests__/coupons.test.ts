@@ -2,12 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../db.js', () => {
 	const db = {
-		coupon: { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() },
-		checkout: { findMany: vi.fn(), updateMany: vi.fn(), findUniqueOrThrow: vi.fn() },
-		order: { count: vi.fn(), updateMany: vi.fn() },
-		$transaction: vi.fn()
+		coupon: { findUnique: vi.fn() },
+		order: { count: vi.fn() }
 	};
-	db.$transaction.mockImplementation((fn: (tx: typeof db) => unknown) => fn(db));
 	return { default: db };
 });
 
@@ -38,7 +35,6 @@ function withCoupon(overrides?: Record<string, unknown>) {
 describe('evaluateCoupon', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		vi.mocked(prisma.checkout.findMany).mockResolvedValue([]);
 		vi.mocked(prisma.order.count).mockResolvedValue(0);
 	});
 
@@ -83,38 +79,5 @@ describe('evaluateCoupon', () => {
 	it('reports the first failing check (inactive before expired)', async () => {
 		withCoupon({ active: false, endsAt: new Date('2026-09-30T00:00:00Z') });
 		expect(await evaluateCoupon('HOLA10', cart, now)).toEqual({ ok: false, reason: 'inactive' });
-	});
-
-	it('releases abandoned checkouts before judging the budget', async () => {
-		withCoupon({ budgetRemaining: decimal(0) });
-		vi.mocked(prisma.checkout.findMany).mockResolvedValue([{ id: 'c1' }] as never);
-		vi.mocked(prisma.checkout.updateMany).mockResolvedValue({ count: 1 });
-		vi.mocked(prisma.checkout.findUniqueOrThrow).mockResolvedValue({
-			couponId: 7,
-			discount: 3000
-		} as never);
-		vi.mocked(prisma.coupon.findUniqueOrThrow).mockResolvedValue(
-			coupon({ budgetRemaining: decimal(3000) }) as never
-		);
-
-		const result = await evaluateCoupon('HOLA10', cart, now);
-
-		expect(prisma.checkout.findMany).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: expect.objectContaining({
-					paymentStatus: 'awaiting_payment',
-					createdAt: { lt: new Date('2026-10-01T11:00:00Z') }
-				})
-			})
-		);
-		expect(prisma.order.updateMany).toHaveBeenCalledWith({
-			where: { checkoutId: 'c1' },
-			data: { status: 'payment_failed' }
-		});
-		expect(prisma.coupon.update).toHaveBeenCalledWith({
-			where: { id: 7 },
-			data: { budgetRemaining: { increment: 3000 } }
-		});
-		expect(result).toMatchObject({ ok: true, discount: 3000 });
 	});
 });

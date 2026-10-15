@@ -6,7 +6,7 @@ vi.mock('../../lib/db.js', () => {
 		storeConfig: { findFirst: vi.fn() },
 		ingredient: { findMany: vi.fn() },
 		coupon: { findUnique: vi.fn(), updateMany: vi.fn() },
-		checkout: { findMany: vi.fn(), create: vi.fn() },
+		checkout: { create: vi.fn() },
 		order: { count: vi.fn(), create: vi.fn() },
 		user: { findUnique: vi.fn(), create: vi.fn() },
 		address: { findFirst: vi.fn(), create: vi.fn() },
@@ -19,7 +19,6 @@ vi.mock('../../lib/delivery/estimate.js', () => ({ getDeliveryFee: vi.fn() }));
 
 import prisma from '../../lib/db.js';
 import { getDeliveryFee } from '../../lib/delivery/estimate.js';
-import { signIntegrity } from '../../lib/wompi.js';
 import { createCheckout, quoteCheckout } from '../checkout.js';
 
 const decimal = (n: number) => ({ toNumber: () => n });
@@ -70,12 +69,8 @@ async function call(
 describe('checkout handlers', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		process.env.WOMPI_PUBLIC_KEY = 'pub_test_x';
-		process.env.WOMPI_INTEGRITY_SECRET = 'integrity_x';
-		process.env.WOMPI_EVENTS_SECRET = 'events_x';
 		vi.mocked(prisma.storeConfig.findFirst).mockResolvedValue(null);
 		vi.mocked(prisma.ingredient.findMany).mockResolvedValue([rice] as never);
-		vi.mocked(prisma.checkout.findMany).mockResolvedValue([]);
 		vi.mocked(getDeliveryFee).mockResolvedValue(4000);
 	});
 
@@ -147,7 +142,7 @@ describe('checkout handlers', () => {
 		expect(prisma.checkout.create).not.toHaveBeenCalled();
 	});
 
-	it('creates the checkout, one awaiting_payment order per bowl, and signs for Wompi', async () => {
+	it('creates the checkout and one pending order per bowl', async () => {
 		vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 		vi.mocked(prisma.user.create).mockResolvedValue({ id: 'u1' } as never);
 		vi.mocked(prisma.address.findFirst).mockResolvedValue(null);
@@ -166,32 +161,22 @@ describe('checkout handlers', () => {
 
 		const response = await call(createCheckout, request);
 
-		// subtotal 23000 + delivery 4000 + fee (800 + 810 = 1610 -> 1600) = 28600
 		expect(response.statusCode).toBe(201);
 		expect(response.json).toEqual({
 			checkoutId: 'c0ffee00-0000-4000-8000-000000000000',
-			orderNumber: 1000,
-			reference: 'c0ffee00-0000-4000-8000-000000000000',
-			amountInCents: 2_860_000,
-			currency: 'COP',
-			signature: signIntegrity('c0ffee00-0000-4000-8000-000000000000', 2_860_000, 'integrity_x'),
-			publicKey: 'pub_test_x'
+			orderNumber: 1000
+		});
+		// subtotal 23000 + delivery 4000 + fee (800 + 810 = 1610 -> 1600) = 28600
+		expect(vi.mocked(prisma.checkout.create).mock.calls[0][0].data).toMatchObject({
+			total: 28600,
+			paymentStatus: 'not_required'
 		});
 		expect(prisma.order.create).toHaveBeenCalledTimes(2);
 		expect(vi.mocked(prisma.order.create).mock.calls[0][0].data).toMatchObject({
-			status: 'awaiting_payment',
+			status: 'pending',
 			checkoutId: 'c0ffee00-0000-4000-8000-000000000000',
 			totalPrice: 11500,
 			includeCutlery: true
 		});
-	});
-
-	it('answers 503 payments_unavailable without Wompi keys', async () => {
-		delete process.env.WOMPI_INTEGRITY_SECRET;
-
-		const response = await call(createCheckout, request);
-
-		expect(response.statusCode).toBe(503);
-		expect(response.json.message).toBe('payments_unavailable');
 	});
 });

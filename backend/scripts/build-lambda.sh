@@ -36,7 +36,6 @@ npx esbuild \
   src/handlers/users.ts \
   src/handlers/delivery.ts \
   src/handlers/checkout.ts \
-  src/handlers/payments.ts \
   src/handlers/coupons.ts \
   --bundle \
   --platform=node \
