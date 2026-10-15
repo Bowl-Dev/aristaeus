@@ -9,7 +9,7 @@
 <BottomSheet ariaLabel={$_('delivery.feeInfo.title')} {onDismiss}>
 	{#snippet children(dismiss: () => void)}
 		<div
-			class="flex max-h-[70svh] flex-col gap-4 overflow-y-auto text-sm leading-6 text-text-black"
+			class="flex max-h-[calc(100svh-12rem)] flex-col gap-4 overflow-y-auto text-sm leading-5 text-text-black"
 		>
 			<h2 class="m-0 text-lg font-bold leading-snug">{$_('delivery.feeInfo.title')}</h2>
 			<p class="m-0">{$_('delivery.feeInfo.p1')}</p>
