@@ -1,6 +1,6 @@
 # Feature Plan — Payments via Wompi (in-app checkout)
 
-**Status:** Implemented 2026-09-27 on `feat/wompi-checkout-coupons` — decisions in CLAUDE.md (v4.1); this doc is historical
+**Status:** Implemented 2026-09-27, **parked 2026-10-15** on branch `feat/wompi-payments` (held back so the deploy ships coupons + delivery only). Restore by reverting the three `chore(*): hold Wompi payments back` commits on top of the live branch.
 **Date:** 2026-09-17
 **Decisions locked:** in-app checkout at order time; processor = Wompi (Bancolombia).
 
