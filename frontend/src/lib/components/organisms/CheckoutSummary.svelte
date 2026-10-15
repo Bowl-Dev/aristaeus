@@ -126,7 +126,7 @@
 		<span class="flex flex-col items-end">
 			{#if quote && coupon}
 				<s class="text-xs text-text-muted" data-testid="pre-discount-total">
-					{formatCOP(quote.total + quote.discount)}
+					{formatCOP(quote.totalBeforeDiscount)}
 				</s>
 			{/if}
 			<span class="text-2xl font-bold text-dark-green">

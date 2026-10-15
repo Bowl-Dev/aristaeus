@@ -123,6 +123,7 @@ async function priceCart(cart: Cart, phone: string | undefined) {
 		discount,
 		serviceFee,
 		total,
+		totalBeforeDiscount: computeTotals(subtotal, deliveryFee, 0).total,
 		coupon: coupon && {
 			code: coupon.code,
 			type: coupon.type as CouponType,

@@ -10,6 +10,7 @@ const quote: CheckoutQuote = {
 	discount: 0,
 	serviceFee: 1000,
 	total: 7800,
+	totalBeforeDiscount: 7800,
 	coupon: null,
 	couponRejection: null
 };
@@ -64,6 +65,7 @@ describe('CheckoutSummary', () => {
 				...quote,
 				discount: 5000,
 				total: 2800,
+				totalBeforeDiscount: 7900,
 				coupon: { code: 'ENVIOGRATIS', type: 'free_shipping', value: null }
 			})
 		});
@@ -74,5 +76,7 @@ describe('CheckoutSummary', () => {
 		expect(couponRow.textContent).toContain('ENVIOGRATIS');
 		expect(couponRow.textContent).not.toContain('−');
 		expect(container.textContent).toMatch(/2\.800/);
+		// the server's pre-discount total, not total + discount (7.800)
+		expect(getByTestId('pre-discount-total').textContent).toMatch(/7\.900/);
 	});
 });

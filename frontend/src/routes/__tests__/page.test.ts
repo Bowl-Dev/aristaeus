@@ -258,6 +258,7 @@ describe('/ +page (view state machine)', () => {
 				discount: 0,
 				serviceFee: 1000,
 				total: 7800,
+				totalBeforeDiscount: 7800,
 				coupon: null,
 				couponRejection: null
 			});

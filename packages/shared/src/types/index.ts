@@ -271,6 +271,8 @@ export interface CheckoutQuote {
 	discount: number;
 	serviceFee: number;
 	total: number;
+	/** The total without the coupon (service fee recomputed), shown struck through. */
+	totalBeforeDiscount: number;
 	coupon: AppliedCoupon | null;
 	/** Set when a couponCode was sent and did not apply. */
 	couponRejection: { reason: CouponRejection; minBowls?: number } | null;

@@ -87,6 +87,8 @@ describe('checkout handlers', () => {
 			discount: 2300,
 			serviceFee: 1500,
 			total: 26200,
+			// without the coupon: 23000 + 4000 + fee (800 + 3% of 27000 = 1610 -> 1600)
+			totalBeforeDiscount: 28600,
 			coupon: { code: 'HOLA10', type: 'percent', value: 10 },
 			couponRejection: null
 		});
@@ -151,7 +153,13 @@ describe('checkout handlers', () => {
 
 		const response = await call(quoteCheckout, { ...request, couponCode: 'HOLA10' });
 
-		expect(response.json).toMatchObject({ deliveryFee: 4000, discount: 4000 });
+		// The struck-through total is not total + discount: the service fee shrinks with the discount.
+		expect(response.json).toMatchObject({
+			deliveryFee: 4000,
+			discount: 4000,
+			total: 24500,
+			totalBeforeDiscount: 28600
+		});
 	});
 
 	it('treats +57 and 10-digit phones as the same user', async () => {
