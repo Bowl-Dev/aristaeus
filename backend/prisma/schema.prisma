@@ -345,8 +345,9 @@ model Coupon {
 
 model Checkout {
   id            String    @id @default(uuid()) @db.Uuid // also the Wompi reference
-  userId        String    @map("user_id") @db.Uuid
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Null once the customer deletes their data (Law 1581): the amounts stay so coupon history adds up.
+  userId        String?   @map("user_id") @db.Uuid
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   /// Shown as AG-####. The sequence starts at 1000 (see the migration).
   orderNumber   Int       @unique @default(autoincrement()) @map("order_number")
 

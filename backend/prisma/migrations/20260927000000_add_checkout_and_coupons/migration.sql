@@ -25,7 +25,7 @@ CREATE TABLE "coupons" (
 -- CreateTable
 CREATE TABLE "checkouts" (
     "id" UUID NOT NULL,
-    "user_id" UUID NOT NULL,
+    "user_id" UUID,
     "order_number" SERIAL NOT NULL,
     "subtotal" INTEGER NOT NULL,
     "delivery_fee" INTEGER NOT NULL,
@@ -65,7 +65,7 @@ CREATE INDEX "orders_checkout_id_idx" ON "orders"("checkout_id");
 ALTER TABLE "orders" ADD CONSTRAINT "orders_checkout_id_fkey" FOREIGN KEY ("checkout_id") REFERENCES "checkouts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_coupon_id_fkey" FOREIGN KEY ("coupon_id") REFERENCES "coupons"("id") ON DELETE SET NULL ON UPDATE CASCADE;
