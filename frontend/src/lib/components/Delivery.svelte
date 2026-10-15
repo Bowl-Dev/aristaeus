@@ -10,8 +10,8 @@
 	import { computeBowlTotals, bowlBasePrice, formatCOP } from '$lib/utils/bowl';
 	import { CUTLERY_PRICE, roundToNearestCoin } from '$lib/types';
 	import { getCheckoutQuote, createCheckout, ApiError } from '$lib/api/client';
-	import { wompiCheckoutUrl } from '$lib/utils/wompi';
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import AppScreen from './templates/AppScreen.svelte';
 	import FormInput from './molecules/FormInput.svelte';
 	import CouponField from './molecules/CouponField.svelte';
@@ -207,9 +207,10 @@
 				customer: { name: name.trim(), phone: trimmedPhone },
 				deliveryInstructions: deliveryInstructions.trim() || undefined
 			});
-			const redirectUrl = `${window.location.origin}${resolve('/order')}?c=${encodeURIComponent(checkout.checkoutId)}`;
-			// Stay in the submitting state while the browser leaves for Wompi.
-			window.location.assign(wompiCheckoutUrl(checkout, redirectUrl));
+			// Stay in the submitting state while navigating to the confirmation page.
+			// resolve() can't carry a query string; the path itself is resolved.
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			await goto(resolve('/order') + '?c=' + encodeURIComponent(checkout.checkoutId));
 		} catch (e) {
 			submitting = false;
 			if (isApiError(e, 409, 'coupon_rejected')) {
@@ -223,8 +224,6 @@
 				addressError = $_('delivery.errors.addressNotFound');
 			} else if (isApiError(e, 503, 'ordersPaused')) {
 				formError = $_('delivery.errors.ordersPaused');
-			} else if (isApiError(e, 503, 'payments_unavailable')) {
-				formError = $_('delivery.errors.paymentsUnavailable');
 			} else {
 				formError = $_('delivery.error');
 			}

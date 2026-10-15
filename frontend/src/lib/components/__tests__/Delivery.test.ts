@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { locale, waitLocale } from 'svelte-i18n';
 import type { CheckoutQuote } from '$lib/types';
+import { goto } from '$app/navigation';
 
 const { getCheckoutQuoteMock, createCheckoutMock, FakeApiError } = vi.hoisted(() => {
 	class FakeApiError extends Error {
@@ -68,19 +69,11 @@ const baseQuote: CheckoutQuote = {
 	couponRejection: null
 };
 
-const checkoutResponse = {
-	checkoutId: 'chk-1',
-	orderNumber: 1000,
-	reference: 'chk-1',
-	amountInCents: 780000,
-	currency: 'COP',
-	signature: 'sig',
-	publicKey: 'pub_test'
-};
+const checkoutResponse = { checkoutId: 'chk-1', orderNumber: 1000 };
 
 function getCta(container: HTMLElement): HTMLButtonElement {
 	return Array.from(container.querySelectorAll('button')).find((b) =>
-		(b.textContent ?? '').match(/Pagar ahora|Redirigiendo/)
+		(b.textContent ?? '').match(/Hacer pedido|Enviando/)
 	) as HTMLButtonElement;
 }
 
@@ -109,18 +102,15 @@ async function typeCoupon(container: HTMLElement, value: string) {
 }
 
 describe('Delivery', () => {
-	const assign = vi.fn();
+	const gotoMock = vi.mocked(goto);
 
 	beforeEach(async () => {
 		getCheckoutQuoteMock.mockReset();
 		createCheckoutMock.mockReset();
-		assign.mockReset();
-		vi.stubGlobal('location', { origin: 'https://algramo.co', assign });
+		gotoMock.mockReset();
 		locale.set('es');
 		await waitLocale();
 	});
-
-	afterEach(() => vi.unstubAllGlobals());
 
 	it('shows the client subtotal and an address hint, with the CTA disabled, before a quote', () => {
 		const { container } = render(Delivery, { props: makeProps({ bowls: [makeBowl(2)] }) });
@@ -151,7 +141,7 @@ describe('Delivery', () => {
 			phone: '3001234567'
 		});
 		expect(container.textContent).toMatch(/5\.000/);
-		expect(getCta(container).textContent).toMatch(/Pagar ahora - \$\s*7\.800/);
+		expect(getCta(container).textContent).toMatch(/Hacer pedido – \$\s*7\.800/);
 	});
 
 	it('does not quote on blur of an empty address', async () => {
@@ -280,7 +270,7 @@ describe('Delivery', () => {
 		);
 	});
 
-	it('creates the checkout and redirects to Wompi', async () => {
+	it('creates the checkout and goes to the order page', async () => {
 		getCheckoutQuoteMock.mockResolvedValue(baseQuote);
 		createCheckoutMock.mockResolvedValue(checkoutResponse);
 		const { container } = render(Delivery, { props: makeProps({ bowls: [makeBowl(3)] }) });
@@ -290,7 +280,7 @@ describe('Delivery', () => {
 		});
 		await waitFor(() => expect(getCta(container).disabled).toBe(false));
 		await fireEvent.click(getCta(container));
-		await waitFor(() => expect(assign).toHaveBeenCalledOnce());
+		await waitFor(() => expect(gotoMock).toHaveBeenCalledWith('/order?c=chk-1'));
 		expect(createCheckoutMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				address: 'Cra 7 # 50-10',
@@ -301,10 +291,6 @@ describe('Delivery', () => {
 			})
 		);
 		expect(createCheckoutMock.mock.calls[0][0].bowls[0].quantity).toBe(3);
-		const url = new URL(assign.mock.calls[0][0]);
-		expect(url.origin + url.pathname).toBe('https://checkout.wompi.co/p/');
-		expect(url.searchParams.get('amount-in-cents')).toBe('780000');
-		expect(url.searchParams.get('redirect-url')).toBe('https://algramo.co/order?c=chk-1');
 	});
 
 	it('on 409 coupon_rejected shows the reason, drops the coupon and re-quotes', async () => {
@@ -332,20 +318,7 @@ describe('Delivery', () => {
 		await waitFor(() => expect(container.textContent).toContain('Cupón expirado'));
 		await waitFor(() => expect(getCheckoutQuoteMock).toHaveBeenCalledTimes(3));
 		expect(getCheckoutQuoteMock.mock.calls[2][0].couponCode).toBeUndefined();
-		expect(assign).not.toHaveBeenCalled();
-	});
-
-	it('shows a readable error when payments are unavailable', async () => {
-		getCheckoutQuoteMock.mockResolvedValue(baseQuote);
-		createCheckoutMock.mockRejectedValue(new FakeApiError(503, 'payments_unavailable'));
-		const { container } = render(Delivery, { props: makeProps() });
-		await fillAll(container);
-		await waitFor(() => expect(getCta(container).disabled).toBe(false));
-		await fireEvent.click(getCta(container));
-		await waitFor(() =>
-			expect(container.textContent).toContain('Los pagos no están disponibles en este momento')
-		);
-		expect(getCta(container).disabled).toBe(false);
+		expect(gotoMock).not.toHaveBeenCalled();
 	});
 
 	it('strips non-digits from the phone field and caps it at 10 digits', async () => {

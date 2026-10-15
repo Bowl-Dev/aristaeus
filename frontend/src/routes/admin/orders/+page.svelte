@@ -40,8 +40,6 @@
 	};
 
 	const availableStatuses: OrderStatus[] = [
-		'awaiting_payment',
-		'payment_failed',
 		'pending',
 		'queued',
 		'assigned',
@@ -60,9 +58,7 @@
 		ready: 'bg-green-500 text-white',
 		completed: 'bg-emerald-600 text-white',
 		cancelled: 'bg-gray-400 text-white',
-		failed: 'bg-red-500 text-white',
-		awaiting_payment: 'bg-amber-300 text-black',
-		payment_failed: 'bg-red-700 text-white'
+		failed: 'bg-red-500 text-white'
 	};
 
 	async function loadOrders() {

@@ -264,13 +264,13 @@ describe('/ +page (view state machine)', () => {
 			const { container } = render(Page);
 			await goToCartWithOneBowl(container);
 			await fireEvent.click(findButton(container, /Continuar a entrega/) as HTMLButtonElement);
-			await waitFor(() => expect(findButton(container, /Pagar ahora/)?.disabled).toBe(true));
+			await waitFor(() => expect(findButton(container, /Hacer pedido/)?.disabled).toBe(true));
 
 			const address = container.querySelector('#delivery-address') as HTMLTextAreaElement;
 			await fireEvent.input(address, { target: { value: 'Cra 7 # 50-10' } });
 			await fireEvent.blur(address);
 			await waitFor(() =>
-				expect(findButton(container, /Pagar ahora/)?.textContent).toMatch(/7\.800/)
+				expect(findButton(container, /Hacer pedido/)?.textContent).toMatch(/7\.800/)
 			);
 			expect(getCheckoutQuoteMock.mock.calls[0][0].bowls).toEqual([
 				{

@@ -97,7 +97,7 @@ export async function getMenus(): Promise<Menu[]> {
 }
 
 // ============================================
-// Checkout (Wompi)
+// Checkout
 // ============================================
 
 /** Price a cart server-side. Nothing is written; a rejected coupon still answers 200. */
@@ -108,7 +108,7 @@ export async function getCheckoutQuote(request: CheckoutQuoteRequest): Promise<C
 	});
 }
 
-/** Create the checkout and its orders; returns the Wompi Web Checkout params. */
+/** Create the checkout and its (pending) orders; returns its id and AG-#### number. */
 export async function createCheckout(
 	request: CreateCheckoutRequest
 ): Promise<CreateCheckoutResponse> {
@@ -118,7 +118,7 @@ export async function createCheckout(
 	});
 }
 
-/** Payment status of a checkout, for the /order return page. */
+/** A created checkout's order number, for the /order confirmation page. */
 export async function getCheckoutStatus(checkoutId: string): Promise<CheckoutStatusResponse> {
 	return apiFetch<CheckoutStatusResponse>(`/api/checkout/${encodeURIComponent(checkoutId)}`);
 }

@@ -272,8 +272,8 @@
 			"addressHint": "Ingresa tu dirección",
 			"quoting": "Calculando…"
 		},
-		"confirm": "Pagar ahora - {price}",
-		"confirming": "Redirigiendo al pago…",
+		"confirm": "Hacer pedido – {price}",
+		"confirming": "Enviando pedido…",
 		"error": "Ocurrió un problema al enviar tu pedido. Revisa tu conexión e intenta de nuevo.",
 		"errors": {
 			"nameRequired": "Ingresa tu nombre",
@@ -281,10 +281,9 @@
 			"addressRequired": "Ingresa una dirección de entrega",
 			"addressNotFound": "No pudimos ubicar esta dirección. Revísala e inténtalo de nuevo (ej. Calle 125 # 18A-05, Apto 302).",
 			"quoteFailed": "No pudimos calcular el total de tu pedido. Inténtalo de nuevo.",
-			"ordersPaused": "En este momento no estamos recibiendo pedidos. ¡Vuelve pronto!",
-			"paymentsUnavailable": "Los pagos no están disponibles en este momento. Inténtalo de nuevo más tarde."
+			"ordersPaused": "En este momento no estamos recibiendo pedidos. ¡Vuelve pronto!"
 		},
-		"confirmNoPrice": "Pagar ahora"
+		"confirmNoPrice": "Hacer pedido"
 	},
 	"admin": {
 		"printLabel": "Imprimir Etiqueta",
@@ -577,29 +576,16 @@
 		"status": "Estado",
 		"eta": "Tiempo estimado",
 		"home": "Volver al inicio",
-		"refresh": "Actualizar estado",
-		"paid": {
-			"eyebrow": "Pedido confirmado",
+		"received": {
+			"eyebrow": "Pedido recibido",
 			"title": "¡Gracias por tu pedido!",
 			"message": "Estamos preparando tu bowl con mucho cuidado. Te notificaremos en cuanto esté listo.",
-			"status": "En preparación"
-		},
-		"pending": {
-			"eyebrow": "Confirmando pago",
-			"title": "Estamos confirmando tu pago",
-			"message": "Esto puede tardar unos minutos. No es necesario que pagues de nuevo; puedes actualizar el estado en un momento.",
-			"status": "Confirmando pago"
-		},
-		"failed": {
-			"eyebrow": "Pago no aprobado",
-			"title": "Tu pago no fue aprobado",
-			"message": "No se realizó ningún cobro. Puedes volver al inicio y armar tu pedido de nuevo.",
-			"status": "Pago rechazado"
+			"status": "Recibido"
 		},
 		"notFound": {
 			"eyebrow": "Pedido no encontrado",
 			"title": "No encontramos tu pedido",
-			"message": "El enlace no es válido o el pedido no existe. Si ya pagaste, escríbenos y lo revisamos."
+			"message": "El enlace no es válido o el pedido no existe. Si ya hiciste tu pedido, escríbenos y lo revisamos."
 		}
 	}
 }
