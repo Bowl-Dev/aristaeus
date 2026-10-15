@@ -141,9 +141,6 @@ jobs:
         run: |
           terraform plan -no-color -out=tfplan \
             -var="database_url=${{ secrets.DATABASE_URL }}" \
-            -var="wompi_public_key=${{ secrets.WOMPI_PUBLIC_KEY }}" \
-            -var="wompi_integrity_secret=${{ secrets.WOMPI_INTEGRITY_SECRET }}" \
-            -var="wompi_events_secret=${{ secrets.WOMPI_EVENTS_SECRET }}" \
             -var="admin_token=${{ secrets.ADMIN_TOKEN }}" \
             -var="environment=${{ github.event.inputs.environment || 'dev' }}" \
             -var="aws_region=${{ env.AWS_REGION }}"
@@ -240,9 +237,6 @@ jobs:
         run: |
           terraform apply -auto-approve \
             -var="database_url=${{ secrets.DATABASE_URL }}" \
-            -var="wompi_public_key=${{ secrets.WOMPI_PUBLIC_KEY }}" \
-            -var="wompi_integrity_secret=${{ secrets.WOMPI_INTEGRITY_SECRET }}" \
-            -var="wompi_events_secret=${{ secrets.WOMPI_EVENTS_SECRET }}" \
             -var="admin_token=${{ secrets.ADMIN_TOKEN }}" \
             -var="environment=${{ github.event.inputs.environment || 'dev' }}" \
             -var="aws_region=${{ env.AWS_REGION }}"

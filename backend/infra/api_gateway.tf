@@ -323,7 +323,7 @@ resource "aws_lambda_permission" "delete_delivery_observation" {
 }
 
 # ============================================
-# Checkout (Wompi) + coupons
+# Checkout + coupons
 # ============================================
 
 resource "aws_apigatewayv2_integration" "quote_checkout" {
@@ -355,7 +355,7 @@ resource "aws_apigatewayv2_integration" "create_checkout" {
   payload_format_version = "2.0"
 }
 
-# POST /api/checkout (create checkout + orders, sign for Wompi)
+# POST /api/checkout (create checkout + orders)
 resource "aws_apigatewayv2_route" "create_checkout" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /api/checkout"
@@ -388,28 +388,6 @@ resource "aws_lambda_permission" "get_checkout" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_checkout.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
-}
-
-resource "aws_apigatewayv2_integration" "wompi_webhook" {
-  api_id                 = aws_apigatewayv2_api.main.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.wompi_webhook.invoke_arn
-  payload_format_version = "2.0"
-}
-
-# POST /api/payments/webhook (Wompi events; no route auth, the event checksum is the auth)
-resource "aws_apigatewayv2_route" "wompi_webhook" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "POST /api/payments/webhook"
-  target    = "integrations/${aws_apigatewayv2_integration.wompi_webhook.id}"
-}
-
-resource "aws_lambda_permission" "wompi_webhook" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.wompi_webhook.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }

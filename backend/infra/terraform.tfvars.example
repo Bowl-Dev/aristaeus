@@ -33,13 +33,8 @@ hosted_zone_name = "algramo.app"
 admin_dns_enabled = false
 
 # ============================================
-# Payments (Wompi) and coupon admin
+# Coupon admin
 # ============================================
-
-# Leave empty until the Wompi keys exist. Checkout answers 503 payments_unavailable.
-wompi_public_key       = ""
-wompi_integrity_secret = ""
-wompi_events_secret    = ""
 
 # Value of the x-admin-token header for the coupon admin endpoints. Empty: 401.
 admin_token = ""

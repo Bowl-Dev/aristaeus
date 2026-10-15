@@ -18,7 +18,6 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "quoteCheckout",
     "createCheckout",
     "getCheckout",
-    "wompiWebhook",
     "listCoupons",
     "createCoupon",
     "updateCoupon",
@@ -360,7 +359,7 @@ resource "aws_lambda_function" "get_config" {
 }
 
 # --------------------------------------------
-# Checkout (Wompi) + coupons
+# Checkout + coupons
 #
 # quoteCheckout and createCheckout price delivery by geocoding the address,
 # so they get the same 60 s budget as estimateDeliveryCost.
@@ -378,11 +377,8 @@ resource "aws_lambda_function" "quote_checkout" {
 
   environment {
     variables = {
-      DATABASE_URL           = var.database_url
-      NODE_ENV               = var.environment
-      WOMPI_PUBLIC_KEY       = var.wompi_public_key
-      WOMPI_INTEGRITY_SECRET = var.wompi_integrity_secret
-      WOMPI_EVENTS_SECRET    = var.wompi_events_secret
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
     }
   }
 
@@ -407,11 +403,8 @@ resource "aws_lambda_function" "create_checkout" {
 
   environment {
     variables = {
-      DATABASE_URL           = var.database_url
-      NODE_ENV               = var.environment
-      WOMPI_PUBLIC_KEY       = var.wompi_public_key
-      WOMPI_INTEGRITY_SECRET = var.wompi_integrity_secret
-      WOMPI_EVENTS_SECRET    = var.wompi_events_secret
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
     }
   }
 
@@ -436,40 +429,8 @@ resource "aws_lambda_function" "get_checkout" {
 
   environment {
     variables = {
-      DATABASE_URL           = var.database_url
-      NODE_ENV               = var.environment
-      WOMPI_PUBLIC_KEY       = var.wompi_public_key
-      WOMPI_INTEGRITY_SECRET = var.wompi_integrity_secret
-      WOMPI_EVENTS_SECRET    = var.wompi_events_secret
-    }
-  }
-
-  depends_on = [aws_cloudwatch_log_group.lambda_logs]
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_lambda_function" "wompi_webhook" {
-  function_name = "${var.project_name}-wompiWebhook-${var.environment}"
-  role          = aws_iam_role.lambda_execution.arn
-  handler       = "handlers/payments.wompiWebhook"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  memory_size   = 256
-
-  filename         = "${path.module}/../dist/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
-
-  environment {
-    variables = {
-      DATABASE_URL           = var.database_url
-      NODE_ENV               = var.environment
-      WOMPI_PUBLIC_KEY       = var.wompi_public_key
-      WOMPI_INTEGRITY_SECRET = var.wompi_integrity_secret
-      WOMPI_EVENTS_SECRET    = var.wompi_events_secret
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
     }
   }
 
