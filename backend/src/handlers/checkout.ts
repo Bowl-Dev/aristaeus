@@ -34,9 +34,11 @@ import { evaluateCoupon, reserveBudget } from '../lib/coupons.js';
 
 const MIN_QUANTITY_GRAMS = 5;
 
+/** Normalized to the 10 local digits, so +573001234567 and 3001234567 are one user. */
 const phoneSchema = z
 	.string()
-	.regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format. Use +57XXXXXXXXXX or 10 digits');
+	.regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format. Use +57XXXXXXXXXX or 10 digits')
+	.transform((phone) => phone.slice(-10));
 
 const bowlSchema = z.object({
 	bowlSize: z.union([z.literal(250), z.literal(450), z.literal(600)]),

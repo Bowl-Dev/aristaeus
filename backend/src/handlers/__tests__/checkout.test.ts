@@ -142,7 +142,38 @@ describe('checkout handlers', () => {
 		expect(prisma.checkout.create).not.toHaveBeenCalled();
 	});
 
+	it('discounts exactly the delivery fee for a free_shipping coupon', async () => {
+		vi.mocked(prisma.coupon.findUnique).mockResolvedValue({
+			...coupon,
+			type: 'free_shipping',
+			value: null
+		} as never);
+
+		const response = await call(quoteCheckout, { ...request, couponCode: 'HOLA10' });
+
+		expect(response.json).toMatchObject({ deliveryFee: 4000, discount: 4000 });
+	});
+
+	it('treats +57 and 10-digit phones as the same user', async () => {
+		vi.mocked(prisma.coupon.findUnique).mockResolvedValue({
+			...coupon,
+			firstPurchaseOnly: true
+		} as never);
+		vi.mocked(prisma.order.count).mockResolvedValue(1);
+
+		const response = await call(quoteCheckout, {
+			...request,
+			couponCode: 'HOLA10',
+			phone: '+573001234567'
+		});
+
+		expect(prisma.order.count).toHaveBeenCalledWith({ where: { user: { phone: '3001234567' } } });
+		expect(response.json).toMatchObject({ couponRejection: { reason: 'not_first_purchase' } });
+	});
+
 	it('creates the checkout and one pending order per bowl', async () => {
+		vi.mocked(prisma.coupon.findUnique).mockResolvedValue(coupon as never);
+		vi.mocked(prisma.coupon.updateMany).mockResolvedValue({ count: 1 });
 		vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 		vi.mocked(prisma.user.create).mockResolvedValue({ id: 'u1' } as never);
 		vi.mocked(prisma.address.findFirst).mockResolvedValue(null);
@@ -159,16 +190,27 @@ describe('checkout handlers', () => {
 				({ id: 'c0ffee00-0000-4000-8000-000000000000', orderNumber: 1000, ...args.data }) as never
 		);
 
-		const response = await call(createCheckout, request);
+		const response = await call(createCheckout, {
+			...request,
+			couponCode: 'HOLA10',
+			customer: { name: 'Ana', phone: '+573001234567' }
+		});
 
 		expect(response.statusCode).toBe(201);
 		expect(response.json).toEqual({
 			checkoutId: 'c0ffee00-0000-4000-8000-000000000000',
 			orderNumber: 1000
 		});
-		// subtotal 23000 + delivery 4000 + fee (800 + 810 = 1610 -> 1600) = 28600
+		// 23000 + delivery 4000 - discount 2300 + fee (800 + 3% of 24700 = 1541 -> 1500) = 26200
+		expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { phone: '3001234567' } });
+		expect(prisma.coupon.updateMany).toHaveBeenCalledTimes(1);
+		expect(prisma.coupon.updateMany).toHaveBeenCalledWith({
+			where: { id: 7, budgetRemaining: { gte: 2300 } },
+			data: { budgetRemaining: { decrement: 2300 } }
+		});
 		expect(vi.mocked(prisma.checkout.create).mock.calls[0][0].data).toMatchObject({
-			total: 28600,
+			total: 26200,
+			couponId: 7,
 			paymentStatus: 'not_required'
 		});
 		expect(prisma.order.create).toHaveBeenCalledTimes(2);

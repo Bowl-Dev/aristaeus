@@ -79,11 +79,12 @@ export async function estimateDelivery(rawAddress: string) {
 }
 
 /**
- * What checkout charges for delivery: the estimate plus its cross-validated
- * MAE as a margin. `null` when the address cannot be priced — checkout must block.
+ * What checkout charges for delivery: the point estimate, no margin. The customer
+ * sees one fee; alGramo absorbs the difference to the courier's actual price.
+ * `null` when the address cannot be priced — checkout must block.
  */
 export async function getDeliveryFee(address: string): Promise<number | null> {
 	const result = await estimateDelivery(address);
 	if (!result?.estimate) return null;
-	return roundToNearestCoin(result.estimate.cost + (result.accuracy ?? 0));
+	return roundToNearestCoin(result.estimate.cost);
 }

@@ -331,6 +331,8 @@ export interface CouponRecord {
 	firstPurchaseOnly: boolean;
 	active: boolean;
 	createdAt: string;
+	/** Checkouts that used this coupon. */
+	redemptions: number;
 }
 
 export interface CouponsResponse {
@@ -351,3 +353,14 @@ export interface CreateCouponRequest {
 	firstPurchaseOnly: boolean;
 	active: boolean;
 }
+
+/**
+ * PATCH /api/coupons/{id} — any subset of the fields. `code`, `type` and `value`
+ * are locked (409 coupon_in_use) once the coupon has redemptions.
+ */
+export type UpdateCouponRequest = Partial<
+	Omit<CreateCouponRequest, 'description' | 'value'> & {
+		description: string | null;
+		value: number | null;
+	}
+>;
