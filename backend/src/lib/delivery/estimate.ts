@@ -11,6 +11,7 @@ import {
 	fitDeliveryModel,
 	haversineLegs,
 	looCvMae,
+	SEED_OBSERVATIONS,
 	type LegObservation,
 	type Legs
 } from './model.js';
@@ -78,13 +79,26 @@ export async function estimateDelivery(rawAddress: string) {
 	};
 }
 
+function median(values: number[]): number {
+	const sorted = [...values].sort((a, b) => a - b);
+	const mid = Math.floor(sorted.length / 2);
+	return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 /**
  * What checkout charges for delivery: the point estimate, no margin. The customer
  * sees one fee; alGramo absorbs the difference to the courier's actual price.
- * `null` when the address cannot be priced — checkout must block.
+ * An address that cannot be priced (it does not parse, or the cadastre cannot
+ * place it or is down) gets the median past delivery cost, so checkout never blocks.
  */
-export async function getDeliveryFee(address: string): Promise<number | null> {
+export async function getDeliveryFee(address: string): Promise<number> {
 	const result = await estimateDelivery(address);
-	if (!result?.estimate) return null;
-	return roundToNearestCoin(result.estimate.cost);
+	if (result?.estimate) return roundToNearestCoin(result.estimate.cost);
+
+	const reason = !result ? 'unparsed' : result.searchTruncated ? 'truncated' : 'not geocoded';
+	console.warn(`Delivery fee: median fallback (${reason}) for address "${address}"`);
+	const costs = (await loadObservations()).map((o) => o.actualCost);
+	return roundToNearestCoin(
+		median(costs.length ? costs : SEED_OBSERVATIONS.map((o) => o.actualCost))
+	);
 }

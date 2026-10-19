@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { locale, waitLocale } from 'svelte-i18n';
 import Cart from '../Cart.svelte';
-import type { Ingredient, BowlSize } from '$lib/types';
+import { type Ingredient, type BowlSize, MAX_BOWL_QUANTITY, MAX_CART_BOWLS } from '$lib/types';
 
 const rice: Ingredient = {
 	id: 1,
@@ -164,6 +164,29 @@ describe('Cart (locale=es)', () => {
 			'button[aria-label="Disminuir cantidad"]'
 		) as HTMLButtonElement;
 		expect(decBtn.disabled).toBe(false);
+	});
+
+	it('disables the + button at MAX_BOWL_QUANTITY', () => {
+		const { container } = render(Cart, {
+			props: makeProps({
+				bowls: [
+					makeBowl({ quantity: MAX_BOWL_QUANTITY - 1 }),
+					makeBowl({ quantity: MAX_BOWL_QUANTITY })
+				]
+			})
+		});
+		const incBtns = container.querySelectorAll<HTMLButtonElement>(
+			'button[aria-label="Aumentar cantidad"]'
+		);
+		expect([...incBtns].map((b) => b.disabled)).toEqual([false, true]);
+	});
+
+	it('disables "Crear otro bowl" with a hint once the cart holds MAX_CART_BOWLS bowls', () => {
+		const { getByText } = render(Cart, {
+			props: makeProps({ bowls: Array.from({ length: MAX_CART_BOWLS }, () => makeBowl()) })
+		});
+		expect((getByText('Crear otro bowl') as HTMLButtonElement).disabled).toBe(true);
+		expect(getByText(`Máximo ${MAX_CART_BOWLS} bowls distintos por pedido`)).toBeTruthy();
 	});
 
 	// ENG-67: trash opens a confirmation modal instead of deleting immediately.

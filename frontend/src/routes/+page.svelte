@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { type Ingredient, type Menu as MenuType, type BowlSize } from '$lib/types';
+	import {
+		type Ingredient,
+		type Menu as MenuType,
+		type BowlSize,
+		MAX_CART_BOWLS
+	} from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { getIngredients, getMenus, getConfig, ApiError } from '$lib/api/client';
 	import {
@@ -223,6 +228,7 @@
 		onAddToCart={addCurrentBowlToCart}
 		onUpsize={(size) => (selectedBowlSize = size)}
 		isEditing={editingIndex !== null}
+		cartFull={bowls.length >= MAX_CART_BOWLS}
 	/>
 {:else if view === 'cart'}
 	<Cart

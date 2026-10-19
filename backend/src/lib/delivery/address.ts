@@ -48,18 +48,24 @@ export type StreetPrefix = 'CL' | 'KR' | 'AC' | 'AK' | 'DG' | 'TV';
 /**
  * Spoken/written prefix forms mapped to the cadastre's abbreviation.
  *
- * Ordered longest-first when built into the regex, so `avenida carrera` wins
- * over `avenida` and `carrera` rather than being shadowed by them.
+ * Ordered longest-first when built into the regex (the alternation tries forms
+ * in list order), so `AV CLL` wins over `AV CL` and `CLL` over `CL` rather
+ * than being shadowed by them.
  */
 const PREFIX_FORMS: ReadonlyArray<readonly [string, StreetPrefix]> = [
 	['AVENIDA CARRERA', 'AK'],
 	['AVENIDA CALLE', 'AC'],
 	['AV CARRERA', 'AK'],
 	['AV CALLE', 'AC'],
+	['AV CRA', 'AK'],
+	['AV CLL', 'AC'],
+	['AV KR', 'AK'],
+	['AV CL', 'AC'],
 	['TRANSVERSAL', 'TV'],
 	['DIAGONAL', 'DG'],
 	['CARRERA', 'KR'],
 	['CALLE', 'CL'],
+	['CLL', 'CL'],
 	['CRA', 'KR'],
 	['KRA', 'KR'],
 	['DIAG', 'DG'],
@@ -84,7 +90,7 @@ const PREFIX_FORMS: ReadonlyArray<readonly [string, StreetPrefix]> = [
 const TOKEN = '\\d{1,3}(?:\\s*BIS)?(?:\\s*[A-Z])?(?:\\s*BIS)?';
 
 /** Separator between the street and the cross-street: `#`, `No.`, `Nro`, `N°`. */
-const SEPARATOR = '(?:#|N\\s*[O°]\\s*\\.?|NRO\\s*\\.?|NUMERO)?';
+const SEPARATOR = '(?:#|N\\s*[O°]|NRO|NUMERO)?';
 
 const PREFIX_ALTERNATION = PREFIX_FORMS.map(([form]) => form.replace(/ /g, '\\s+')).join('|');
 
@@ -119,7 +125,15 @@ export function parseAddress(input: string): ParsedAddress | null {
 	const raw = String(input ?? '').trim();
 	if (!raw) return null;
 
-	const match = ADDRESS_RE.exec(normalizeText(raw));
+	// Dots are spacing: `Av. Calle 26`, `Cra. 15`, `No. 10`.
+	const text = normalizeText(raw.replace(/\./g, ' '));
+	// ponytail: quadrant addresses get the fallback fee. The cadastre writes them as PDONVIAL
+	// `CL 2 S` and PDOTEXTO `15 18 E` (quadrant after the house number), which the geocoder
+	// does not handle. Geocode them (PDONVIAL suffix ' S'/' E', trailing quadrant in PDOTEXTO,
+	// which parsePlateText must strip) if south/east volume matters.
+	if (/\b(SUR|ESTE)\b/.test(text)) return null;
+
+	const match = ADDRESS_RE.exec(text);
 	if (!match) return null;
 
 	const [, prefixForm, streetToken, crossToken, numberToken] = match;

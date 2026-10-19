@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
-	import { type Ingredient, type BowlSize, CUTLERY_PRICE, roundToNearestCoin } from '$lib/types';
+	import {
+		type Ingredient,
+		type BowlSize,
+		CUTLERY_PRICE,
+		MAX_BOWL_QUANTITY,
+		MAX_CART_BOWLS,
+		roundToNearestCoin
+	} from '$lib/types';
 	import { computeBowlTotals, bowlBasePrice, formatCOP } from '$lib/utils/bowl';
 	import AppScreen from './templates/AppScreen.svelte';
 	import Card from './molecules/Card.svelte';
@@ -96,6 +103,9 @@
 	// path: pressing it at quantity 1 opens this confirmation rather than
 	// removing the bowl outright.
 	let pendingRemoveIndex = $state<number | null>(null);
+
+	// Mirrors the server's cart limits (see $lib/utils/cart).
+	const cartFull = $derived(bowls.length >= MAX_CART_BOWLS);
 </script>
 
 <AppScreen {onBack} {cartCount} fill>
@@ -204,6 +214,7 @@
 						<IconButton
 							variant="filled-primary"
 							ariaLabel={$_('cart.bowl.increase')}
+							disabled={bowl.quantity >= MAX_BOWL_QUANTITY}
 							onclick={() => onIncreaseBowl(i)}
 						>
 							<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -249,9 +260,15 @@
 
 	<!-- Action buttons -->
 	<div class="flex flex-col gap-3 px-5 pb-10 pt-4">
+		{#if cartFull}
+			<p class="m-0 text-center text-xs text-text-muted">
+				{$_('cart.actions.full', { values: { max: MAX_CART_BOWLS } })}
+			</p>
+		{/if}
 		<button
 			type="button"
-			class="w-full cursor-pointer rounded-full border border-strokes bg-pure-white px-6 py-4 text-sm font-semibold text-text-black transition-all duration-200 hover:bg-accent-gray active:scale-[0.97] [-webkit-tap-highlight-color:transparent]"
+			class="w-full cursor-pointer rounded-full border border-strokes bg-pure-white px-6 py-4 text-sm font-semibold text-text-black transition-all duration-200 hover:bg-accent-gray active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
+			disabled={cartFull}
 			onclick={onCreateAnother}
 		>
 			{$_('cart.actions.createAnother')}

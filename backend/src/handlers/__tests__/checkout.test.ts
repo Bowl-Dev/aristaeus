@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import { Prisma } from '@prisma/client';
 
 vi.mock('../../lib/db.js', () => {
 	const db = {
 		storeConfig: { findFirst: vi.fn() },
 		ingredient: { findMany: vi.fn() },
 		coupon: { findUnique: vi.fn(), updateMany: vi.fn() },
-		checkout: { create: vi.fn() },
+		checkout: { create: vi.fn(), findUnique: vi.fn() },
 		order: { count: vi.fn(), create: vi.fn() },
 		user: { findUnique: vi.fn(), create: vi.fn() },
 		address: { findFirst: vi.fn(), create: vi.fn() },
@@ -31,7 +32,9 @@ const rice = {
 	fiberGPer100g: null,
 	pricePerG: decimal(50)
 };
+const checkoutId = 'c0ffee00-0000-4000-8000-000000000000';
 const request = {
+	checkoutId,
 	address: 'Calle 125 # 18A-05',
 	// unit price: 1200 packaging + 200g x 50 + 300 cutlery = 11500
 	bowls: [
@@ -72,6 +75,7 @@ describe('checkout handlers', () => {
 		vi.mocked(prisma.storeConfig.findFirst).mockResolvedValue(null);
 		vi.mocked(prisma.ingredient.findMany).mockResolvedValue([rice] as never);
 		vi.mocked(getDeliveryFee).mockResolvedValue(4000);
+		vi.mocked(prisma.checkout.findUnique).mockResolvedValue(null);
 	});
 
 	it('quotes subtotal, delivery, discount, service fee and total', async () => {
@@ -107,13 +111,53 @@ describe('checkout handlers', () => {
 		});
 	});
 
-	it('answers 400 address_not_found when delivery cannot be priced', async () => {
-		vi.mocked(getDeliveryFee).mockResolvedValue(null);
+	it('quotes 200 at the median fee when the address cannot be priced', async () => {
+		// getDeliveryFee falls back to the median past cost instead of failing (see estimate.test.ts).
+		vi.mocked(getDeliveryFee).mockResolvedValue(4400);
 
-		const response = await call(quoteCheckout, request);
+		const response = await call(quoteCheckout, { ...request, address: 'Av Boyacá # 80-20' });
+
+		expect(response.statusCode).toBe(200);
+		expect(response.json).toMatchObject({ deliveryFee: 4400 });
+	});
+
+	it('replays an existing checkoutId without pricing or creating anything', async () => {
+		vi.mocked(prisma.checkout.findUnique).mockResolvedValue({
+			id: checkoutId,
+			orderNumber: 1000
+		} as never);
+
+		const response = await call(createCheckout, request);
+
+		expect(response.statusCode).toBe(200);
+		expect(response.json).toEqual({ checkoutId, orderNumber: 1000 });
+		expect(prisma.storeConfig.findFirst).not.toHaveBeenCalled();
+		expect(getDeliveryFee).not.toHaveBeenCalled();
+		expect(prisma.$transaction).not.toHaveBeenCalled();
+	});
+
+	it('returns the checkout a concurrent retry created first', async () => {
+		vi.mocked(prisma.checkout.findUnique)
+			.mockResolvedValueOnce(null)
+			.mockResolvedValueOnce({ id: checkoutId, orderNumber: 1000 } as never);
+		vi.mocked(prisma.$transaction).mockRejectedValueOnce(
+			new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+				code: 'P2002',
+				clientVersion: 'test'
+			})
+		);
+
+		const response = await call(createCheckout, request);
+
+		expect(response.statusCode).toBe(200);
+		expect(response.json).toEqual({ checkoutId, orderNumber: 1000 });
+	});
+
+	it('rejects a checkoutId that is not a uuid', async () => {
+		const response = await call(createCheckout, { ...request, checkoutId: 'retry-1' });
 
 		expect(response.statusCode).toBe(400);
-		expect(response.json.message).toBe('address_not_found');
+		expect(prisma.checkout.findUnique).not.toHaveBeenCalled();
 	});
 
 	it('answers 409 when the coupon is rejected, creating nothing', async () => {
@@ -194,8 +238,7 @@ describe('checkout handlers', () => {
 			postalCode: null
 		} as never);
 		vi.mocked(prisma.checkout.create).mockImplementation(
-			(args: { data: { total: number } }) =>
-				({ id: 'c0ffee00-0000-4000-8000-000000000000', orderNumber: 1000, ...args.data }) as never
+			(args: { data: { total: number } }) => ({ orderNumber: 1000, ...args.data }) as never
 		);
 
 		const response = await call(createCheckout, {
@@ -205,10 +248,7 @@ describe('checkout handlers', () => {
 		});
 
 		expect(response.statusCode).toBe(201);
-		expect(response.json).toEqual({
-			checkoutId: 'c0ffee00-0000-4000-8000-000000000000',
-			orderNumber: 1000
-		});
+		expect(response.json).toEqual({ checkoutId, orderNumber: 1000 });
 		// 23000 + delivery 4000 - discount 2300 + fee (800 + 3% of 24700 = 1541 -> 1500) = 26200
 		expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { phone: '3001234567' } });
 		expect(prisma.coupon.updateMany).toHaveBeenCalledTimes(1);
@@ -217,6 +257,7 @@ describe('checkout handlers', () => {
 			data: { budgetRemaining: { decrement: 2300 } }
 		});
 		expect(vi.mocked(prisma.checkout.create).mock.calls[0][0].data).toMatchObject({
+			id: checkoutId,
 			total: 26200,
 			couponId: 7,
 			paymentStatus: 'not_required'
@@ -224,7 +265,7 @@ describe('checkout handlers', () => {
 		expect(prisma.order.create).toHaveBeenCalledTimes(2);
 		expect(vi.mocked(prisma.order.create).mock.calls[0][0].data).toMatchObject({
 			status: 'pending',
-			checkoutId: 'c0ffee00-0000-4000-8000-000000000000',
+			checkoutId,
 			totalPrice: 11500,
 			includeCutlery: true
 		});

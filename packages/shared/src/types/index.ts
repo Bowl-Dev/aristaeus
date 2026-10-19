@@ -93,6 +93,10 @@ export const BOWL_SIZE_PRICES: readonly BowlSizePrice[] = [1200, 1300, 1400] as 
 // Flat surcharge (COP) added to a bowl when the customer opts to include cutlery.
 export const CUTLERY_PRICE = 300;
 
+// Checkout limits, enforced by the server and mirrored by the cart.
+export const MAX_BOWL_QUANTITY = 10; // copies of one bowl
+export const MAX_CART_BOWLS = 10; // different bowls in one cart
+
 /**
  * Round a COP amount to the nearest 100, since 100 is the smallest coin in
  * Colombian currency. The one copy client and server both price with.
@@ -280,6 +284,8 @@ export interface CheckoutQuote {
 
 /** POST /api/checkout — creates the checkout + its orders. */
 export interface CreateCheckoutRequest extends CheckoutQuoteRequest {
+	/** Client-generated UUID. Retrying with the same id returns the existing checkout. */
+	checkoutId: string;
 	customer: { name: string; phone: string };
 	deliveryInstructions?: string;
 }

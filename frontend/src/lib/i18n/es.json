@@ -232,6 +232,7 @@
 		},
 		"actions": {
 			"createAnother": "Crear otro bowl",
+			"full": "Máximo {max} bowls distintos por pedido",
 			"proceedToDelivery": "Continuar a entrega — {price}"
 		}
 	},
@@ -280,7 +281,6 @@
 			"nameRequired": "Ingresa tu nombre",
 			"phoneInvalid": "El teléfono debe tener 10 dígitos",
 			"addressRequired": "Ingresa una dirección de entrega",
-			"addressNotFound": "No pudimos ubicar esta dirección. Revísala e inténtalo de nuevo (ej. Calle 125 # 18A-05, Apto 302).",
 			"quoteFailed": "No pudimos calcular el total de tu pedido. Inténtalo de nuevo.",
 			"ordersPaused": "En este momento no estamos recibiendo pedidos. ¡Vuelve pronto!"
 		},

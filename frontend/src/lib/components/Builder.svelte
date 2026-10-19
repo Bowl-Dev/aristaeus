@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { _, locale } from 'svelte-i18n';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { BOWL_SIZES, roundToNearestCoin, type Ingredient, type BowlSize } from '$lib/types';
+	import {
+		BOWL_SIZES,
+		MAX_CART_BOWLS,
+		roundToNearestCoin,
+		type Ingredient,
+		type BowlSize
+	} from '$lib/types';
 	import AppScreen from './templates/AppScreen.svelte';
 	import CategoryAccordion from './molecules/CategoryAccordion.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
@@ -26,6 +32,7 @@
 		onAddToCart,
 		onUpsize,
 		isEditing = false,
+		cartFull = false,
 		includeCutlery = $bindable(false)
 	}: {
 		ingredients: Ingredient[];
@@ -42,6 +49,9 @@
 		// True when editing a bowl already in the cart, so the CTA says it will
 		// update that entry rather than add another (ENG-75).
 		isEditing?: boolean;
+		// True when the cart already holds MAX_CART_BOWLS different bowls. Blocks
+		// adding a new one; editing an existing bowl is still allowed.
+		cartFull?: boolean;
 		includeCutlery?: boolean;
 	} = $props();
 
@@ -76,6 +86,7 @@
 	const remaining = $derived(bowlSize - totals.weight);
 	const isOverCapacity = $derived(totals.weight > bowlSize);
 	const hasItems = $derived(selectedItems.size > 0);
+	const cartBlocked = $derived(cartFull && !isEditing);
 
 	const formattedPrice = $derived(
 		formatCOP(roundToNearestCoin(bowlBasePrice(bowlSize) + totals.ingredientsPrice))
@@ -343,6 +354,12 @@
 						{$_('builder.overCapacity', { values: { amount: totals.weight - bowlSize } })}
 					</p>
 				{/if}
+
+				{#if cartBlocked}
+					<p class="m-0 px-4 text-center text-xs font-semibold text-red-400">
+						{$_('cart.actions.full', { values: { max: MAX_CART_BOWLS } })}
+					</p>
+				{/if}
 			</div>
 
 			<!-- Expanded sheet body (macros + selected ingredients) -->
@@ -396,7 +413,7 @@
 			<button
 				type="button"
 				class="flex w-full cursor-pointer items-center justify-center gap-3 rounded-full border-none bg-dark-green px-5 py-4 text-base font-semibold tracking-[0.8px] text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
-				disabled={!hasItems || isOverCapacity}
+				disabled={!hasItems || isOverCapacity || cartBlocked}
 				onclick={onAddToCart}
 			>
 				<svg

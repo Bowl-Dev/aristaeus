@@ -1,4 +1,4 @@
-import type { BowlSize } from '$lib/types';
+import { type BowlSize, MAX_BOWL_QUANTITY, MAX_CART_BOWLS } from '$lib/types';
 
 export interface BowlSnapshot {
 	bowlSize: BowlSize;
@@ -7,12 +7,15 @@ export interface BowlSnapshot {
 	includeCutlery: boolean;
 }
 
+// The server rejects carts over MAX_CART_BOWLS lines or MAX_BOWL_QUANTITY copies
+// of one bowl, so addBowl and incrementAt stop there. Editing (replaceAt) is fine.
 export function addBowl(
 	bowls: BowlSnapshot[],
 	bowlSize: BowlSize,
 	items: Map<number, number> | ReadonlyMap<number, number>,
 	includeCutlery = false
 ): BowlSnapshot[] {
+	if (bowls.length >= MAX_CART_BOWLS) return bowls;
 	return [...bowls, { bowlSize, items: new Map(items), quantity: 1, includeCutlery }];
 }
 
@@ -21,6 +24,7 @@ export function removeAt(bowls: BowlSnapshot[], index: number): BowlSnapshot[] {
 }
 
 export function incrementAt(bowls: BowlSnapshot[], index: number): BowlSnapshot[] {
+	if ((bowls[index]?.quantity ?? 0) >= MAX_BOWL_QUANTITY) return bowls;
 	return bowls.map((b, i) => (i === index ? { ...b, quantity: b.quantity + 1 } : b));
 }
 

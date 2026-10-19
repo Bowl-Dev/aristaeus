@@ -36,7 +36,14 @@ export type {
 	UpdateCouponRequest
 } from '@aristaeus/shared';
 
-export { BOWL_SIZES, BOWL_SIZE_PRICES, CUTLERY_PRICE, roundToNearestCoin } from '@aristaeus/shared';
+export {
+	BOWL_SIZES,
+	BOWL_SIZE_PRICES,
+	CUTLERY_PRICE,
+	MAX_BOWL_QUANTITY,
+	MAX_CART_BOWLS,
+	roundToNearestCoin
+} from '@aristaeus/shared';
 
 // ponytail: BOWL_SIZE_LABELS and DRESSING_CONTAINER_GRAMS have no callers, and the
 // labels are untranslated English besides. Delete both when the size picker copy

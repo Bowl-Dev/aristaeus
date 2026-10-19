@@ -101,20 +101,44 @@ describe('parseAddress', () => {
 		const cases: Array<[string, string]> = [
 			['Calle 26 # 42-90', 'CL'],
 			['Cl 26 # 42-90', 'CL'],
+			['Cll 26 # 42-90', 'CL'],
+			['Cl. 26 # 42-90', 'CL'],
 			['Carrera 7 # 40b-95', 'KR'],
 			['Cra 7 # 40b-95', 'KR'],
+			['Cra. 7 # 40b-95', 'KR'],
 			['Kr 7 # 40b-95', 'KR'],
 			['Avenida Calle 26 # 42-90', 'AC'],
 			['Av Calle 26 # 42-90', 'AC'],
+			['Av Cl 26 # 42-90', 'AC'],
+			['Av Cll 26 # 42-90', 'AC'],
 			['AC 26 # 42-90', 'AC'],
 			['Avenida Carrera 19 # 153-10', 'AK'],
 			['AK 19 # 153-10', 'AK'],
+			['Av Cra 19 # 153-10', 'AK'],
+			['Av Kr 19 # 153-10', 'AK'],
 			['Diagonal 163a # 20-11', 'DG'],
 			['Transversal 26b # 25-10', 'TV']
 		];
 		for (const [text, prefix] of cases) {
 			expect(parseAddress(text)?.prefix, text).toBe(prefix);
 		}
+	});
+
+	it('treats dots as spacing', () => {
+		expect(parseAddress('Av. Calle 26 # 68-35')).toMatchObject({
+			prefix: 'AC',
+			street: '26',
+			cross: '68',
+			number: 35
+		});
+		expect(parseAddress('Cra. 15 No. 80-20')).toMatchObject({ prefix: 'KR', cross: '80' });
+	});
+
+	// South/east plates carry a quadrant the geocoder cannot match yet: they get the fallback fee.
+	it('returns null for south and east quadrant addresses', () => {
+		expect(parseAddress('Calle 80 Sur # 10-20')).toBeNull();
+		expect(parseAddress('Carrera 10 # 15-20 Sur')).toBeNull();
+		expect(parseAddress('Calle 2 # 15-18 Este')).toBeNull();
 	});
 
 	it('returns null for text that is not an address', () => {

@@ -49,7 +49,6 @@
 	let quote = $state<CheckoutQuote | null>(null);
 	let quotedAddress = $state('');
 	let quoting = $state(false);
-	let addressError = $state<string | null>(null);
 	// Bumped per request so an older, slower response never overwrites a newer one.
 	let quoteSeq = 0;
 
@@ -141,20 +140,15 @@
 			if (seq !== quoteSeq) return;
 			quote = q;
 			quotedAddress = address;
-			addressError = null;
 			formError = null;
 			if (q.couponRejection) {
 				couponError = rejectionMessage(q.couponRejection);
 				couponCode = null;
 			}
-		} catch (e) {
+		} catch {
 			if (seq !== quoteSeq) return;
 			quote = null;
-			if (isApiError(e, 400, 'address_not_found')) {
-				addressError = $_('delivery.errors.addressNotFound');
-			} else {
-				formError = $_('delivery.errors.quoteFailed');
-			}
+			formError = $_('delivery.errors.quoteFailed');
 		} finally {
 			if (seq === quoteSeq) quoting = false;
 		}
@@ -191,6 +185,10 @@
 			: undefined
 	);
 
+	// Every retry from this screen reuses this id, so a lost response can't place a
+	// second order. Going back to the cart remounts Delivery, which gets a new one.
+	const checkoutId = crypto.randomUUID();
+
 	async function handleSubmit() {
 		hasSubmitted = true;
 		if (!validate() || !freshQuote) return;
@@ -200,6 +198,7 @@
 		const trimmedPhone = phone.trim();
 		try {
 			const checkout = await createCheckout({
+				checkoutId,
 				address: deliveryAddress.trim(),
 				bowls: checkoutBowls,
 				couponCode: appliedCoupon?.code,
@@ -219,9 +218,6 @@
 				);
 				couponCode = null;
 				requestQuote();
-			} else if (isApiError(e, 400, 'address_not_found')) {
-				quote = null;
-				addressError = $_('delivery.errors.addressNotFound');
 			} else if (isApiError(e, 503, 'ordersPaused')) {
 				formError = $_('delivery.errors.ordersPaused');
 			} else {
@@ -288,7 +284,7 @@
 			label={$_('delivery.form.address.label')}
 			bind:value={deliveryAddress}
 			placeholder={$_('delivery.form.address.placeholder')}
-			error={errors.address ?? addressError ?? undefined}
+			error={errors.address}
 			onblur={onAddressBlur}
 			required
 		/>

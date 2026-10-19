@@ -71,6 +71,7 @@ const baseQuote: CheckoutQuote = {
 };
 
 const checkoutResponse = { checkoutId: 'chk-1', orderNumber: 1000 };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 function getCta(container: HTMLElement): HTMLButtonElement {
 	return Array.from(container.querySelectorAll('button')).find((b) =>
@@ -149,15 +150,6 @@ describe('Delivery', () => {
 		const { container } = render(Delivery, { props: makeProps() });
 		await fireEvent.blur($(container, '#delivery-address'));
 		expect(getCheckoutQuoteMock).not.toHaveBeenCalled();
-	});
-
-	it('shows address_not_found on the address field', async () => {
-		getCheckoutQuoteMock.mockRejectedValue(new FakeApiError(400, 'address_not_found'));
-		const { container } = render(Delivery, { props: makeProps() });
-		await fillAll(container);
-		await waitFor(() => expect(container.querySelector('#delivery-address-error')).toBeTruthy());
-		expect(container.textContent).toContain('No pudimos ubicar esta dirección');
-		expect(getCta(container).disabled).toBe(true);
 	});
 
 	it('ignores an older quote that resolves after a newer one', async () => {
@@ -284,6 +276,7 @@ describe('Delivery', () => {
 		await waitFor(() => expect(gotoMock).toHaveBeenCalledWith('/order?c=chk-1'));
 		expect(createCheckoutMock).toHaveBeenCalledWith(
 			expect.objectContaining({
+				checkoutId: expect.stringMatching(UUID),
 				address: 'Cra 7 # 50-10',
 				customer: { name: 'Juan Pérez', phone: '3001234567' },
 				phone: '3001234567',
@@ -292,6 +285,23 @@ describe('Delivery', () => {
 			})
 		);
 		expect(createCheckoutMock.mock.calls[0][0].bowls[0].quantity).toBe(3);
+	});
+
+	it('retries with the same checkoutId, so a lost response cannot place a second order', async () => {
+		getCheckoutQuoteMock.mockResolvedValue(baseQuote);
+		createCheckoutMock
+			.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+			.mockResolvedValueOnce(checkoutResponse);
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await waitFor(() => expect(getCta(container).disabled).toBe(false));
+		await fireEvent.click(getCta(container));
+		await waitFor(() => expect(container.textContent).toContain('Ocurrió un problema'));
+		await fireEvent.click(getCta(container));
+		await waitFor(() => expect(gotoMock).toHaveBeenCalledWith('/order?c=chk-1'));
+		const [first, second] = createCheckoutMock.mock.calls.map(([req]) => req.checkoutId);
+		expect(first).toMatch(UUID);
+		expect(second).toBe(first);
 	});
 
 	it('on 409 coupon_rejected shows the reason, drops the coupon and re-quotes', async () => {

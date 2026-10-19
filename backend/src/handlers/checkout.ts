@@ -9,14 +9,16 @@
  */
 
 import type { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
-import type { Coupon } from '@prisma/client';
+import { Prisma, type Coupon } from '@prisma/client';
 import { z } from 'zod';
-import type {
-	CheckoutQuote,
-	CheckoutStatusResponse,
-	CouponType,
-	CreateCheckoutResponse,
-	PaymentStatus
+import {
+	MAX_BOWL_QUANTITY,
+	MAX_CART_BOWLS,
+	type CheckoutQuote,
+	type CheckoutStatusResponse,
+	type CouponType,
+	type CreateCheckoutResponse,
+	type PaymentStatus
 } from '@aristaeus/shared';
 import prisma from '../lib/db.js';
 import {
@@ -51,17 +53,18 @@ const bowlSchema = z.object({
 		)
 		.min(1, 'A bowl must contain at least one item'),
 	includeCutlery: z.boolean(),
-	quantity: z.number().int().min(1).max(10)
+	quantity: z.number().int().min(1).max(MAX_BOWL_QUANTITY)
 });
 
 const quoteSchema = z.object({
 	address: z.string().trim().min(5).max(200),
-	bowls: z.array(bowlSchema).min(1).max(10),
+	bowls: z.array(bowlSchema).min(1).max(MAX_CART_BOWLS),
 	couponCode: z.string().max(40).optional(),
 	phone: phoneSchema.optional()
 });
 
 const createSchema = quoteSchema.extend({
+	checkoutId: z.string().uuid(),
 	customer: z.object({ name: z.string().trim().min(1).max(100), phone: phoneSchema }),
 	deliveryInstructions: z.string().max(500).optional()
 });
@@ -75,7 +78,7 @@ class BudgetTaken extends Error {}
 
 /**
  * Price a cart exactly as it will be charged. Returns an error response when
- * it cannot be priced (bad ingredients, overweight bowl, unpriceable address).
+ * it cannot be priced (bad ingredients, overweight bowl).
  */
 async function priceCart(cart: Cart, phone: string | undefined) {
 	const ids = [...new Set(cart.bowls.flatMap((bowl) => bowl.items.map((i) => i.ingredientId)))];
@@ -100,7 +103,6 @@ async function priceCart(cart: Cart, phone: string | undefined) {
 	const subtotal = bowls.reduce((sum, b) => sum + b.unitPrice * b.bowl.quantity, 0);
 
 	const deliveryFee = await getDeliveryFee(cart.address);
-	if (deliveryFee === null) return badRequest('address_not_found');
 
 	let coupon: Coupon | null = null;
 	let discount = 0;
@@ -136,6 +138,17 @@ async function priceCart(cart: Cart, phone: string | undefined) {
 
 const isResponse = (value: object): value is APIGatewayProxyResult => 'statusCode' in value;
 
+/** 200 with the original response when the checkout already exists, so a retry is harmless. */
+async function existingCheckout(id: string) {
+	const checkout = await prisma.checkout.findUnique({ where: { id } });
+	if (!checkout) return null;
+	const response: CreateCheckoutResponse = {
+		checkoutId: checkout.id,
+		orderNumber: checkout.orderNumber
+	};
+	return success(response);
+}
+
 /**
  * POST /api/checkout/quote
  * Body: CheckoutQuoteRequest -> CheckoutQuote. A rejected coupon is still 200.
@@ -160,9 +173,19 @@ export const quoteCheckout: APIGatewayProxyHandler = async (event) => {
 /**
  * POST /api/checkout
  * Body: CreateCheckoutRequest -> 201 CreateCheckoutResponse
+ * A retried checkoutId gets 200 and the original response, without re-pricing.
  */
 export const createCheckout: APIGatewayProxyHandler = async (event) => {
 	try {
+		if (!event.body) return badRequest('Request body is required');
+
+		const parseResult = createSchema.safeParse(JSON.parse(event.body));
+		if (!parseResult.success) return badRequest('Validation failed', parseResult.error.flatten());
+		const { checkoutId, customer, address, deliveryInstructions } = parseResult.data;
+
+		const replay = await existingCheckout(checkoutId);
+		if (replay) return replay;
+
 		// Fail open — if the config read throws, log and carry on.
 		try {
 			const storeConfig = await prisma.storeConfig.findFirst();
@@ -170,12 +193,6 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 		} catch (configError) {
 			console.error('Error reading store config (failing open):', configError);
 		}
-
-		if (!event.body) return badRequest('Request body is required');
-
-		const parseResult = createSchema.safeParse(JSON.parse(event.body));
-		if (!parseResult.success) return badRequest('Validation failed', parseResult.error.flatten());
-		const { customer, address, deliveryInstructions } = parseResult.data;
 
 		const priced = await priceCart(parseResult.data, customer.phone);
 		if (isResponse(priced)) return priced;
@@ -208,6 +225,7 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 
 					const newCheckout = await tx.checkout.create({
 						data: {
+							id: checkoutId,
 							userId: user.id,
 							subtotal: quote.subtotal,
 							deliveryFee: quote.deliveryFee,
@@ -261,6 +279,11 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 		} catch (error) {
 			if (error instanceof BudgetTaken) {
 				return conflict('coupon_rejected', { reason: 'budget_exhausted' });
+			}
+			// A concurrent retry committed this checkoutId first; this tx (and its budget) rolled back.
+			if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+				const replay = await existingCheckout(checkoutId);
+				if (replay) return replay;
 			}
 			throw error;
 		}
