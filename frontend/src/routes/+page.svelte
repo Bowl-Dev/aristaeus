@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { type Ingredient, type Menu as MenuType, type BowlSize } from '$lib/types';
+	import {
+		type Ingredient,
+		type Menu as MenuType,
+		type BowlSize,
+		MAX_CART_BOWLS
+	} from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { getIngredients, getMenus, getConfig, ApiError } from '$lib/api/client';
 	import {
@@ -18,13 +23,11 @@
 	import Builder from '$lib/components/Builder.svelte';
 	import Cart from '$lib/components/Cart.svelte';
 	import Delivery from '$lib/components/Delivery.svelte';
-	import ThnksModal from '$lib/components/ThnksModal.svelte';
 	import PauseModal from '$lib/components/PauseModal.svelte';
 
 	// View state
 	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'delivery'>('landing');
 	let showLandingModal = $state(false);
-	let showThanks = $state(false);
 
 	// Service-paused state (fail-open: stays false unless backend says otherwise)
 	let ordersPaused = $state(false);
@@ -225,6 +228,7 @@
 		onAddToCart={addCurrentBowlToCart}
 		onUpsize={(size) => (selectedBowlSize = size)}
 		isEditing={editingIndex !== null}
+		cartFull={bowls.length >= MAX_CART_BOWLS}
 	/>
 {:else if view === 'cart'}
 	<Cart
@@ -240,22 +244,7 @@
 		onEditBowl={handleEditBowl}
 	/>
 {:else if view === 'delivery'}
-	<Delivery
-		{ingredients}
-		{bowls}
-		{cartCount}
-		onBack={() => (view = 'cart')}
-		onOrderSuccess={() => {
-			bowls = [];
-			clearSelection();
-			showThanks = true;
-			view = 'landing';
-		}}
-	/>
-{/if}
-
-{#if showThanks}
-	<ThnksModal onDismiss={() => (showThanks = false)} />
+	<Delivery {ingredients} {bowls} {cartCount} onBack={() => (view = 'cart')} />
 {/if}
 
 {#if showPauseModal}

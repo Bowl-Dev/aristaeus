@@ -59,7 +59,7 @@ output "lambda_function_names" {
   value = {
     get_ingredients           = aws_lambda_function.get_ingredients.function_name
     list_orders               = aws_lambda_function.list_orders.function_name
-    create_order              = aws_lambda_function.create_order.function_name
+    create_checkout           = aws_lambda_function.create_checkout.function_name
     get_order                 = aws_lambda_function.get_order.function_name
     admin_update_order_status = aws_lambda_function.admin_update_order_status.function_name
   }

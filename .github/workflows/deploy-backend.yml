@@ -141,6 +141,7 @@ jobs:
         run: |
           terraform plan -no-color -out=tfplan \
             -var="database_url=${{ secrets.DATABASE_URL }}" \
+            -var="admin_token=${{ secrets.ADMIN_TOKEN }}" \
             -var="environment=${{ github.event.inputs.environment || 'dev' }}" \
             -var="aws_region=${{ env.AWS_REGION }}"
         continue-on-error: true
@@ -236,6 +237,7 @@ jobs:
         run: |
           terraform apply -auto-approve \
             -var="database_url=${{ secrets.DATABASE_URL }}" \
+            -var="admin_token=${{ secrets.ADMIN_TOKEN }}" \
             -var="environment=${{ github.event.inputs.environment || 'dev' }}" \
             -var="aws_region=${{ env.AWS_REGION }}"
 

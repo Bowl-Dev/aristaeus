@@ -1,6 +1,6 @@
 # Feature Plan — Coupons
 
-**Status:** Complete — ready for review
+**Status:** Implemented 2026-09-27 on `feat/wompi-checkout-coupons` (percent / fixed / free_shipping + admin screen) — this doc is historical
 **Date:** 2026-09-17 · **amended 2026-09-21** (product: no free-shipping-first; build the type system + an admin create screen)
 **Sources:** AL-58 / AL-31 / AL-44 (Linear) + the [coupon spec doc](https://docs.google.com/document/d/1-eWyBbYV8t3kEQ_xQZ9N11JNUIXxuxQR0x3CJKOXArY/edit) (Google Docs, linked from AL-31)
 

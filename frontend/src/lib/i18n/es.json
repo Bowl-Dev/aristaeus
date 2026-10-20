@@ -40,11 +40,6 @@
 			"note": "+$300"
 		}
 	},
-	"thnks": {
-		"title": "¡Gracias por elegirnos!",
-		"message": "Ya estamos preparando tu bowl con mucho cuidado. En breve te escribiremos por WhatsApp para confirmar el precio final, incluyendo el costo de envío, y realizar el pago.",
-		"dismiss": "Entendido"
-	},
 	"pause": {
 		"title": "Estamos preparando algo increíble.",
 		"body": [
@@ -237,6 +232,7 @@
 		},
 		"actions": {
 			"createAnother": "Crear otro bowl",
+			"full": "Máximo {max} bowls distintos por pedido",
 			"proceedToDelivery": "Continuar a entrega — {price}"
 		}
 	},
@@ -264,22 +260,45 @@
 				"placeholder": "Calle, número, apto"
 			},
 			"instructions": {
-				"label": "Instrucciones de Entrega o Cupones (Opcional)",
+				"label": "Instrucciones de Entrega (Opcional)",
 				"placeholder": "Referencias adicionales, indicaciones especiales..."
 			}
 		},
 		"summary": {
 			"title": "Resumen del Pedido",
-			"shippingNote": "El costo de envío se calcula una vez confirmado el pedido según la distancia. Esta información será comunicada durante el proceso de pago."
+			"subtotal": "Subtotal",
+			"shipping": "Costo de envío",
+			"service": "Tarifa de servicio",
+			"total": "Total",
+			"addressHint": "Ingresa tu dirección",
+			"quoting": "Calculando…",
+			"free": "Gratis"
 		},
-		"confirm": "Confirmar Pedido — {price}",
-		"confirming": "Enviando...",
+		"confirm": "Hacer pedido – {price}",
+		"confirming": "Enviando pedido…",
 		"error": "Ocurrió un problema al enviar tu pedido. Revisa tu conexión e intenta de nuevo.",
-		"partialError": "{failed} de {total} pedidos fallaron: {reason}",
 		"errors": {
 			"nameRequired": "Ingresa tu nombre",
 			"phoneInvalid": "El teléfono debe tener 10 dígitos",
-			"addressRequired": "Ingresa una dirección de entrega"
+			"addressRequired": "Ingresa una dirección de entrega",
+			"quoteFailed": "No pudimos calcular el total de tu pedido. Inténtalo de nuevo.",
+			"ordersPaused": "En este momento no estamos recibiendo pedidos. ¡Vuelve pronto!"
+		},
+		"confirmNoPrice": "Hacer pedido",
+		"feeInfo": {
+			"open": "Más información sobre el costo de envío",
+			"note": "🛵 El valor del domicilio se calcula según tu zona de entrega y puede ser diferente al del operador.",
+			"learnMore": "Conoce más",
+			"title": "¿Por qué el valor del domicilio puede ser diferente? 🛵",
+			"p1": "En alGramo calculamos el costo de tu domicilio según la zona de Bogotá en la que te encuentres, tomando como referencia un promedio de las tarifas de nuestros operadores de entrega.",
+			"p2": "Trabajamos con operadores externos como Yango, cuyos precios pueden cambiar según la demanda, la disponibilidad y otros factores.",
+			"p3": "Por eso, cuando hagas seguimiento a tu pedido, podrías ver un valor diferente al que pagaste en alGramo, ya sea mayor o menor.",
+			"calloutTitle": "¿Qué pasa con la diferencia?",
+			"calloutBefore": "El valor que pagaste al finalizar tu compra ",
+			"calloutBold": "no cambia",
+			"calloutAfter": ". Si el operador cobra más, alGramo asume la diferencia. Si cobra menos, se mantiene la tarifa que aceptaste al realizar tu pedido.",
+			"closing": "💚 ¡Así sabes cuánto vas a pagar desde el principio, sin sorpresas ni cobros adicionales por cambios en la tarifa del operador!",
+			"ok": "Entendido"
 		}
 	},
 	"admin": {
@@ -436,7 +455,12 @@
 				"active": "Activo",
 				"submit": "Crear cupón",
 				"saving": "Creando…",
-				"saved": "Cupón {code} creado."
+				"saved": "Cupón {code} creado.",
+				"editTitle": "Editar cupón {code}",
+				"update": "Guardar cambios",
+				"cancel": "Cancelar",
+				"updated": "Cupón {code} actualizado.",
+				"lockedHint": "Este cupón ya fue usado: el código, el tipo y el valor no se pueden cambiar."
 			},
 			"list": {
 				"title": "Campañas",
@@ -448,8 +472,28 @@
 				"budget": "Presupuesto restante",
 				"status": "Estado",
 				"minBowls": "Mínimo {count} bowls.",
-				"firstOnly": "Solo primera compra."
-			}
+				"firstOnly": "Solo primera compra.",
+				"activate": "Activar",
+				"deactivate": "Desactivar",
+				"redemptions": "Redenciones",
+				"edit": "Editar",
+				"delete": "Eliminar",
+				"confirmDelete": "¿Eliminar el cupón {code}? Esta acción no se puede deshacer."
+			},
+			"auth": {
+				"title": "Acceso de administrador",
+				"label": "Token de administrador",
+				"submit": "Entrar",
+				"invalid": "Token inválido. Inténtalo de nuevo.",
+				"signOut": "Cerrar sesión"
+			},
+			"toggleFailed": "No se pudo cambiar el estado del cupón.",
+			"errors": {
+				"coupon_in_use": "Este cupón ya fue usado: no se puede eliminar ni cambiar su código, tipo o valor.",
+				"coupon_code_taken": "Ya existe un cupón con ese código.",
+				"budget_below_redeemed": "El presupuesto no puede ser menor que lo que ya se ha redimido."
+			},
+			"deleteFailed": "No se pudo eliminar el cupón."
 		}
 	},
 	"footer": {
@@ -530,6 +574,49 @@
 			"errorNotFound": "No encontramos una cuenta asociada a este número de teléfono.",
 			"warning": "Advertencia: Esta acción es permanente y eliminará todos sus datos, incluyendo historial de pedidos.",
 			"backToPrivacy": "Volver a Política de Privacidad"
+		}
+	},
+	"coupon": {
+		"label": "Cupón de Descuento",
+		"placeholder": "Ingresa tu cupón",
+		"apply": "Aplicar",
+		"applying": "Aplicando…",
+		"needsAddress": "Ingresa tu dirección de entrega para aplicar el cupón.",
+		"applied": {
+			"percent": "¡Cupón aplicado! {value}% de descuento",
+			"fixed": "¡Cupón aplicado! {amount} de descuento",
+			"free_shipping": "¡Cupón aplicado! Envío gratis"
+		},
+		"row": {
+			"percent": "Descuento {value}%",
+			"fixed": "Descuento",
+			"free_shipping": "Envío gratis"
+		},
+		"reason": {
+			"not_found": "Cupón no encontrado",
+			"expired": "Cupón expirado",
+			"not_first_purchase": "Este cupón solo aplica para la primera compra",
+			"min_bowls": "Debes comprar mínimo {count} bowls para utilizar este cupón",
+			"inactive": "Este cupón ya no se encuentra disponible",
+			"not_started": "Este cupón ya no se encuentra disponible",
+			"budget_exhausted": "Este cupón ya no se encuentra disponible"
+		}
+	},
+	"order": {
+		"number": "Número de pedido",
+		"status": "Estado",
+		"eta": "Tiempo estimado",
+		"home": "Volver al inicio",
+		"received": {
+			"eyebrow": "Pedido recibido",
+			"title": "¡Gracias por tu pedido!",
+			"message": "Estamos preparando tu bowl con mucho cuidado. Te notificaremos en cuanto esté listo.",
+			"status": "Recibido"
+		},
+		"notFound": {
+			"eyebrow": "Pedido no encontrado",
+			"title": "No encontramos tu pedido",
+			"message": "El enlace no es válido o el pedido no existe. Si ya hiciste tu pedido, escríbenos y lo revisamos."
 		}
 	}
 }

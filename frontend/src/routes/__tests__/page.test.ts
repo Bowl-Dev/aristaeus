@@ -3,7 +3,7 @@ import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { locale, waitLocale } from 'svelte-i18n';
 import type { Ingredient, Menu } from '$lib/types';
 
-const { getIngredientsMock, getMenusMock, createOrderMock, FakeApiError } = vi.hoisted(() => {
+const { getIngredientsMock, getMenusMock, getCheckoutQuoteMock, FakeApiError } = vi.hoisted(() => {
 	class FakeApiError extends Error {
 		status: number;
 		constructor(status: number, message: string) {
@@ -15,7 +15,7 @@ const { getIngredientsMock, getMenusMock, createOrderMock, FakeApiError } = vi.h
 	return {
 		getIngredientsMock: vi.fn(),
 		getMenusMock: vi.fn(),
-		createOrderMock: vi.fn(),
+		getCheckoutQuoteMock: vi.fn(),
 		FakeApiError
 	};
 });
@@ -23,7 +23,7 @@ const { getIngredientsMock, getMenusMock, createOrderMock, FakeApiError } = vi.h
 vi.mock('$lib/api/client', () => ({
 	getIngredients: getIngredientsMock,
 	getMenus: getMenusMock,
-	createOrder: createOrderMock,
+	getCheckoutQuote: getCheckoutQuoteMock,
 	ApiError: FakeApiError
 }));
 
@@ -77,7 +77,7 @@ describe('/ +page (view state machine)', () => {
 	beforeEach(async () => {
 		getIngredientsMock.mockReset();
 		getMenusMock.mockReset();
-		createOrderMock.mockReset();
+		getCheckoutQuoteMock.mockReset();
 		locale.set('es');
 		await waitLocale();
 	});
@@ -247,6 +247,40 @@ describe('/ +page (view state machine)', () => {
 			expect(container.querySelectorAll('button[aria-label="Editar bowl"]').length).toBe(1);
 			expect(container.textContent).toContain('100g');
 			expect(container.textContent).not.toContain('110g');
+		});
+
+		it('cart → delivery prices the order with a server quote before enabling payment', async () => {
+			getIngredientsMock.mockResolvedValue([rice]);
+			getMenusMock.mockResolvedValue([sampleMenu]);
+			getCheckoutQuoteMock.mockResolvedValue({
+				subtotal: 1800,
+				deliveryFee: 5000,
+				discount: 0,
+				serviceFee: 1000,
+				total: 7800,
+				totalBeforeDiscount: 7800,
+				coupon: null,
+				couponRejection: null
+			});
+			const { container } = render(Page);
+			await goToCartWithOneBowl(container);
+			await fireEvent.click(findButton(container, /Continuar a entrega/) as HTMLButtonElement);
+			await waitFor(() => expect(findButton(container, /Hacer pedido/)?.disabled).toBe(true));
+
+			const address = container.querySelector('#delivery-address') as HTMLTextAreaElement;
+			await fireEvent.input(address, { target: { value: 'Cra 7 # 50-10' } });
+			await fireEvent.blur(address);
+			await waitFor(() =>
+				expect(findButton(container, /Hacer pedido/)?.textContent).toMatch(/7\.800/)
+			);
+			expect(getCheckoutQuoteMock.mock.calls[0][0].bowls).toEqual([
+				{
+					bowlSize: 450,
+					items: [{ ingredientId: 1, quantityGrams: 100 }],
+					includeCutlery: false,
+					quantity: 1
+				}
+			]);
 		});
 	});
 

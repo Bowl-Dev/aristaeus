@@ -117,8 +117,8 @@ aristaeus/
 │   │   └── seed-menus.ts              # Separate menus seed script (5 curated menus)
 │   ├── infra/                         # Terraform infrastructure
 │   │   ├── main.tf                    # Main Terraform config
-│   │   ├── lambda.tf                  # Lambda function definitions (12 functions)
-│   │   ├── api_gateway.tf             # API Gateway configuration (12 routes)
+│   │   ├── lambda.tf                  # Lambda function definitions (19 functions)
+│   │   ├── api_gateway.tf             # API Gateway configuration (19 routes)
 │   │   ├── iam.tf                     # IAM roles and policies
 │   │   ├── variables.tf               # Terraform variables
 │   │   ├── outputs.tf                 # Terraform outputs
@@ -130,13 +130,17 @@ aristaeus/
 │       ├── handlers/
 │       │   ├── ingredients.ts         # GET /api/ingredients
 │       │   ├── menus.ts               # GET /api/menus
-│       │   ├── orders.ts              # Order CRUD handlers
+│       │   ├── orders.ts              # Order list/detail/status handlers (admin)
+│       │   ├── checkout.ts            # Checkout quote/create/status
+│       │   ├── coupons.ts             # Coupon admin (x-admin-token)
 │       │   ├── users.ts               # GET /api/users/check-phone, DELETE /api/users
 │       │   └── __tests__/             # Handler unit tests
 │       └── lib/
 │           ├── db.ts                  # Prisma client singleton
 │           ├── response.ts            # API response helpers
-│           └── nutrition.ts           # Server-side nutrition calc
+│           ├── nutrition.ts           # Server-side nutrition calc
+│           ├── pricing.ts             # Cart totals: subtotal, discount, service fee
+│           └── coupons.ts             # Coupon evaluation + atomic budget decrement
 │
 ├── packages/
 │   └── shared/                        # @aristaeus/shared workspace
@@ -177,11 +181,16 @@ aristaeus/
   - `GET /api/ingredients` - fetch available ingredients
   - `GET /api/menus` - fetch pre-configured menus with ingredients
   - `GET /api/orders` - list all orders (admin)
-  - `POST /api/orders` - create new order
   - `GET /api/orders/{id}` - get order details
   - `PUT /api/orders/{orderId}/status` - admin status update
   - `GET /api/users/check-phone` - returning customer lookup
   - `DELETE /api/users` - delete user data (Law 1581 compliance)
+- **Checkout** (2026-10-15; Wompi in-app payment is parked on branch `feat/wompi-payments`)
+  - One `Checkout` per cart owns N orders, created straight as `pending` (`paymentStatus = 'not_required'`)
+  - `POST /api/checkout/quote` is the only place checkout money is computed (delivery fee = the estimator's point estimate, coupon discount, service fee 800 + 3%)
+  - The customer sees one delivery fee plus an ⓘ disclaimer sheet: if the courier charges more, alGramo absorbs it
+  - `/order?c=<checkoutId>` shows the received order (AG-#### order number)
+- **Coupons** (`percent`, `fixed`, `free_shipping`) — APLICAR on the delivery screen, `/admin/coupons` to create/edit/toggle/delete; budget decremented atomically when the checkout is created (no refund on admin cancel)
 - **Menu system** - pre-configured bowl selections
   - `Menu` and `MenuIngredient` database models
   - 5 seeded menus with full ingredient recipes and pricing
@@ -205,11 +214,11 @@ aristaeus/
 ### 📋 Not Started (Out of Scope for MVP)
 
 - User authentication/accounts
-- Payment processing
+- In-app payment (Wompi, parked on `feat/wompi-payments`)
+- Pay on-site (AL-55) and `free_product` / `buy_x_get_y` coupons
 - Inventory/stock management
 - Order modifications/cancellations
 - Allergen tracking
-- Multi-bowl orders
 
 ---
 
@@ -386,7 +395,9 @@ The `.env` files are auto-generated when running `npm run dev:local`, `dev:hybri
 
 - `GET /api/ingredients` - Get available ingredients
 - `GET /api/menus` - Get pre-configured menus with ingredients
-- `POST /api/orders` - Create new order
+- `POST /api/checkout/quote` - Price a cart (delivery, coupon, service fee). No writes
+- `POST /api/checkout` - Create checkout + pending orders, returns `{ checkoutId, orderNumber }`
+- `GET /api/checkout/{id}` - Order number for the `/order` page
 - `GET /api/orders/{id}` - Get order status
 - `GET /api/users/check-phone` - Check if phone number has a registered account
 - `DELETE /api/users` - Delete user account and data (Law 1581)
@@ -395,6 +406,7 @@ The `.env` files are auto-generated when running `npm run dev:local`, `dev:hybri
 
 - `GET /api/orders` - List all orders (admin view)
 - `PUT /api/orders/{orderId}/status` - Update order status (admin)
+- `GET` / `POST /api/coupons`, `PATCH` / `DELETE /api/coupons/{id}` - Coupon admin (edit locks code/type/value once redeemed; delete only if never redeemed) (header `x-admin-token` = `ADMIN_TOKEN`)
 
 ---
 
@@ -508,11 +520,9 @@ Full schema: See `backend/prisma/schema.prisma`
 ### What NOT to Implement (Out of Scope)
 
 - User authentication/accounts
-- Payment processing
 - Inventory/stock management
 - Order modifications/cancellations
 - Allergen tracking
-- Multi-bowl orders
 
 ### Code Style & Patterns
 
@@ -538,17 +548,19 @@ curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json
 
 ## Version History
 
-| Date       | Version | Changes                                                                                                     |
-| ---------- | ------- | ----------------------------------------------------------------------------------------------------------- |
-| 2025-12-02 | 1.0     | Initial CLAUDE.md creation                                                                                  |
-| 2025-12-14 | 1.1     | Converted to npm workspaces monorepo, added `@aristaeus/shared` package                                     |
-| 2025-12-14 | 2.0     | Added serverless backend (Lambda + Prisma), GitHub Pages deployment                                         |
-| 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                                   |
-| 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed                 |
-| 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                                     |
-| 2026-02-21 | 3.2     | Added deployment checklist, lessons learned from checkPhone endpoint deployment                             |
-| 2026-03-26 | 3.3     | Menu system, pricing logic, Law 1581 compliance (users/privacy), 3-view UI, bowl sizes 250/450/600          |
-| 2026-09-17 | 4.0     | Removed the robot subsystem and the v1 grid delivery fallback; folded the separate spec docs into this file |
+| Date       | Version | Changes                                                                                                          |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 2025-12-02 | 1.0     | Initial CLAUDE.md creation                                                                                       |
+| 2025-12-14 | 1.1     | Converted to npm workspaces monorepo, added `@aristaeus/shared` package                                          |
+| 2025-12-14 | 2.0     | Added serverless backend (Lambda + Prisma), GitHub Pages deployment                                              |
+| 2025-12-15 | 2.1     | Migrated from Serverless Framework to Terraform, added Express dev server                                        |
+| 2026-01-09 | 3.0     | **MVP Complete** - Connected frontend to backend, admin orders page, all endpoints deployed                      |
+| 2026-02-03 | 3.1     | Added ESLint + Prettier linting, Husky pre-commit hooks, CI lint checks                                          |
+| 2026-02-21 | 3.2     | Added deployment checklist, lessons learned from checkPhone endpoint deployment                                  |
+| 2026-03-26 | 3.3     | Menu system, pricing logic, Law 1581 compliance (users/privacy), 3-view UI, bowl sizes 250/450/600               |
+| 2026-09-17 | 4.0     | Removed the robot subsystem and the v1 grid delivery fallback; folded the separate spec docs into this file      |
+| 2026-09-27 | 4.1     | Wompi in-app checkout (Checkout model, webhook, /order page), coupons + /admin/coupons, removed POST /api/orders |
+| 2026-10-15 | 4.2     | Wompi held back (orders go straight to pending); delivery fee = point estimate + disclaimer; coupon edit/delete  |
 
 ---
 
@@ -607,6 +619,6 @@ When changing database operations (e.g., replacing `user.upsert` with `user.find
 
 ---
 
-**Last Updated:** 2026-09-17
-**Project Status:** MVP Complete + Menu System + Delivery Estimation
+**Last Updated:** 2026-10-15
+**Project Status:** MVP Complete + Menu System + Delivery Estimation + Coupons
 **Current Phase:** Production

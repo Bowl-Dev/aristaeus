@@ -90,6 +90,21 @@ export type BowlSizePrice = 1200 | 1300 | 1400; //Bowl packaging prices in COP
 export const BOWL_SIZES: readonly BowlSize[] = [250, 450, 600] as const;
 export const BOWL_SIZE_PRICES: readonly BowlSizePrice[] = [1200, 1300, 1400] as const;
 
+// Flat surcharge (COP) added to a bowl when the customer opts to include cutlery.
+export const CUTLERY_PRICE = 300;
+
+// Checkout limits, enforced by the server and mirrored by the cart.
+export const MAX_BOWL_QUANTITY = 10; // copies of one bowl
+export const MAX_CART_BOWLS = 10; // different bowls in one cart
+
+/**
+ * Round a COP amount to the nearest 100, since 100 is the smallest coin in
+ * Colombian currency. The one copy client and server both price with.
+ */
+export function roundToNearestCoin(amount: number): number {
+	return Math.round(amount / 100) * 100;
+}
+
 // Order types
 export type OrderStatus =
 	| 'pending'
@@ -151,37 +166,6 @@ export interface BowlConfiguration {
 	selectedIngredients: SelectedIngredient[];
 }
 
-// API request/response types
-export interface CreateOrderRequest {
-	bowlSize: BowlSize;
-	customer: CustomerInfo;
-	items: Array<{
-		ingredientId: number;
-		quantityGrams: number;
-	}>;
-	includeCutlery?: boolean;
-	updateUserData?: boolean;
-	deliveryInstructions?: string;
-}
-
-export interface CreateOrderResponse {
-	orderId: number;
-	status: OrderStatus;
-	estimatedWaitTimeMinutes?: number;
-}
-
-export interface OrderStatusResponse {
-	orderId: number;
-	status: OrderStatus;
-	address?: ColombianAddress;
-	deliveryInstructions?: string | null;
-	nutritionalSummary: NutritionalSummary;
-	createdAt: string;
-	assignedAt: string | null;
-	startedAt: string | null;
-	completedAt: string | null;
-}
-
 // ============================================
 // Admin API Types
 // ============================================
@@ -206,6 +190,8 @@ export interface AdminOrderItem {
 // Admin order view with user details
 export interface AdminOrder {
 	id: number;
+	/** The checkout's AG-#### number; null for orders placed before checkout existed. */
+	orderNumber: number | null;
 	bowlSize: number;
 	includeCutlery: boolean;
 	user: {
@@ -251,3 +237,138 @@ export interface CheckPhoneResponse {
 		address: ColombianAddress | null;
 	};
 }
+
+// ============================================
+// Checkout API Types
+// ============================================
+
+export interface CheckoutBowl {
+	bowlSize: BowlSize;
+	items: Array<{ ingredientId: number; quantityGrams: number }>;
+	includeCutlery: boolean;
+	quantity: number;
+}
+
+/** POST /api/checkout/quote — prices a cart. No writes. */
+export interface CheckoutQuoteRequest {
+	/** Free-form Bogotá address, e.g. "Calle 125 # 18A-05, Apto 302". */
+	address: string;
+	bowls: CheckoutBowl[];
+	couponCode?: string;
+	/** Needed for first-purchase-only coupons. */
+	phone?: string;
+}
+
+export interface AppliedCoupon {
+	code: string;
+	type: CouponType;
+	value: number | null;
+}
+
+/**
+ * All amounts in COP, each a multiple of 100.
+ * total = subtotal + deliveryFee - discount + serviceFee
+ */
+export interface CheckoutQuote {
+	subtotal: number;
+	deliveryFee: number;
+	discount: number;
+	serviceFee: number;
+	total: number;
+	/** The total without the coupon (service fee recomputed), shown struck through. */
+	totalBeforeDiscount: number;
+	coupon: AppliedCoupon | null;
+	/** Set when a couponCode was sent and did not apply. */
+	couponRejection: { reason: CouponRejection; minBowls?: number } | null;
+}
+
+/** POST /api/checkout — creates the checkout + its orders. */
+export interface CreateCheckoutRequest extends CheckoutQuoteRequest {
+	/** Client-generated UUID. Retrying with the same id returns the existing checkout. */
+	checkoutId: string;
+	customer: { name: string; phone: string };
+	deliveryInstructions?: string;
+}
+
+export interface CreateCheckoutResponse {
+	checkoutId: string;
+	/** Shown as AG-#### */
+	orderNumber: number;
+}
+
+/** No in-app payment yet: every checkout is `not_required`. */
+export type PaymentStatus = 'not_required';
+
+/** GET /api/checkout/{id} */
+export interface CheckoutStatusResponse {
+	checkoutId: string;
+	orderNumber: number;
+	paymentStatus: PaymentStatus;
+	total: number;
+}
+
+// ============================================
+// Coupon API Types
+// ============================================
+
+/** Benefit types the backend can price. */
+export type CouponType = 'percent' | 'fixed' | 'free_shipping';
+
+/** Why a code did not apply; maps to `coupon.reason.*` in i18n. */
+export type CouponRejection =
+	| 'not_found'
+	| 'inactive'
+	| 'not_started'
+	| 'expired'
+	| 'budget_exhausted'
+	| 'not_first_purchase'
+	| 'min_bowls';
+
+export interface CouponRecord {
+	id: number;
+	code: string;
+	campaignName: string;
+	description: string | null;
+	type: CouponType;
+	value: number | null;
+	startsAt: string;
+	endsAt: string;
+	budgetTotal: number;
+	budgetRemaining: number;
+	minBowls: number;
+	firstPurchaseOnly: boolean;
+	active: boolean;
+	createdAt: string;
+	/** Checkouts that used this coupon. */
+	redemptions: number;
+}
+
+export interface CouponsResponse {
+	coupons: CouponRecord[];
+	count: number;
+}
+
+export interface CreateCouponRequest {
+	code: string;
+	campaignName: string;
+	description?: string;
+	type: CouponType;
+	value?: number;
+	startsAt: string;
+	endsAt: string;
+	budgetTotal: number;
+	minBowls: number;
+	firstPurchaseOnly: boolean;
+	active: boolean;
+}
+
+/**
+ * PATCH /api/coupons/{id} — any subset of the fields. `code`, `type` and `value`
+ * are locked (409 coupon_in_use) once the coupon has redemptions.
+ */
+export type UpdateCouponRequest = Partial<
+	Omit<CreateCouponRequest, 'description' | 'value'> & {
+		description: string | null;
+		value: number | null;
+	}
+>;

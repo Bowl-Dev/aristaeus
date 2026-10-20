@@ -9,7 +9,8 @@
 		placeholder,
 		required = false,
 		rows = 3,
-		error
+		error,
+		onblur
 	}: {
 		id: string;
 		label: string;
@@ -19,6 +20,7 @@
 		required?: boolean;
 		rows?: number;
 		error?: string;
+		onblur?: () => void;
 	} = $props();
 
 	const fieldClass =
@@ -48,6 +50,7 @@
 			bind:value
 			{placeholder}
 			{rows}
+			{onblur}
 			aria-invalid={error ? 'true' : undefined}
 			aria-describedby={error ? `${id}-error` : undefined}
 			class="resize-none {fieldClass} {borderClass}"
@@ -61,6 +64,7 @@
 			maxlength={10}
 			{value}
 			oninput={onNumericInput}
+			{onblur}
 			{placeholder}
 			aria-invalid={error ? 'true' : undefined}
 			aria-describedby={error ? `${id}-error` : undefined}
@@ -71,6 +75,7 @@
 			{id}
 			{type}
 			bind:value
+			{onblur}
 			{placeholder}
 			aria-invalid={error ? 'true' : undefined}
 			aria-describedby={error ? `${id}-error` : undefined}

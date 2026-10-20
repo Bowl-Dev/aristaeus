@@ -1,21 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { locale, waitLocale } from 'svelte-i18n';
+import type { CheckoutQuote } from '$lib/types';
+import { goto } from '$app/navigation';
 
-const { createOrderMock, FakeApiError } = vi.hoisted(() => {
+const { getCheckoutQuoteMock, createCheckoutMock, FakeApiError } = vi.hoisted(() => {
 	class FakeApiError extends Error {
 		status: number;
-		constructor(status: number, message: string) {
+		details?: unknown;
+		constructor(status: number, message: string, details?: unknown) {
 			super(message);
 			this.status = status;
+			this.details = details;
 			this.name = 'ApiError';
 		}
 	}
-	return { createOrderMock: vi.fn(), FakeApiError };
+	return { getCheckoutQuoteMock: vi.fn(), createCheckoutMock: vi.fn(), FakeApiError };
 });
 
 vi.mock('$lib/api/client', () => ({
-	createOrder: createOrderMock,
+	getCheckoutQuote: getCheckoutQuoteMock,
+	createCheckout: createCheckoutMock,
 	ApiError: FakeApiError
 }));
 
@@ -38,8 +43,6 @@ const rice: Ingredient = {
 	pricePerG: 5
 };
 
-const ingredients: Ingredient[] = [rice];
-
 const makeBowl = (qty = 1, includeCutlery = false) => ({
 	bowlSize: 450 as BowlSize,
 	items: new Map([[1, 100]]),
@@ -48,121 +51,290 @@ const makeBowl = (qty = 1, includeCutlery = false) => ({
 });
 
 const makeProps = (overrides: Record<string, unknown> = {}) => ({
-	ingredients,
+	ingredients: [rice],
 	bowls: [makeBowl()],
 	cartCount: 1,
 	onBack: vi.fn(),
-	onOrderSuccess: vi.fn(),
 	...overrides
 });
 
+// subtotal 1800 + delivery 5000 + service 1000 = 7800
+const baseQuote: CheckoutQuote = {
+	subtotal: 1800,
+	deliveryFee: 5000,
+	discount: 0,
+	serviceFee: 1000,
+	total: 7800,
+	totalBeforeDiscount: 7800,
+	coupon: null,
+	couponRejection: null
+};
+
+const checkoutResponse = { checkoutId: 'chk-1', orderNumber: 1000 };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 function getCta(container: HTMLElement): HTMLButtonElement {
 	return Array.from(container.querySelectorAll('button')).find((b) =>
-		(b.textContent ?? '').match(/Confirmar Pedido|Enviando/)
+		(b.textContent ?? '').match(/Hacer pedido|Enviando/)
 	) as HTMLButtonElement;
 }
 
-async function fillRequiredFields(container: HTMLElement) {
-	await fireEvent.input(container.querySelector('#delivery-name') as HTMLInputElement, {
-		target: { value: 'Juan Pérez' }
-	});
-	await fireEvent.input(container.querySelector('#delivery-phone') as HTMLInputElement, {
-		target: { value: '3001234567' }
-	});
-	await fireEvent.input(container.querySelector('#delivery-address') as HTMLTextAreaElement, {
-		target: { value: 'Cra 7 # 50-10' }
-	});
+function getApply(container: HTMLElement): HTMLButtonElement {
+	return Array.from(container.querySelectorAll('button')).find((b) =>
+		(b.textContent ?? '').match(/Aplicar/)
+	) as HTMLButtonElement;
+}
+
+const $ = (container: HTMLElement, sel: string) => container.querySelector(sel) as HTMLInputElement;
+
+async function fillAddress(container: HTMLElement, value = 'Cra 7 # 50-10') {
+	const address = $(container, '#delivery-address');
+	await fireEvent.input(address, { target: { value } });
+	await fireEvent.blur(address);
+}
+
+async function fillAll(container: HTMLElement) {
+	await fireEvent.input($(container, '#delivery-name'), { target: { value: 'Juan Pérez' } });
+	await fireEvent.input($(container, '#delivery-phone'), { target: { value: '3001234567' } });
+	await fillAddress(container);
+}
+
+async function typeCoupon(container: HTMLElement, value: string) {
+	await fireEvent.input($(container, '#delivery-coupon'), { target: { value } });
 }
 
 describe('Delivery', () => {
+	const gotoMock = vi.mocked(goto);
+
 	beforeEach(async () => {
-		createOrderMock.mockReset();
+		getCheckoutQuoteMock.mockReset();
+		createCheckoutMock.mockReset();
+		gotoMock.mockReset();
 		locale.set('es');
 		await waitLocale();
 	});
 
-	it('disables the submit button until name, phone, and address are filled', async () => {
-		const { container } = render(Delivery, { props: makeProps() });
-		const cta = getCta(container);
-		expect(cta.disabled).toBe(true);
-		await fillRequiredFields(container);
-		expect(cta.disabled).toBe(false);
-	});
-
-	it('renders the grand total as (base + ingredients) × quantity for each bowl', () => {
-		// 450g bowl base = 1300 COP, + 100g rice * 5 = 500 → unit = 1800
-		// × quantity 2 = 3600
+	it('shows the client subtotal and an address hint, with the CTA disabled, before a quote', () => {
 		const { container } = render(Delivery, { props: makeProps({ bowls: [makeBowl(2)] }) });
-		// Two bowls share one summary row showing "× 2"
+		// 450g base 1300 + 100g rice × 5 = 1800 per bowl, × 2
 		expect(container.textContent).toMatch(/×\s*2/);
-		// Grand total ($3.600 in es-CO)
 		expect(container.textContent).toMatch(/3\.600/);
+		expect(container.textContent).toContain('Ingresa tu dirección');
+		expect(getCta(container).disabled).toBe(true);
+		expect(getCheckoutQuoteMock).not.toHaveBeenCalled();
 	});
 
-	it('sends one createOrder request per (bowl × quantity) and calls onOrderSuccess', async () => {
-		createOrderMock.mockResolvedValue({ id: 1 });
-		const onOrderSuccess = vi.fn();
-		const { container } = render(Delivery, {
-			props: makeProps({ bowls: [makeBowl(3)], onOrderSuccess })
-		});
-		await fillRequiredFields(container);
-		await fireEvent.click(getCta(container));
-		await waitFor(() => expect(onOrderSuccess).toHaveBeenCalledOnce());
-		expect(createOrderMock).toHaveBeenCalledTimes(3);
-		// Each request is the same payload shape; spot-check the first
-		const payload = createOrderMock.mock.calls[0][0];
-		expect(payload.bowlSize).toBe(450);
-		expect(payload.customer.name).toBe('Juan Pérez');
-		expect(payload.customer.phone).toBe('3001234567');
-		expect(payload.customer.address.streetAddress).toBe('Cra 7 # 50-10');
-		expect(payload.items).toEqual([{ ingredientId: 1, quantityGrams: 100 }]);
-		// No instructions entered → field is omitted from the payload
-		expect(payload.deliveryInstructions).toBeUndefined();
-	});
-
-	it('includes deliveryInstructions in the payload when the field is filled', async () => {
-		createOrderMock.mockResolvedValue({ id: 1 });
+	it('quotes when the address loses focus and shows the server amounts', async () => {
+		getCheckoutQuoteMock.mockResolvedValue(baseQuote);
 		const { container } = render(Delivery, { props: makeProps() });
-		await fillRequiredFields(container);
-		await fireEvent.input(
-			container.querySelector('#delivery-instructions') as HTMLTextAreaElement,
-			{ target: { value: 'Leave at the door' } }
-		);
-		await fireEvent.click(getCta(container));
-		await waitFor(() => expect(createOrderMock).toHaveBeenCalled());
-		const payload = createOrderMock.mock.calls[0][0];
-		expect(payload.deliveryInstructions).toBe('Leave at the door');
-	});
-
-	it('shows the API error message and does not call onOrderSuccess when all requests fail', async () => {
-		createOrderMock.mockRejectedValue(new FakeApiError(500, 'Server exploded'));
-		const onOrderSuccess = vi.fn();
-		const { container } = render(Delivery, { props: makeProps({ onOrderSuccess }) });
-		await fillRequiredFields(container);
-		await fireEvent.click(getCta(container));
-		await waitFor(() => expect(container.textContent).toContain('Server exploded'));
-		expect(onOrderSuccess).not.toHaveBeenCalled();
-	});
-
-	it('renders a partial-failure message when some requests succeed and some fail', async () => {
-		// 2 requests (quantity = 2): first succeeds, second fails
-		createOrderMock
-			.mockResolvedValueOnce({ id: 1 })
-			.mockRejectedValueOnce(new FakeApiError(500, 'Nope'));
-		const onOrderSuccess = vi.fn();
-		const { container } = render(Delivery, {
-			props: makeProps({ bowls: [makeBowl(2)], onOrderSuccess })
+		await fillAll(container);
+		await waitFor(() => expect(getCta(container).disabled).toBe(false));
+		expect(getCheckoutQuoteMock).toHaveBeenCalledWith({
+			address: 'Cra 7 # 50-10',
+			bowls: [
+				{
+					bowlSize: 450,
+					items: [{ ingredientId: 1, quantityGrams: 100 }],
+					includeCutlery: false,
+					quantity: 1
+				}
+			],
+			couponCode: undefined,
+			phone: '3001234567'
 		});
-		await fillRequiredFields(container);
+		expect(container.textContent).toMatch(/5\.000/);
+		expect(getCta(container).textContent).toMatch(/Hacer pedido – \$\s*7\.800/);
+	});
+
+	it('does not quote on blur of an empty address', async () => {
+		const { container } = render(Delivery, { props: makeProps() });
+		await fireEvent.blur($(container, '#delivery-address'));
+		expect(getCheckoutQuoteMock).not.toHaveBeenCalled();
+	});
+
+	it('ignores an older quote that resolves after a newer one', async () => {
+		let resolveFirst: (q: CheckoutQuote) => void = () => {};
+		getCheckoutQuoteMock
+			.mockImplementationOnce(() => new Promise((r) => (resolveFirst = r)))
+			.mockResolvedValueOnce({ ...baseQuote, deliveryFee: 9000, total: 11800 });
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await fillAddress(container, 'Calle 100 # 15-20');
+		await waitFor(() => expect(container.textContent).toMatch(/11\.800/));
+		resolveFirst(baseQuote);
+		await new Promise((r) => setTimeout(r, 0));
+		expect(container.textContent).toMatch(/11\.800/);
+		expect(container.textContent).not.toMatch(/7\.800/);
+	});
+
+	it('applies a coupon: success line, discount row and struck-through total', async () => {
+		getCheckoutQuoteMock.mockResolvedValueOnce(baseQuote).mockResolvedValueOnce({
+			...baseQuote,
+			discount: 200,
+			total: 7600,
+			coupon: { code: 'ALGRAMO10', type: 'percent', value: 10 }
+		});
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'algramo10');
+		expect($(container, '#delivery-coupon').value).toBe('ALGRAMO10');
+		await fireEvent.click(getApply(container));
+		await waitFor(() =>
+			expect(container.textContent).toContain('¡Cupón aplicado! 10% de descuento')
+		);
+		expect(getCheckoutQuoteMock.mock.calls[1][0].couponCode).toBe('ALGRAMO10');
+		const row = container.querySelector('[data-testid="coupon-row"]');
+		expect(row?.textContent).toContain('Descuento 10%');
+		expect(container.querySelector('[data-testid="pre-discount-total"]')?.textContent).toMatch(
+			/7\.800/
+		);
+		expect(getCta(container).textContent).toMatch(/7\.600/);
+	});
+
+	it('re-checks an applied coupon when the phone changes (first-purchase rule)', async () => {
+		getCheckoutQuoteMock.mockResolvedValueOnce(baseQuote).mockResolvedValue({
+			...baseQuote,
+			discount: 200,
+			total: 7600,
+			coupon: { code: 'ALGRAMO10', type: 'percent', value: 10 }
+		});
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'ALGRAMO10');
+		await fireEvent.click(getApply(container));
+		await waitFor(() => expect(container.textContent).toContain('¡Cupón aplicado!'));
+		const phone = $(container, '#delivery-phone');
+		await fireEvent.input(phone, { target: { value: '3109876543' } });
+		await fireEvent.blur(phone);
+		await waitFor(() => expect(getCheckoutQuoteMock).toHaveBeenCalledTimes(3));
+		expect(getCheckoutQuoteMock.mock.calls[2][0]).toMatchObject({
+			couponCode: 'ALGRAMO10',
+			phone: '3109876543'
+		});
+	});
+
+	it('editing an applied coupon removes it and re-quotes without it', async () => {
+		getCheckoutQuoteMock
+			.mockResolvedValueOnce(baseQuote)
+			.mockResolvedValueOnce({
+				...baseQuote,
+				discount: 200,
+				total: 7600,
+				coupon: { code: 'ALGRAMO10', type: 'percent', value: 10 }
+			})
+			.mockResolvedValueOnce(baseQuote);
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'ALGRAMO10');
+		await fireEvent.click(getApply(container));
+		await waitFor(() => expect(container.textContent).toContain('¡Cupón aplicado!'));
+		await typeCoupon(container, 'ALGRAMO1');
+		await waitFor(() => expect(getCheckoutQuoteMock).toHaveBeenCalledTimes(3));
+		expect(getCheckoutQuoteMock.mock.calls[2][0].couponCode).toBeUndefined();
+		await waitFor(() => expect(container.textContent).not.toContain('¡Cupón aplicado!'));
+	});
+
+	it('shows the rejection reason with the minimum bowl count', async () => {
+		getCheckoutQuoteMock.mockResolvedValueOnce(baseQuote).mockResolvedValueOnce({
+			...baseQuote,
+			couponRejection: { reason: 'min_bowls', minBowls: 2 }
+		});
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'DOSXUNO');
+		await fireEvent.click(getApply(container));
+		await waitFor(() =>
+			expect(container.textContent).toContain(
+				'Debes comprar mínimo 2 bowls para utilizar este cupón'
+			)
+		);
+	});
+
+	it('never reveals that a coupon budget ran out', async () => {
+		getCheckoutQuoteMock
+			.mockResolvedValueOnce(baseQuote)
+			.mockResolvedValueOnce({ ...baseQuote, couponRejection: { reason: 'budget_exhausted' } });
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'GONE');
+		await fireEvent.click(getApply(container));
+		await waitFor(() =>
+			expect(container.textContent).toContain('Este cupón ya no se encuentra disponible')
+		);
+	});
+
+	it('creates the checkout and goes to the order page', async () => {
+		getCheckoutQuoteMock.mockResolvedValue(baseQuote);
+		createCheckoutMock.mockResolvedValue(checkoutResponse);
+		const { container } = render(Delivery, { props: makeProps({ bowls: [makeBowl(3)] }) });
+		await fillAll(container);
+		await fireEvent.input($(container, '#delivery-instructions'), {
+			target: { value: 'Portería' }
+		});
+		await waitFor(() => expect(getCta(container).disabled).toBe(false));
 		await fireEvent.click(getCta(container));
-		await waitFor(() => expect(container.textContent).toMatch(/1 de 2/));
-		expect(container.textContent).toContain('Nope');
-		expect(onOrderSuccess).not.toHaveBeenCalled();
+		await waitFor(() => expect(gotoMock).toHaveBeenCalledWith('/order?c=chk-1'));
+		expect(createCheckoutMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				checkoutId: expect.stringMatching(UUID),
+				address: 'Cra 7 # 50-10',
+				customer: { name: 'Juan Pérez', phone: '3001234567' },
+				phone: '3001234567',
+				deliveryInstructions: 'Portería',
+				couponCode: undefined
+			})
+		);
+		expect(createCheckoutMock.mock.calls[0][0].bowls[0].quantity).toBe(3);
+	});
+
+	it('retries with the same checkoutId, so a lost response cannot place a second order', async () => {
+		getCheckoutQuoteMock.mockResolvedValue(baseQuote);
+		createCheckoutMock
+			.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+			.mockResolvedValueOnce(checkoutResponse);
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await waitFor(() => expect(getCta(container).disabled).toBe(false));
+		await fireEvent.click(getCta(container));
+		await waitFor(() => expect(container.textContent).toContain('Ocurrió un problema'));
+		await fireEvent.click(getCta(container));
+		await waitFor(() => expect(gotoMock).toHaveBeenCalledWith('/order?c=chk-1'));
+		const [first, second] = createCheckoutMock.mock.calls.map(([req]) => req.checkoutId);
+		expect(first).toMatch(UUID);
+		expect(second).toBe(first);
+	});
+
+	it('on 409 coupon_rejected shows the reason, drops the coupon and re-quotes', async () => {
+		getCheckoutQuoteMock
+			.mockResolvedValueOnce(baseQuote)
+			.mockResolvedValueOnce({
+				...baseQuote,
+				discount: 200,
+				total: 7600,
+				coupon: { code: 'ALGRAMO10', type: 'percent', value: 10 }
+			})
+			.mockResolvedValueOnce(baseQuote);
+		createCheckoutMock.mockRejectedValue(
+			new FakeApiError(409, 'coupon_rejected', {
+				message: 'coupon_rejected',
+				reason: 'expired'
+			})
+		);
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'ALGRAMO10');
+		await fireEvent.click(getApply(container));
+		await waitFor(() => expect(getCta(container).textContent).toMatch(/7\.600/));
+		await fireEvent.click(getCta(container));
+		await waitFor(() => expect(container.textContent).toContain('Cupón expirado'));
+		await waitFor(() => expect(getCheckoutQuoteMock).toHaveBeenCalledTimes(3));
+		expect(getCheckoutQuoteMock.mock.calls[2][0].couponCode).toBeUndefined();
+		expect(gotoMock).not.toHaveBeenCalled();
 	});
 
 	it('strips non-digits from the phone field and caps it at 10 digits', async () => {
 		const { container } = render(Delivery, { props: makeProps() });
-		const phone = container.querySelector('#delivery-phone') as HTMLInputElement;
+		const phone = $(container, '#delivery-phone');
 		await fireEvent.input(phone, { target: { value: '+57 300 123 4567' } });
 		expect(phone.value).toBe('3001234567');
 	});
@@ -177,9 +349,8 @@ describe('Delivery', () => {
 		await waitFor(() => expect(container.querySelector('#delivery-name-error')).toBeTruthy());
 		expect(container.querySelector('#delivery-phone-error')).toBeTruthy();
 		expect(container.querySelector('#delivery-address-error')).toBeTruthy();
-		const name = container.querySelector('#delivery-name') as HTMLInputElement;
-		expect(name.getAttribute('aria-invalid')).toBe('true');
-		expect(createOrderMock).not.toHaveBeenCalled();
+		expect($(container, '#delivery-name').getAttribute('aria-invalid')).toBe('true');
+		expect(createCheckoutMock).not.toHaveBeenCalled();
 	});
 
 	it('clears a field error once the field becomes valid', async () => {
@@ -189,11 +360,8 @@ describe('Delivery', () => {
 		await fireEvent.click(cta);
 		await waitFor(() => expect(container.querySelector('#delivery-name-error')).toBeTruthy());
 
-		await fireEvent.input(container.querySelector('#delivery-name') as HTMLInputElement, {
-			target: { value: 'Juan Pérez' }
-		});
+		await fireEvent.input($(container, '#delivery-name'), { target: { value: 'Juan Pérez' } });
 		await waitFor(() => expect(container.querySelector('#delivery-name-error')).toBeFalsy());
-		// Other invalid fields still show their errors.
 		expect(container.querySelector('#delivery-phone-error')).toBeTruthy();
 	});
 });

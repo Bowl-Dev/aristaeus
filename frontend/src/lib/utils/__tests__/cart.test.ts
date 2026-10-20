@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { addBowl, removeAt, incrementAt, decrementAt, replaceAt, type BowlSnapshot } from '../cart';
+import { MAX_BOWL_QUANTITY, MAX_CART_BOWLS } from '$lib/types';
 
 const bowl = (
 	quantity: number,
@@ -41,6 +42,11 @@ describe('addBowl', () => {
 		addBowl(before, 250, new Map());
 		expect(before).toHaveLength(1);
 	});
+
+	it('is a no-op once the cart holds MAX_CART_BOWLS bowls', () => {
+		const full = Array.from({ length: MAX_CART_BOWLS }, () => bowl(1));
+		expect(addBowl(full, 250, new Map())).toBe(full);
+	});
 });
 
 describe('removeAt', () => {
@@ -60,6 +66,11 @@ describe('incrementAt', () => {
 		const before = [bowl(1), bowl(1)];
 		const after = incrementAt(before, 0);
 		expect(after.map((b) => b.quantity)).toEqual([2, 1]);
+	});
+
+	it('is a no-op once the bowl is at MAX_BOWL_QUANTITY', () => {
+		const before = [bowl(MAX_BOWL_QUANTITY)];
+		expect(incrementAt(before, 0)).toBe(before);
 	});
 });
 

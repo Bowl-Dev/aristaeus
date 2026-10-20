@@ -3,7 +3,8 @@ import { render } from '@testing-library/svelte';
 import { locale, waitLocale } from 'svelte-i18n';
 import MenuCard from '../MenuCard.svelte';
 import type { Menu, MenuIngredientItem } from '$lib/types';
-import { bowlBasePrice, roundToNearestCoin, formatCOP } from '$lib/utils/bowl';
+import { bowlBasePrice, formatCOP } from '$lib/utils/bowl';
+import { roundToNearestCoin } from '$lib/types';
 
 const makeItem = (overrides: Partial<MenuIngredientItem> = {}): MenuIngredientItem => ({
 	ingredientId: 1,

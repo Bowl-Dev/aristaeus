@@ -1,79 +1,16 @@
 /**
  * Orders API Handlers
  * GET /api/orders - List all orders (admin)
- * POST /api/orders - Create a new order
  * GET /api/orders/{id} - Get order details
  * PUT /api/orders/{orderId}/status - Update order status (admin API)
+ *
+ * Orders are created by POST /api/checkout (see checkout.ts).
  */
 
 import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
-import {
-	success,
-	created,
-	badRequest,
-	notFound,
-	serverError,
-	serviceUnavailable
-} from '../lib/response.js';
-import { calculateNutrition } from '../lib/nutrition.js';
-
-// Validation schemas
-const VALID_BOWL_SIZES = [250, 450, 600] as const;
-const MIN_QUANTITY_GRAMS = 5;
-
-// Colombian address validation schema
-const colombianAddressSchema = z.object({
-	streetAddress: z
-		.string()
-		.min(5, 'Street address must be at least 5 characters')
-		.max(200, 'Street address cannot exceed 200 characters'),
-	neighborhood: z
-		.string()
-		.min(2, 'Neighborhood must be at least 2 characters')
-		.max(100, 'Neighborhood cannot exceed 100 characters'),
-	city: z
-		.string()
-		.min(2, 'City must be at least 2 characters')
-		.max(100, 'City cannot exceed 100 characters'),
-	department: z
-		.string()
-		.min(2, 'Department must be at least 2 characters')
-		.max(100, 'Department cannot exceed 100 characters'),
-	postalCode: z
-		.string()
-		.regex(/^[0-9]{6}$/, 'Postal code must be exactly 6 digits')
-		.optional()
-});
-
-// Customer information validation schema
-const customerSchema = z.object({
-	name: z.string().min(1, 'Name is required').max(100, 'Name cannot exceed 100 characters'),
-	phone: z
-		.string()
-		.regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format. Use +57XXXXXXXXXX or 10 digits'),
-	email: z.string().email('Invalid email format').max(255).optional(),
-	address: colombianAddressSchema
-});
-
-const createOrderSchema = z.object({
-	bowlSize: z.number().refine((val) => VALID_BOWL_SIZES.includes(val as 250 | 450 | 600), {
-		message: 'Bowl size must be 250, 450, or 600 grams'
-	}),
-	customer: customerSchema,
-	items: z
-		.array(
-			z.object({
-				ingredientId: z.number().int().positive(),
-				quantityGrams: z.number().min(MIN_QUANTITY_GRAMS)
-			})
-		)
-		.min(1, 'Order must contain at least one item'),
-	includeCutlery: z.boolean().optional().default(false),
-	updateUserData: z.boolean().optional().default(false),
-	deliveryInstructions: z.string().max(500).optional()
-});
+import { success, badRequest, notFound, serverError } from '../lib/response.js';
 
 const adminUpdateStatusSchema = z.object({
 	status: z.enum([
@@ -87,171 +24,6 @@ const adminUpdateStatusSchema = z.object({
 		'failed'
 	])
 });
-
-/**
- * POST /api/orders
- * Creates a new bowl order
- */
-export const createOrder: APIGatewayProxyHandler = async (event) => {
-	try {
-		// Service pause guard: reject new orders when the store is paused.
-		// Fail open — if the config read throws, log and continue with order creation.
-		try {
-			const storeConfig = await prisma.storeConfig.findFirst();
-			if (storeConfig?.ordersPaused === true) {
-				return serviceUnavailable('ordersPaused');
-			}
-		} catch (configError) {
-			console.error('Error reading store config (failing open):', configError);
-		}
-
-		if (!event.body) {
-			return badRequest('Request body is required');
-		}
-
-		const body = JSON.parse(event.body);
-		const parseResult = createOrderSchema.safeParse(body);
-
-		if (!parseResult.success) {
-			return badRequest('Validation failed', parseResult.error.flatten());
-		}
-
-		const { bowlSize, customer, items, includeCutlery, updateUserData, deliveryInstructions } =
-			parseResult.data;
-
-		// Fetch all ingredients for validation and calculation
-		const ingredientIds = items.map((item) => item.ingredientId);
-		const ingredients = await prisma.ingredient.findMany({
-			where: {
-				id: { in: ingredientIds },
-				available: true
-			}
-		});
-
-		// Validate all ingredients exist and are available
-		if (ingredients.length !== ingredientIds.length) {
-			const foundIds = new Set(ingredients.map((i) => i.id));
-			const missingIds = ingredientIds.filter((id) => !foundIds.has(id));
-			return badRequest(`Ingredients not found or unavailable: ${missingIds.join(', ')}`);
-		}
-
-		// Create ingredient map for calculations
-		const ingredientMap = new Map(ingredients.map((i) => [i.id, i]));
-
-		// Calculate nutritional summary (server-side validation)
-		const nutrition = calculateNutrition(items, ingredientMap, bowlSize as 250 | 450 | 600);
-
-		// Validate total weight doesn't exceed bowl size
-		if (nutrition.totalWeightG > bowlSize) {
-			return badRequest(
-				`Total weight (${nutrition.totalWeightG}g) exceeds bowl capacity (${bowlSize}g)`
-			);
-		}
-
-		// Create order with user and items in a transaction
-		const order = await prisma.$transaction(async (tx) => {
-			// Find existing user by phone number
-			let user = await tx.user.findUnique({
-				where: { phone: customer.phone }
-			});
-
-			if (user) {
-				// User exists - only update name/email if explicitly requested
-				if (updateUserData) {
-					user = await tx.user.update({
-						where: { phone: customer.phone },
-						data: {
-							name: customer.name,
-							email: customer.email ?? null
-						}
-					});
-				}
-				// Otherwise, use existing user data without updating
-			} else {
-				// Create new user
-				user = await tx.user.create({
-					data: {
-						name: customer.name,
-						phone: customer.phone,
-						email: customer.email ?? null
-					}
-				});
-			}
-
-			// Find-or-create the address for this user. Identical addresses dedupe;
-			// distinct ones accumulate (multiple addresses per user).
-			const postalCode = customer.address.postalCode ?? null;
-			let address = await tx.address.findFirst({
-				where: {
-					userId: user.id,
-					streetAddress: customer.address.streetAddress,
-					neighborhood: customer.address.neighborhood,
-					city: customer.address.city,
-					department: customer.address.department,
-					postalCode
-				}
-			});
-
-			if (!address) {
-				address = await tx.address.create({
-					data: {
-						userId: user.id,
-						streetAddress: customer.address.streetAddress,
-						neighborhood: customer.address.neighborhood,
-						city: customer.address.city,
-						department: customer.address.department,
-						postalCode
-					}
-				});
-			}
-
-			// Create the order linked to user, with the delivery address snapshot
-			const newOrder = await tx.order.create({
-				data: {
-					userId: user.id,
-					addressId: address.id,
-					deliveryStreetAddress: address.streetAddress,
-					deliveryNeighborhood: address.neighborhood,
-					deliveryCity: address.city,
-					deliveryDepartment: address.department,
-					deliveryPostalCode: address.postalCode,
-					deliveryInstructions: deliveryInstructions ?? null,
-					bowlSize,
-					status: 'pending',
-					includeCutlery,
-					totalCalories: nutrition.totalCalories,
-					totalProteinG: nutrition.totalProteinG,
-					totalCarbsG: nutrition.totalCarbsG,
-					totalFatG: nutrition.totalFatG,
-					totalFiberG: nutrition.totalFiberG,
-					totalWeightG: nutrition.totalWeightG,
-					totalPrice: nutrition.totalPrice
-				}
-			});
-
-			// Create order items
-			await tx.orderItem.createMany({
-				data: items.map((item, index) => ({
-					orderId: newOrder.id,
-					ingredientId: item.ingredientId,
-					quantityGrams: item.quantityGrams,
-					sequenceOrder: index + 1
-				}))
-			});
-
-			return newOrder;
-		});
-
-		return created({
-			orderId: order.id,
-			status: order.status,
-			createdAt: order.createdAt.toISOString()
-		});
-	} catch (error) {
-		console.error('Error creating order:', error);
-		return serverError('Failed to create order');
-	}
-};
 
 /**
  * GET /api/orders/{id}
@@ -351,6 +123,7 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 			where,
 			include: {
 				user: true,
+				checkout: { select: { orderNumber: true } },
 				items: {
 					include: {
 						ingredient: {
@@ -368,6 +141,7 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 		return success({
 			orders: orders.map((order) => ({
 				id: order.id,
+				orderNumber: order.checkout?.orderNumber ?? null,
 				bowlSize: order.bowlSize,
 				includeCutlery: order.includeCutlery,
 				user: {

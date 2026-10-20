@@ -40,11 +40,6 @@
 			"note": "+$300"
 		}
 	},
-	"thnks": {
-		"title": "Thank you for choosing us!",
-		"message": "We're already preparing your bowl with great care. We'll message you on WhatsApp shortly to confirm the final price, including shipping, and process payment.",
-		"dismiss": "Got it"
-	},
 	"pause": {
 		"title": "We're cooking up something amazing.",
 		"body": [
@@ -237,6 +232,7 @@
 		},
 		"actions": {
 			"createAnother": "Create another bowl",
+			"full": "Up to {max} different bowls per order",
 			"proceedToDelivery": "Continue to delivery — {price}"
 		}
 	},
@@ -264,22 +260,45 @@
 				"placeholder": "Street, number, apt"
 			},
 			"instructions": {
-				"label": "Delivery Instructions or Coupons (Optional)",
+				"label": "Delivery Instructions (Optional)",
 				"placeholder": "Additional references, special instructions..."
 			}
 		},
 		"summary": {
 			"title": "Order Summary",
-			"shippingNote": "Shipping cost is calculated once the order is confirmed, based on distance. This information will be communicated during the payment process."
+			"subtotal": "Subtotal",
+			"shipping": "Delivery fee",
+			"service": "Service fee",
+			"total": "Total",
+			"addressHint": "Enter your address",
+			"quoting": "Calculating…",
+			"free": "Free"
 		},
-		"confirm": "Confirm Order — {price}",
-		"confirming": "Sending...",
+		"confirm": "Place order – {price}",
+		"confirming": "Placing order…",
 		"error": "Something went wrong sending your order. Check your connection and try again.",
-		"partialError": "{failed} of {total} orders failed: {reason}",
 		"errors": {
 			"nameRequired": "Please enter your name",
 			"phoneInvalid": "Phone must be 10 digits",
-			"addressRequired": "Please enter a delivery address"
+			"addressRequired": "Please enter a delivery address",
+			"quoteFailed": "We couldn't calculate your order total. Please try again.",
+			"ordersPaused": "We're not taking orders right now. Come back soon!"
+		},
+		"confirmNoPrice": "Place order",
+		"feeInfo": {
+			"open": "More about the delivery fee",
+			"note": "🛵 The delivery fee is calculated from your delivery zone and may differ from the courier's price.",
+			"learnMore": "Learn more",
+			"title": "Why might the delivery fee be different? 🛵",
+			"p1": "At alGramo we calculate your delivery fee from the area of Bogotá you're in, using an average of our delivery partners' rates as a reference.",
+			"p2": "We work with external couriers such as Yango, whose prices can change with demand, availability and other factors.",
+			"p3": "So when you track your order, you might see a different amount from what you paid at alGramo, either higher or lower.",
+			"calloutTitle": "What happens to the difference?",
+			"calloutBefore": "The amount you paid at checkout ",
+			"calloutBold": "does not change",
+			"calloutAfter": ". If the courier charges more, alGramo covers the difference. If it charges less, the rate you accepted when placing your order stays the same.",
+			"closing": "💚 This way you know what you'll pay from the start, with no surprises or extra charges when the courier's rate changes!",
+			"ok": "Got it"
 		}
 	},
 	"admin": {
@@ -436,7 +455,12 @@
 				"active": "Active",
 				"submit": "Create coupon",
 				"saving": "Creating…",
-				"saved": "Coupon {code} created."
+				"saved": "Coupon {code} created.",
+				"editTitle": "Edit coupon {code}",
+				"update": "Save changes",
+				"cancel": "Cancel",
+				"updated": "Coupon {code} updated.",
+				"lockedHint": "This coupon has been used: its code, type and value can no longer change."
 			},
 			"list": {
 				"title": "Campaigns",
@@ -448,8 +472,28 @@
 				"budget": "Budget left",
 				"status": "Status",
 				"minBowls": "Min {count} bowls.",
-				"firstOnly": "First purchase only."
-			}
+				"firstOnly": "First purchase only.",
+				"activate": "Activate",
+				"deactivate": "Deactivate",
+				"redemptions": "Redemptions",
+				"edit": "Edit",
+				"delete": "Delete",
+				"confirmDelete": "Delete coupon {code}? This cannot be undone."
+			},
+			"auth": {
+				"title": "Admin access",
+				"label": "Admin token",
+				"submit": "Sign in",
+				"invalid": "Invalid token. Please try again.",
+				"signOut": "Sign out"
+			},
+			"toggleFailed": "Couldn't change the coupon's status.",
+			"errors": {
+				"coupon_in_use": "This coupon has been used: it can't be deleted, and its code, type and value can't change.",
+				"coupon_code_taken": "A coupon with that code already exists.",
+				"budget_below_redeemed": "The budget can't be lower than what has already been redeemed."
+			},
+			"deleteFailed": "Could not delete the coupon."
 		}
 	},
 	"footer": {
@@ -530,6 +574,49 @@
 			"errorNotFound": "We could not find an account associated with this phone number.",
 			"warning": "Warning: This action is permanent and will delete all your data, including order history.",
 			"backToPrivacy": "Back to Privacy Policy"
+		}
+	},
+	"coupon": {
+		"label": "Discount Coupon",
+		"placeholder": "Enter your coupon",
+		"apply": "Apply",
+		"applying": "Applying…",
+		"needsAddress": "Enter your delivery address to apply the coupon.",
+		"applied": {
+			"percent": "Coupon applied! {value}% off",
+			"fixed": "Coupon applied! {amount} off",
+			"free_shipping": "Coupon applied! Free delivery"
+		},
+		"row": {
+			"percent": "Discount {value}%",
+			"fixed": "Discount",
+			"free_shipping": "Free delivery"
+		},
+		"reason": {
+			"not_found": "Coupon not found",
+			"expired": "Coupon expired",
+			"not_first_purchase": "This coupon only applies to your first purchase",
+			"min_bowls": "You need to buy at least {count} bowls to use this coupon",
+			"inactive": "This coupon is no longer available",
+			"not_started": "This coupon is no longer available",
+			"budget_exhausted": "This coupon is no longer available"
+		}
+	},
+	"order": {
+		"number": "Order number",
+		"status": "Status",
+		"eta": "Estimated time",
+		"home": "Back to home",
+		"received": {
+			"eyebrow": "Order received",
+			"title": "Thanks for your order!",
+			"message": "We're preparing your bowl with great care. We'll let you know as soon as it's ready.",
+			"status": "Received"
+		},
+		"notFound": {
+			"eyebrow": "Order not found",
+			"title": "We couldn't find your order",
+			"message": "The link is invalid or the order doesn't exist. If you already placed your order, message us and we'll look into it."
 		}
 	}
 }

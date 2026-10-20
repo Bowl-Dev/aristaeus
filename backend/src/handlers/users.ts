@@ -9,7 +9,10 @@ import prisma from '../lib/db.js';
 import { success, badRequest, notFound, serverError } from '../lib/response.js';
 
 const checkPhoneSchema = z.object({
-	phone: z.string().regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format')
+	phone: z
+		.string()
+		.regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format')
+		.transform((phone) => phone.slice(-10))
 });
 
 /**
@@ -78,7 +81,10 @@ export const checkPhone: APIGatewayProxyHandler = async (event) => {
 };
 
 const deleteUserSchema = z.object({
-	phone: z.string().regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format')
+	phone: z
+		.string()
+		.regex(/^(\+57)?[0-9]{10}$/, 'Invalid Colombian phone format')
+		.transform((phone) => phone.slice(-10))
 });
 
 /**

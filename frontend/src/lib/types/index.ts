@@ -10,18 +10,40 @@ export type {
 	OrderStatus,
 	Order,
 	OrderItem,
-	CreateOrderRequest,
-	CreateOrderResponse,
-	OrderStatusResponse,
 	ColombianAddress,
 	User,
 	CustomerInfo,
 	Menu,
-	MenuIngredientItem
+	MenuIngredientItem,
+	AdminOrder,
+	AdminOrderItem,
+	ListOrdersParams,
+	PaginatedOrdersResponse,
+	CheckPhoneResponse,
+	CheckoutBowl,
+	CheckoutQuoteRequest,
+	CheckoutQuote,
+	AppliedCoupon,
+	CreateCheckoutRequest,
+	CreateCheckoutResponse,
+	CheckoutStatusResponse,
+	PaymentStatus,
+	CouponType,
+	CouponRejection,
+	CouponRecord,
+	CouponsResponse,
+	CreateCouponRequest,
+	UpdateCouponRequest
 } from '@aristaeus/shared';
 
-export { BOWL_SIZES } from '@aristaeus/shared';
-export { BOWL_SIZE_PRICES } from '@aristaeus/shared';
+export {
+	BOWL_SIZES,
+	BOWL_SIZE_PRICES,
+	CUTLERY_PRICE,
+	MAX_BOWL_QUANTITY,
+	MAX_CART_BOWLS,
+	roundToNearestCoin
+} from '@aristaeus/shared';
 
 // ponytail: BOWL_SIZE_LABELS and DRESSING_CONTAINER_GRAMS have no callers, and the
 // labels are untranslated English besides. Delete both when the size picker copy

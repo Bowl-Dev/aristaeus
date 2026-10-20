@@ -31,3 +31,10 @@ hosted_zone_name = "algramo.app"
 # Keep this false until the orders API has authentication.
 # The admin distribution still exists and answers on its CloudFront domain.
 admin_dns_enabled = false
+
+# ============================================
+# Coupon admin
+# ============================================
+
+# Value of the x-admin-token header for the coupon admin endpoints. Empty: 401.
+admin_token = ""
