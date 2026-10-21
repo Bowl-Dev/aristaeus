@@ -268,7 +268,6 @@
 			"title": "Resumen del Pedido",
 			"subtotal": "Subtotal",
 			"shipping": "Costo de envío",
-			"service": "Tarifa de servicio",
 			"total": "Total",
 			"addressHint": "Ingresa tu dirección",
 			"quoting": "Calculando…",

@@ -187,7 +187,7 @@ aristaeus/
   - `DELETE /api/users` - delete user data (Law 1581 compliance)
 - **Checkout** (2026-10-15; Wompi in-app payment is parked on branch `feat/wompi-payments`)
   - One `Checkout` per cart owns N orders, created straight as `pending` (`paymentStatus = 'not_required'`)
-  - `POST /api/checkout/quote` is the only place checkout money is computed (delivery fee = the estimator's point estimate, coupon discount, service fee 800 + 3%)
+  - `POST /api/checkout/quote` is the only place checkout money is computed (delivery fee = the estimator's point estimate, coupon discount; service fee off since 2026-10-21, `serviceFee` is always 0)
   - The customer sees one delivery fee plus an ⓘ disclaimer sheet: if the courier charges more, alGramo absorbs it
   - `/order?c=<checkoutId>` shows the received order (AG-#### order number)
 - **Coupons** (`percent`, `fixed`, `free_shipping`) — APLICAR on the delivery screen, `/admin/coupons` to create/edit/toggle/delete; budget decremented atomically when the checkout is created (no refund on admin cancel)
