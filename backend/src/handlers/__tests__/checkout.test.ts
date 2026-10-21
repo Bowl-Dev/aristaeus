@@ -83,16 +83,15 @@ describe('checkout handlers', () => {
 
 		const response = await call(quoteCheckout, { ...request, couponCode: 'hola10' });
 
-		// subtotal 23000, discount 2300, fee 800 + 3% of 24700 = 1541 -> 1500
+		// subtotal 23000, discount 2300, no service fee
 		expect(response.statusCode).toBe(200);
 		expect(response.json).toEqual({
 			subtotal: 23000,
 			deliveryFee: 4000,
 			discount: 2300,
-			serviceFee: 1500,
-			total: 26200,
-			// without the coupon: 23000 + 4000 + fee (800 + 3% of 27000 = 1610 -> 1600)
-			totalBeforeDiscount: 28600,
+			serviceFee: 0,
+			total: 24700,
+			totalBeforeDiscount: 27000,
 			coupon: { code: 'HOLA10', type: 'percent', value: 10 },
 			couponRejection: null
 		});
@@ -197,12 +196,11 @@ describe('checkout handlers', () => {
 
 		const response = await call(quoteCheckout, { ...request, couponCode: 'HOLA10' });
 
-		// The struck-through total is not total + discount: the service fee shrinks with the discount.
 		expect(response.json).toMatchObject({
 			deliveryFee: 4000,
 			discount: 4000,
-			total: 24500,
-			totalBeforeDiscount: 28600
+			total: 23000,
+			totalBeforeDiscount: 27000
 		});
 	});
 
@@ -249,7 +247,7 @@ describe('checkout handlers', () => {
 
 		expect(response.statusCode).toBe(201);
 		expect(response.json).toEqual({ checkoutId, orderNumber: 1000 });
-		// 23000 + delivery 4000 - discount 2300 + fee (800 + 3% of 24700 = 1541 -> 1500) = 26200
+		// 23000 + delivery 4000 - discount 2300 = 24700
 		expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { phone: '3001234567' } });
 		expect(prisma.coupon.updateMany).toHaveBeenCalledTimes(1);
 		expect(prisma.coupon.updateMany).toHaveBeenCalledWith({
@@ -258,7 +256,7 @@ describe('checkout handlers', () => {
 		});
 		expect(vi.mocked(prisma.checkout.create).mock.calls[0][0].data).toMatchObject({
 			id: checkoutId,
-			total: 26200,
+			total: 24700,
 			couponId: 7,
 			paymentStatus: 'not_required'
 		});

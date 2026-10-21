@@ -32,9 +32,8 @@ describe('pricing', () => {
 		expect(computeDiscount({ type: 'free_shipping', value: null }, 23500, 4000)).toBe(4000);
 	});
 
-	it('charges 800 + 3% service fee on the discounted amount', () => {
-		// 800 + 0.03 * (20000 + 4000 - 2000) = 1460 -> 1500
-		expect(computeTotals(20000, 4000, 2000)).toEqual({ serviceFee: 1500, total: 23500 });
-		expect(computeTotals(0, 0, 0)).toEqual({ serviceFee: 800, total: 800 });
+	it('charges no service fee', () => {
+		expect(computeTotals(20000, 4000, 2000)).toEqual({ serviceFee: 0, total: 22000 });
+		expect(computeTotals(0, 0, 0)).toEqual({ serviceFee: 0, total: 0 });
 	});
 });

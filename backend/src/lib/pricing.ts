@@ -13,10 +13,6 @@ import {
 } from '@aristaeus/shared';
 import { calculateNutrition, type NutritionalSummary } from './nutrition.js';
 
-/** Covers the payment processor: 800 COP + 3% of what the customer pays for. */
-const SERVICE_FEE_BASE = 800;
-const SERVICE_FEE_RATE = 0.03;
-
 /** One bowl's nutrition and its unit price, cutlery included. */
 export function priceBowl(
 	bowl: CheckoutBowl,
@@ -46,9 +42,9 @@ export function computeDiscount(
 	}
 }
 
+// ponytail: service fee switched off (2026-10-21 hotfix) while there is no payment processor to cover.
+// Was roundToNearestCoin(800 + 0.03 * (subtotal + deliveryFee - discount)); restore it with Wompi.
 export function computeTotals(subtotal: number, deliveryFee: number, discount: number) {
-	const serviceFee = roundToNearestCoin(
-		SERVICE_FEE_BASE + SERVICE_FEE_RATE * (subtotal + deliveryFee - discount)
-	);
+	const serviceFee = 0;
 	return { serviceFee, total: subtotal + deliveryFee - discount + serviceFee };
 }

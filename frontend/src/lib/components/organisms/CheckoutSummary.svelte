@@ -109,14 +109,6 @@
 				</button>
 			</p>
 		{/if}
-		<div class="flex items-center justify-between">
-			<span class="text-sm text-text-muted">{$_('delivery.summary.service')}</span>
-			{#if quote}
-				<span class="text-sm font-semibold text-text-black">{formatCOP(quote.serviceFee)}</span>
-			{:else}
-				<span class="text-xs text-text-muted">{hint}</span>
-			{/if}
-		</div>
 	</div>
 
 	<div class="mt-1 flex items-end justify-between border-t border-strokes pt-3">
