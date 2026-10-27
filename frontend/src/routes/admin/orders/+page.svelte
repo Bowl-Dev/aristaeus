@@ -11,6 +11,7 @@
 	import { generateLabel } from '$lib/utils/labelGenerator';
 	import { _ } from 'svelte-i18n';
 	import { CATEGORY_ORDER } from '$lib/constants';
+	import { formatCOP } from '$lib/utils/bowl';
 
 	// State
 	let orders = $state<AdminOrder[]>([]);
@@ -386,9 +387,25 @@
 									<span class="font-medium text-xs">{formatDate(order.createdAt)}</span>
 								</div>
 								<div class="flex justify-between col-span-2 border-t border-gray-200 pt-2 mt-1">
-									<span class="text-gray-500">Price:</span>
-									<span class="font-bold text-gray-900">${order.totalPrice} COP</span>
+									<span class="text-gray-500">{$_('admin.price.bowl')}</span>
+									<span class="font-medium">{formatCOP(order.totalPrice)}</span>
 								</div>
+								{#if order.deliveryFee !== null}
+									<div class="flex justify-between col-span-2">
+										<span class="text-gray-500">{$_('admin.price.delivery')}</span>
+										<span class="font-medium">{formatCOP(order.deliveryFee)}</span>
+									</div>
+									{#if order.discount}
+										<div class="flex justify-between col-span-2">
+											<span class="text-gray-500">{$_('admin.price.discount')}</span>
+											<span class="font-medium">−{formatCOP(order.discount)}</span>
+										</div>
+									{/if}
+									<div class="flex justify-between col-span-2 border-t border-gray-200 pt-2">
+										<span class="font-semibold text-gray-900">{$_('admin.price.amountDue')}</span>
+										<span class="font-bold text-gray-900">{formatCOP(order.amountDue)}</span>
+									</div>
+								{/if}
 							</div>
 						</div>
 
