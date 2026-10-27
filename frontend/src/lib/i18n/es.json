@@ -301,6 +301,12 @@
 		}
 	},
 	"admin": {
+		"price": {
+			"bowl": "Bowl",
+			"delivery": "Domicilio",
+			"discount": "Descuento",
+			"amountDue": "Total a cobrar"
+		},
 		"printLabel": "Imprimir Etiqueta",
 		"generatingLabel": "Generando...",
 		"hub": {

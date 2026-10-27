@@ -211,6 +211,12 @@ export interface AdminOrder {
 	totalFatG: number;
 	totalFiberG: number;
 	totalPrice: number;
+	/** Checkout delivery fee on the checkout's first bowl, 0 on the rest; null without a checkout. */
+	deliveryFee: number | null;
+	/** Checkout discount, split like deliveryFee. */
+	discount: number | null;
+	/** What to charge for this bowl: totalPrice + deliveryFee - discount. Sums to checkout.total. */
+	amountDue: number;
 	createdAt: string;
 	assignedAt: string | null;
 	startedAt: string | null;
