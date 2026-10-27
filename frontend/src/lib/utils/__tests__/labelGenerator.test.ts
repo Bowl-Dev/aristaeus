@@ -19,7 +19,7 @@ function item(
 }
 
 describe('buildIngredientList', () => {
-	it('orders ingredients by category: base, vegetable, protein, topping, dressing', () => {
+	it('orders ingredients by category: base, protein, vegetable, topping, dressing', () => {
 		// Deliberately supplied in robot assembly order, which differs from display order
 		const items = [
 			item('Salsa', 'dressing', 1),
@@ -30,7 +30,7 @@ describe('buildIngredientList', () => {
 		];
 
 		expect(buildIngredientList(items)).toBe(
-			'Arroz 100g, Lechuga 100g, Pollo 100g, Ajonjolí 100g y Salsa 100g.'
+			'Arroz 100g, Pollo 100g, Lechuga 100g, Ajonjolí 100g y Salsa 100g.'
 		);
 	});
 
