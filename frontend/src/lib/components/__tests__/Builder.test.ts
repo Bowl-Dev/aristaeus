@@ -166,7 +166,7 @@ describe('Builder', () => {
 		expect(container.textContent).toContain('Grande');
 	});
 
-	it('renders category accordions as Base → Vegetales → Proteína (ENG-4)', () => {
+	it('renders category accordions as Base → Proteína → Vegetales (ENG-105)', () => {
 		// Deliberately out of display order to prove the ordering is applied
 		const { container } = render(Builder, {
 			props: { ...makeProps(), ingredients: [chicken, lettuce, rice] }
@@ -174,7 +174,7 @@ describe('Builder', () => {
 		const headings = Array.from(container.querySelectorAll('button'))
 			.map((b) => (b.textContent ?? '').trim())
 			.filter((t) => ['Base', 'Vegetales', 'Proteína'].some((c) => t.startsWith(c)));
-		expect(headings.map((t) => t.split(/\s+/)[0])).toEqual(['Base', 'Vegetales', 'Proteína']);
+		expect(headings.map((t) => t.split(/\s+/)[0])).toEqual(['Base', 'Proteína', 'Vegetales']);
 	});
 
 	it('shows the loading state when loading is true', () => {
