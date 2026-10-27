@@ -20,16 +20,16 @@
 	{#snippet children(dismiss: () => void)}
 		<div class="grid grid-cols-2 gap-[0.875rem]">
 			<OptionCard
-				iconSrc={`${base}/BuildBowl.png`}
-				iconAlt={$_('landing.modal.fromScratch')}
-				label={$_('landing.modal.fromScratch')}
-				onclick={onFromScratch}
-			/>
-			<OptionCard
 				iconSrc={`${base}/Menu.png`}
 				iconAlt={$_('landing.modal.menuIdeas')}
 				label={$_('landing.modal.menuIdeas')}
 				onclick={onMenu}
+			/>
+			<OptionCard
+				iconSrc={`${base}/BuildBowl.png`}
+				iconAlt={$_('landing.modal.fromScratch')}
+				label={$_('landing.modal.fromScratch')}
+				onclick={onFromScratch}
 			/>
 		</div>
 

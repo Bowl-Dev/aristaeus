@@ -60,7 +60,7 @@
 	class="flex flex-col overflow-hidden rounded-2xl bg-pure-white shadow-[0_1px_4px_rgba(0,0,0,0.06),0_2px_12px_rgba(0,0,0,0.04)]"
 >
 	<!-- Image -->
-	<div class="aspect-[2/1] w-full overflow-hidden bg-accent-gray">
+	<div class="aspect-[320/274] w-full overflow-hidden bg-accent-gray">
 		{#if imageFailed}
 			<div class="flex h-full w-full items-center justify-center bg-accent-gray text-text-muted">
 				<svg
@@ -90,10 +90,11 @@
 	</div>
 
 	<!-- Body -->
-	<div class="flex flex-col items-center justify-center gap-4 px-6 py-4">
-		<div class="flex flex-col items-start gap-4 self-stretch">
-			<Heading level={3} uppercase extraClass="text-[18px] tracking-[0.9px]">{name}</Heading>
-			<p class="m-0 text-base leading-[1.625] text-text-muted">{description}</p>
+	<div class="flex flex-col items-center justify-center gap-2 px-6 pb-4 pt-2">
+		<div class="flex flex-col items-start gap-[3px] self-stretch">
+			<Heading level={3} uppercase extraClass="text-base leading-7 tracking-[0.9px]">{name}</Heading
+			>
+			<p class="m-0 line-clamp-3 text-[13px] leading-[19px] text-text-muted">{description}</p>
 		</div>
 
 		<NutritionalInfo
@@ -104,10 +105,10 @@
 		/>
 
 		<div class="flex items-center justify-between self-stretch">
-			<span class="text-sm font-medium uppercase tracking-[0.5px] text-text-muted">
+			<span class="text-xs font-medium uppercase tracking-[0.5px] text-text-muted">
 				{$_('menu.card.price')}
 			</span>
-			<span class="text-[18px] font-bold text-dark-green">{formatCOP(totalPrice)}</span>
+			<span class="text-base font-bold text-dark-green">{formatCOP(totalPrice)}</span>
 		</div>
 
 		<Button
