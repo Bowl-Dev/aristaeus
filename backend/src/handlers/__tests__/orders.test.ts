@@ -69,4 +69,25 @@ describe('listOrders price breakdown', () => {
 		const [row] = await list([order(1, 20000, null)]);
 		expect(row).toMatchObject({ deliveryFee: null, discount: null, amountDue: 20000 });
 	});
+
+	it('includes the pickup point and date for pickup checkouts', async () => {
+		const pickup = {
+			orderNumber: 1002,
+			deliveryFee: 0,
+			discount: 0,
+			orders: [{ id: 21 }],
+			pickupDate: new Date('2026-11-02'),
+			pickupPoint: { name: 'UNAL', location: 'Facultad de Medicina' }
+		};
+		const [pickupRow, deliveryRow] = await list([
+			order(21, 20000, pickup),
+			order(22, 20000, { orderNumber: 1003, deliveryFee: 0, discount: 0, orders: [] })
+		]);
+		expect(pickupRow.pickup).toEqual({
+			name: 'UNAL',
+			location: 'Facultad de Medicina',
+			date: '2026-11-02'
+		});
+		expect(deliveryRow.pickup).toBeNull();
+	});
 });

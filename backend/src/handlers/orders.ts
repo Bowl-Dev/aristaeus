@@ -11,6 +11,7 @@ import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
 import { success, badRequest, notFound, serverError } from '../lib/response.js';
+import { toDateString } from '../lib/pickup.js';
 
 const adminUpdateStatusSchema = z.object({
 	status: z.enum([
@@ -128,6 +129,8 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 						orderNumber: true,
 						deliveryFee: true,
 						discount: true,
+						pickupDate: true,
+						pickupPoint: { select: { name: true, location: true } },
 						// The checkout's first bowl carries its delivery fee and discount
 						orders: {
 							select: { id: true },
@@ -156,6 +159,8 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 				const isFirstBowl = order.checkout?.orders[0]?.id === order.id;
 				const deliveryFee = order.checkout ? (isFirstBowl ? order.checkout.deliveryFee : 0) : null;
 				const discount = order.checkout ? (isFirstBowl ? order.checkout.discount : 0) : null;
+				const pickupPoint = order.checkout?.pickupPoint;
+				const pickupDate = order.checkout?.pickupDate;
 				return {
 					id: order.id,
 					orderNumber: order.checkout?.orderNumber ?? null,
@@ -194,6 +199,14 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 					deliveryFee,
 					discount,
 					amountDue: totalPrice + (deliveryFee ?? 0) - (discount ?? 0),
+					pickup:
+						pickupPoint && pickupDate
+							? {
+									name: pickupPoint.name,
+									location: pickupPoint.location,
+									date: toDateString(pickupDate)
+								}
+							: null,
 					createdAt: order.createdAt.toISOString(),
 					assignedAt: order.assignedAt?.toISOString() ?? null,
 					startedAt: order.startedAt?.toISOString() ?? null,

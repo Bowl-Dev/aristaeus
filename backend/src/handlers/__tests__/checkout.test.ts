@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { Prisma } from '@prisma/client';
 
@@ -11,6 +11,7 @@ vi.mock('../../lib/db.js', () => {
 		order: { count: vi.fn(), create: vi.fn() },
 		user: { findUnique: vi.fn(), create: vi.fn() },
 		address: { findFirst: vi.fn(), create: vi.fn() },
+		pickupPoint: { findUnique: vi.fn() },
 		$transaction: vi.fn()
 	};
 	db.$transaction.mockImplementation((fn: (tx: typeof db) => unknown) => fn(db));
@@ -47,6 +48,8 @@ const request = {
 	],
 	customer: { name: 'Ana', phone: '3001234567' }
 };
+const pickupRequest = { ...request, address: undefined, pickupPointId: 1 };
+const unal = { id: 1, name: 'UNAL', active: true };
 const coupon = {
 	id: 7,
 	code: 'HOLA10',
@@ -93,7 +96,8 @@ describe('checkout handlers', () => {
 			total: 24700,
 			totalBeforeDiscount: 27000,
 			coupon: { code: 'HOLA10', type: 'percent', value: 10 },
-			couponRejection: null
+			couponRejection: null,
+			pickupDate: null
 		});
 	});
 
@@ -266,6 +270,93 @@ describe('checkout handlers', () => {
 			checkoutId,
 			totalPrice: 11500,
 			includeCutlery: true
+		});
+	});
+
+	describe('pickup', () => {
+		beforeEach(() => {
+			vi.useFakeTimers({ toFake: ['Date'] });
+			vi.setSystemTime(new Date('2026-11-06T17:00:00Z')); // Friday noon in Bogotá
+			vi.mocked(prisma.pickupPoint.findUnique).mockResolvedValue(unal as never);
+		});
+		afterEach(() => vi.useRealTimers());
+
+		it('quotes a pickup cart with no delivery fee and the next weekday', async () => {
+			const response = await call(quoteCheckout, pickupRequest);
+
+			expect(response.statusCode).toBe(200);
+			expect(response.json).toMatchObject({
+				deliveryFee: 0,
+				total: 23000,
+				pickupDate: '2026-11-09'
+			});
+			expect(getDeliveryFee).not.toHaveBeenCalled();
+		});
+
+		it('requires exactly one of address or pickupPointId', async () => {
+			expect((await call(quoteCheckout, { ...request, pickupPointId: 1 })).statusCode).toBe(400);
+			expect((await call(quoteCheckout, { bowls: request.bowls })).statusCode).toBe(400);
+		});
+
+		it('rejects an unknown or inactive point with 400', async () => {
+			vi.mocked(prisma.pickupPoint.findUnique).mockResolvedValueOnce({
+				...unal,
+				active: false
+			} as never);
+			const inactive = await call(quoteCheckout, pickupRequest);
+			vi.mocked(prisma.pickupPoint.findUnique).mockResolvedValueOnce(null);
+			const unknown = await call(createCheckout, pickupRequest);
+
+			expect(inactive.statusCode).toBe(400);
+			expect(inactive.json).toMatchObject({ message: 'Pickup point not available' });
+			expect(unknown.statusCode).toBe(400);
+			expect(prisma.$transaction).not.toHaveBeenCalled();
+		});
+
+		it('rejects a free_shipping coupon on pickup', async () => {
+			vi.mocked(prisma.coupon.findUnique).mockResolvedValue({
+				...coupon,
+				type: 'free_shipping',
+				value: null
+			} as never);
+
+			const quote = await call(quoteCheckout, { ...pickupRequest, couponCode: 'HOLA10' });
+			const create = await call(createCheckout, { ...pickupRequest, couponCode: 'HOLA10' });
+
+			expect(quote.statusCode).toBe(200);
+			expect(quote.json).toMatchObject({
+				discount: 0,
+				coupon: null,
+				couponRejection: { reason: 'pickup_free_shipping' }
+			});
+			expect(create.statusCode).toBe(409);
+			expect(create.json).toMatchObject({ reason: 'pickup_free_shipping' });
+		});
+
+		it('creates a pickup checkout with no address', async () => {
+			vi.mocked(prisma.coupon.findUnique).mockResolvedValue(coupon as never);
+			vi.mocked(prisma.coupon.updateMany).mockResolvedValue({ count: 1 });
+			vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'u1' } as never);
+			vi.mocked(prisma.checkout.create).mockImplementation(
+				(args: { data: object }) => ({ orderNumber: 1000, ...args.data }) as never
+			);
+
+			const response = await call(createCheckout, { ...pickupRequest, couponCode: 'HOLA10' });
+
+			expect(response.statusCode).toBe(201);
+			expect(prisma.address.findFirst).not.toHaveBeenCalled();
+			expect(prisma.address.create).not.toHaveBeenCalled();
+			expect(vi.mocked(prisma.checkout.create).mock.calls[0][0].data).toMatchObject({
+				deliveryFee: 0,
+				discount: 2300,
+				total: 20700,
+				pickupPointId: 1,
+				pickupDate: new Date('2026-11-09')
+			});
+			expect(vi.mocked(prisma.order.create).mock.calls[0][0].data).toMatchObject({
+				addressId: null,
+				deliveryStreetAddress: null
+			});
 		});
 	});
 });

@@ -18,6 +18,7 @@ import { getIngredients } from './handlers/ingredients.js';
 import { getOrder, listOrders, adminUpdateOrderStatus } from './handlers/orders.js';
 import { quoteCheckout, createCheckout, getCheckout } from './handlers/checkout.js';
 import { listCoupons, createCoupon, updateCoupon, deleteCoupon } from './handlers/coupons.js';
+import { listPickupPoints, createPickupPoint, updatePickupPoint } from './handlers/pickupPoints.js';
 import { checkPhone, deleteUser } from './handlers/users.js';
 import { getMenus } from './handlers/menus.js';
 import { getConfig } from './handlers/config.js';
@@ -157,6 +158,14 @@ app.patch('/api/coupons/:id', wrapHandler(updateCoupon, ['id']));
 app.delete('/api/coupons/:id', wrapHandler(deleteCoupon, ['id']));
 
 // ============================================
+// Pickup points (list public; create/update admin, x-admin-token)
+// ============================================
+
+app.get('/api/pickup-points', wrapHandler(listPickupPoints));
+app.post('/api/pickup-points', wrapHandler(createPickupPoint));
+app.patch('/api/pickup-points/:id', wrapHandler(updatePickupPoint, ['id']));
+
+// ============================================
 // Delivery Cost Estimation (admin/ops)
 // ============================================
 
@@ -197,6 +206,9 @@ app.listen(PORT, () => {
 	console.log('  POST /api/coupons                 (admin, x-admin-token)');
 	console.log('  PATCH /api/coupons/:id            (admin, x-admin-token)');
 	console.log('  DELETE /api/coupons/:id           (admin, x-admin-token)');
+	console.log('  GET  /api/pickup-points');
+	console.log('  POST /api/pickup-points           (admin, x-admin-token)');
+	console.log('  PATCH /api/pickup-points/:id      (admin, x-admin-token)');
 	console.log('  POST /api/delivery/estimate       (ops)');
 	console.log('  GET  /api/delivery/observations   (ops)');
 	console.log('  POST /api/delivery/observations   (ops)');

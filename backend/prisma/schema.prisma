@@ -361,6 +361,11 @@ model Checkout {
   couponId      Int?      @map("coupon_id")
   coupon        Coupon?   @relation(fields: [couponId], references: [id])
 
+  // Both null = home delivery
+  pickupPointId Int?         @map("pickup_point_id")
+  pickupPoint   PickupPoint? @relation(fields: [pickupPointId], references: [id])
+  pickupDate    DateTime?    @map("pickup_date") @db.Date
+
   /// 'awaiting_payment' | 'paid' | 'payment_failed'
   paymentStatus String    @default("awaiting_payment") @map("payment_status") @db.VarChar(30)
   wompiTxId     String?   @map("wompi_tx_id") @db.VarChar(64)
@@ -374,5 +379,22 @@ model Checkout {
 
   @@index([userId])
   @@index([couponId, paymentStatus])
+  @@index([pickupPointId])
   @@map("checkouts")
+}
+
+/// Campus pickup point. Never deleted (checkouts reference it): deactivate instead.
+model PickupPoint {
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(100)
+  location     String     @db.VarChar(200)
+  /// Free text shown as-is, e.g. "Lunes a viernes, 11am – 2pm"
+  hours        String     @db.VarChar(100)
+  active       Boolean    @default(true)
+  displayOrder Int?       @map("display_order")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  checkouts    Checkout[]
+
+  @@map("pickup_points")
 }

@@ -33,6 +33,7 @@ import {
 import { priceBowl, computeTotals } from '../lib/pricing.js';
 import { getDeliveryFee } from '../lib/delivery/estimate.js';
 import { evaluateCoupon, reserveBudget } from '../lib/coupons.js';
+import { nextPickupDate, toDateString } from '../lib/pickup.js';
 
 const MIN_QUANTITY_GRAMS = 5;
 
@@ -56,20 +57,30 @@ const bowlSchema = z.object({
 	quantity: z.number().int().min(1).max(MAX_BOWL_QUANTITY)
 });
 
-const quoteSchema = z.object({
-	address: z.string().trim().min(5).max(200),
+const cartSchema = z.object({
+	address: z.string().trim().min(5).max(200).optional(),
+	pickupPointId: z.number().int().positive().optional(),
 	bowls: z.array(bowlSchema).min(1).max(MAX_CART_BOWLS),
 	couponCode: z.string().max(40).optional(),
 	phone: phoneSchema.optional()
 });
 
-const createSchema = quoteSchema.extend({
-	checkoutId: z.string().uuid(),
-	customer: z.object({ name: z.string().trim().min(1).max(100), phone: phoneSchema }),
-	deliveryInstructions: z.string().max(500).optional()
-});
+/** Home delivery (address) or campus pickup (pickupPointId), never both. */
+const oneDestination = (cart: { address?: string; pickupPointId?: number }) =>
+	(cart.address === undefined) !== (cart.pickupPointId === undefined);
+const destinationError = { message: 'Send exactly one of address or pickupPointId' };
 
-type Cart = z.infer<typeof quoteSchema>;
+const quoteSchema = cartSchema.refine(oneDestination, destinationError);
+
+const createSchema = cartSchema
+	.extend({
+		checkoutId: z.string().uuid(),
+		customer: z.object({ name: z.string().trim().min(1).max(100), phone: phoneSchema }),
+		deliveryInstructions: z.string().max(500).optional()
+	})
+	.refine(oneDestination, destinationError);
+
+type Cart = z.infer<typeof cartSchema>;
 
 /** Checkout takes a free-form Bogotá address; the structured fields get these. */
 const BOGOTA = { neighborhood: 'Bogotá', city: 'Bogotá', department: 'Bogotá D.C.' };
@@ -102,7 +113,16 @@ async function priceCart(cart: Cart, phone: string | undefined) {
 	}
 	const subtotal = bowls.reduce((sum, b) => sum + b.unitPrice * b.bowl.quantity, 0);
 
-	const deliveryFee = await getDeliveryFee(cart.address);
+	let pickupPointId: number | null = null;
+	let pickupDate: string | null = null;
+	if (cart.pickupPointId !== undefined) {
+		const point = await prisma.pickupPoint.findUnique({ where: { id: cart.pickupPointId } });
+		if (!point?.active) return badRequest('Pickup point not available');
+		pickupPointId = point.id;
+		pickupDate = nextPickupDate(new Date());
+	}
+
+	const deliveryFee = cart.address === undefined ? 0 : await getDeliveryFee(cart.address);
 
 	let coupon: Coupon | null = null;
 	let discount = 0;
@@ -114,8 +134,13 @@ async function priceCart(cart: Cart, phone: string | undefined) {
 			deliveryFee,
 			phone
 		});
-		if (evaluation.ok) ({ coupon, discount } = evaluation);
-		else couponRejection = { reason: evaluation.reason, minBowls: evaluation.minBowls };
+		if (!evaluation.ok) {
+			couponRejection = { reason: evaluation.reason, minBowls: evaluation.minBowls };
+		} else if (pickupPointId !== null && evaluation.coupon.type === 'free_shipping') {
+			couponRejection = { reason: 'pickup_free_shipping' };
+		} else {
+			({ coupon, discount } = evaluation);
+		}
 	}
 
 	const { serviceFee, total } = computeTotals(subtotal, deliveryFee, discount);
@@ -131,9 +156,10 @@ async function priceCart(cart: Cart, phone: string | undefined) {
 			type: coupon.type as CouponType,
 			value: coupon.value?.toNumber() ?? null
 		},
-		couponRejection
+		couponRejection,
+		pickupDate
 	};
-	return { quote, coupon, bowls };
+	return { quote, coupon, bowls, pickupPointId };
 }
 
 const isResponse = (value: object): value is APIGatewayProxyResult => 'statusCode' in value;
@@ -196,7 +222,7 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 
 		const priced = await priceCart(parseResult.data, customer.phone);
 		if (isResponse(priced)) return priced;
-		const { quote, coupon, bowls } = priced;
+		const { quote, coupon, bowls, pickupPointId } = priced;
 		if (quote.couponRejection) return conflict('coupon_rejected', quote.couponRejection);
 
 		let checkout;
@@ -209,11 +235,14 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 						user = await tx.user.create({ data: { name: customer.name, phone: customer.phone } });
 					}
 
-					const addressFields = { userId: user.id, streetAddress: address, ...BOGOTA };
-					let savedAddress = await tx.address.findFirst({
-						where: { ...addressFields, postalCode: null }
-					});
-					if (!savedAddress) savedAddress = await tx.address.create({ data: addressFields });
+					let savedAddress = null;
+					if (address !== undefined) {
+						const addressFields = { userId: user.id, streetAddress: address, ...BOGOTA };
+						savedAddress = await tx.address.findFirst({
+							where: { ...addressFields, postalCode: null }
+						});
+						if (!savedAddress) savedAddress = await tx.address.create({ data: addressFields });
+					}
 
 					if (
 						coupon &&
@@ -233,7 +262,9 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 							serviceFee: quote.serviceFee,
 							total: quote.total,
 							paymentStatus: 'not_required',
-							couponId: coupon?.id ?? null
+							couponId: coupon?.id ?? null,
+							pickupPointId,
+							pickupDate: quote.pickupDate && new Date(quote.pickupDate)
 						}
 					});
 
@@ -244,12 +275,12 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 								data: {
 									userId: user.id,
 									checkoutId: newCheckout.id,
-									addressId: savedAddress.id,
-									deliveryStreetAddress: savedAddress.streetAddress,
-									deliveryNeighborhood: savedAddress.neighborhood,
-									deliveryCity: savedAddress.city,
-									deliveryDepartment: savedAddress.department,
-									deliveryPostalCode: savedAddress.postalCode,
+									addressId: savedAddress?.id ?? null,
+									deliveryStreetAddress: savedAddress?.streetAddress ?? null,
+									deliveryNeighborhood: savedAddress?.neighborhood ?? null,
+									deliveryCity: savedAddress?.city ?? null,
+									deliveryDepartment: savedAddress?.department ?? null,
+									deliveryPostalCode: savedAddress?.postalCode ?? null,
 									deliveryInstructions: deliveryInstructions ?? null,
 									bowlSize: bowl.bowlSize,
 									status: 'pending',
@@ -307,14 +338,27 @@ export const getCheckout: APIGatewayProxyHandler = async (event) => {
 		const id = event.pathParameters?.id ?? '';
 		if (!z.string().uuid().safeParse(id).success) return notFound('Checkout not found');
 
-		const checkout = await prisma.checkout.findUnique({ where: { id } });
+		const checkout = await prisma.checkout.findUnique({
+			where: { id },
+			include: { pickupPoint: true }
+		});
 		if (!checkout) return notFound('Checkout not found');
+		const { pickupPoint, pickupDate } = checkout;
 
 		const response: CheckoutStatusResponse = {
 			checkoutId: checkout.id,
 			orderNumber: checkout.orderNumber,
 			paymentStatus: checkout.paymentStatus as PaymentStatus,
-			total: checkout.total
+			total: checkout.total,
+			pickup:
+				pickupPoint && pickupDate
+					? {
+							name: pickupPoint.name,
+							location: pickupPoint.location,
+							hours: pickupPoint.hours,
+							date: toDateString(pickupDate)
+						}
+					: null
 		};
 		return success(response);
 	} catch (error) {

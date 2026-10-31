@@ -217,6 +217,8 @@ export interface AdminOrder {
 	discount: number | null;
 	/** What to charge for this bowl: totalPrice + deliveryFee - discount. Sums to checkout.total. */
 	amountDue: number;
+	/** Set for pickup checkouts; date is YYYY-MM-DD. */
+	pickup: { name: string; location: string; date: string } | null;
 	createdAt: string;
 	assignedAt: string | null;
 	startedAt: string | null;
@@ -257,8 +259,10 @@ export interface CheckoutBowl {
 
 /** POST /api/checkout/quote — prices a cart. No writes. */
 export interface CheckoutQuoteRequest {
-	/** Free-form Bogotá address, e.g. "Calle 125 # 18A-05, Apto 302". */
-	address: string;
+	/** Home delivery: free-form Bogotá address, e.g. "Calle 125 # 18A-05, Apto 302". Exactly one of address | pickupPointId. */
+	address?: string;
+	/** Campus pickup. */
+	pickupPointId?: number;
 	bowls: CheckoutBowl[];
 	couponCode?: string;
 	/** Needed for first-purchase-only coupons. */
@@ -286,6 +290,8 @@ export interface CheckoutQuote {
 	coupon: AppliedCoupon | null;
 	/** Set when a couponCode was sent and did not apply. */
 	couponRejection: { reason: CouponRejection; minBowls?: number } | null;
+	/** YYYY-MM-DD pickup day (Bogotá) for pickup carts; null for delivery. */
+	pickupDate: string | null;
 }
 
 /** POST /api/checkout — creates the checkout + its orders. */
@@ -311,7 +317,27 @@ export interface CheckoutStatusResponse {
 	orderNumber: number;
 	paymentStatus: PaymentStatus;
 	total: number;
+	/** Set for pickup checkouts; date is YYYY-MM-DD. */
+	pickup: { name: string; location: string; hours: string; date: string } | null;
 }
+
+// ============================================
+// Pickup Point API Types
+// ============================================
+
+/** GET /api/pickup-points returns all of them, inactive included. */
+export interface PickupPoint {
+	id: number;
+	name: string;
+	location: string;
+	/** Free text shown as-is, e.g. "Lunes a viernes, 11am – 2pm". */
+	hours: string;
+	active: boolean;
+	displayOrder: number | null;
+}
+
+/** POST /api/pickup-points body; PATCH /api/pickup-points/{id} takes Partial<PickupPointInput>. */
+export type PickupPointInput = Omit<PickupPoint, 'id'>;
 
 // ============================================
 // Coupon API Types
@@ -328,7 +354,8 @@ export type CouponRejection =
 	| 'expired'
 	| 'budget_exhausted'
 	| 'not_first_purchase'
-	| 'min_bowls';
+	| 'min_bowls'
+	| 'pickup_free_shipping';
 
 export interface CouponRecord {
 	id: number;

@@ -6,12 +6,12 @@
  * DELETE /api/coupons/{id} - delete a coupon nobody has redeemed
  */
 
-import { createHash, timingSafeEqual } from 'node:crypto';
-import type { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
+import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { Prisma, type Coupon } from '@prisma/client';
 import { z } from 'zod';
 import type { CouponRecord, CouponsResponse, CouponType } from '@aristaeus/shared';
 import prisma from '../lib/db.js';
+import { isAdmin } from '../lib/admin.js';
 import {
 	success,
 	created,
@@ -86,18 +86,6 @@ function toCouponData(data: z.infer<typeof createCouponSchema>) {
 		firstPurchaseOnly: data.firstPurchaseOnly,
 		active: data.active
 	};
-}
-
-const digest = (text: string) => createHash('sha256').update(text).digest();
-
-/** Timing-safe; hashing first makes both sides the same length. */
-function isAdmin(event: APIGatewayProxyEvent): boolean {
-	const expected = process.env.ADMIN_TOKEN;
-	if (!expected) return false;
-	const header = Object.entries(event.headers ?? {}).find(
-		([name]) => name.toLowerCase() === 'x-admin-token'
-	)?.[1];
-	return typeof header === 'string' && timingSafeEqual(digest(header), digest(expected));
 }
 
 function toCouponRecord(coupon: CouponWithCount): CouponRecord {
