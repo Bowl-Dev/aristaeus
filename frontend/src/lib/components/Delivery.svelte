@@ -1,14 +1,9 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
-	import type {
-		Ingredient,
-		BowlSize,
-		CheckoutBowl,
-		CheckoutQuote,
-		CouponRejection
-	} from '$lib/types';
-	import { computeBowlTotals, bowlBasePrice, formatCOP } from '$lib/utils/bowl';
-	import { CUTLERY_PRICE, roundToNearestCoin } from '$lib/types';
+	import type { Ingredient, CheckoutQuote, CouponRejection } from '$lib/types';
+	import { formatCOP } from '$lib/utils/bowl';
+	import type { BowlSnapshot } from '$lib/utils/cart';
+	import { summaryLines, toCheckoutBowls, rejectionMessage } from '$lib/utils/checkout';
 	import { getCheckoutQuote, createCheckout, ApiError } from '$lib/api/client';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
@@ -16,13 +11,6 @@
 	import FormInput from './molecules/FormInput.svelte';
 	import CouponField from './molecules/CouponField.svelte';
 	import CheckoutSummary from './organisms/CheckoutSummary.svelte';
-
-	interface BowlSnapshot {
-		bowlSize: BowlSize;
-		items: Map<number, number>;
-		quantity: number;
-		includeCutlery: boolean;
-	}
 
 	interface Props {
 		ingredients: Ingredient[];
@@ -80,44 +68,9 @@
 		if (hasSubmitted) validate();
 	});
 
-	function sizeLabel(bowlSize: BowlSize) {
-		return bowlSize === 250
-			? $_('size.small')
-			: bowlSize === 450
-				? $_('size.medium')
-				: $_('size.large');
-	}
-
-	// Display-only unit prices; every amount below the bowl lines comes from the server quote.
-	function unitPrice(bowl: BowlSnapshot) {
-		const totals = computeBowlTotals(bowl.items, ingredients);
-		const cutlery = bowl.includeCutlery ? CUTLERY_PRICE : 0;
-		return roundToNearestCoin(bowlBasePrice(bowl.bowlSize) + totals.ingredientsPrice + cutlery);
-	}
-
-	const lines = $derived(
-		bowls.map((b, i) => ({
-			label: `${$_('cart.bowl.title', { values: { n: i + 1, size: sizeLabel(b.bowlSize) } })} × ${b.quantity}`,
-			amount: unitPrice(b) * b.quantity
-		}))
-	);
+	const lines = $derived(summaryLines(bowls, ingredients, $_));
 	const clientSubtotal = $derived(lines.reduce((acc, l) => acc + l.amount, 0));
-
-	const checkoutBowls = $derived<CheckoutBowl[]>(
-		bowls.map((b) => ({
-			bowlSize: b.bowlSize,
-			items: Array.from(b.items, ([ingredientId, quantityGrams]) => ({
-				ingredientId,
-				quantityGrams
-			})),
-			includeCutlery: b.includeCutlery,
-			quantity: b.quantity
-		}))
-	);
-
-	function rejectionMessage(r: { reason: CouponRejection; minBowls?: number }) {
-		return $_(`coupon.reason.${r.reason}`, { values: { count: r.minBowls ?? 0 } });
-	}
+	const checkoutBowls = $derived(toCheckoutBowls(bowls));
 
 	const isApiError = (e: unknown, status: number, message: string) =>
 		e instanceof ApiError && e.status === status && e.message === message;
@@ -142,7 +95,7 @@
 			quotedAddress = address;
 			formError = null;
 			if (q.couponRejection) {
-				couponError = rejectionMessage(q.couponRejection);
+				couponError = rejectionMessage(q.couponRejection, $_);
 				couponCode = null;
 			}
 		} catch {
@@ -214,7 +167,8 @@
 			submitting = false;
 			if (isApiError(e, 409, 'coupon_rejected')) {
 				couponError = rejectionMessage(
-					(e as ApiError).details as { reason: CouponRejection; minBowls?: number }
+					(e as ApiError).details as { reason: CouponRejection; minBowls?: number },
+					$_
 				);
 				couponCode = null;
 				requestQuote();

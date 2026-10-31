@@ -326,6 +326,10 @@
 			"coupons": {
 				"title": "Cupones",
 				"description": "Crea campañas de descuento y revisa su presupuesto."
+			},
+			"pickupPoints": {
+				"title": "Puntos de recogida",
+				"description": "Administra los puntos de recogida en campus y sus horarios."
 			}
 		},
 		"deliveryCalculator": {
@@ -499,6 +503,44 @@
 				"budget_below_redeemed": "El presupuesto no puede ser menor que lo que ya se ha redimido."
 			},
 			"deleteFailed": "No se pudo eliminar el cupón."
+		},
+		"orders": {
+			"pickupBadge": "Recogida · {name} · {date}"
+		},
+		"pickupPoints": {
+			"title": "Puntos de recogida",
+			"subtitle": "Los clientes ven los puntos activos al elegir cómo recibir su pedido.",
+			"loadFailed": "No se pudieron cargar los puntos de recogida.",
+			"saveFailed": "No se pudo guardar el punto de recogida.",
+			"toggleFailed": "No se pudo cambiar el estado del punto.",
+			"form": {
+				"title": "Nuevo punto de recogida",
+				"editTitle": "Editar {name}",
+				"name": "Nombre",
+				"location": "Ubicación",
+				"hours": "Horario",
+				"hoursPlaceholder": "Lunes a viernes, 11am – 2pm",
+				"displayOrder": "Orden",
+				"active": "Activo",
+				"submit": "Crear punto",
+				"update": "Guardar cambios",
+				"saving": "Guardando…",
+				"cancel": "Cancelar",
+				"saved": "Punto {name} creado",
+				"updated": "Punto {name} actualizado"
+			},
+			"list": {
+				"title": "Puntos",
+				"loading": "Cargando…",
+				"empty": "Aún no hay puntos de recogida.",
+				"point": "Punto",
+				"status": "Estado",
+				"active": "Activo",
+				"inactive": "Inactivo",
+				"edit": "Editar",
+				"activate": "Activar",
+				"deactivate": "Desactivar"
+			}
 		}
 	},
 	"footer": {
@@ -604,7 +646,8 @@
 			"min_bowls": "Debes comprar mínimo {count} bowls para utilizar este cupón",
 			"inactive": "Este cupón ya no se encuentra disponible",
 			"not_started": "Este cupón ya no se encuentra disponible",
-			"budget_exhausted": "Este cupón ya no se encuentra disponible"
+			"budget_exhausted": "Este cupón ya no se encuentra disponible",
+			"pickup_free_shipping": "Los cupones de envío gratis no aplican para recogida: el envío ya es gratis"
 		}
 	},
 	"order": {
@@ -622,6 +665,36 @@
 			"eyebrow": "Pedido no encontrado",
 			"title": "No encontramos tu pedido",
 			"message": "El enlace no es válido o el pedido no existe. Si ya hiciste tu pedido, escríbenos y lo revisamos."
+		},
+		"pickupPoint": "Punto de recogida",
+		"pickupDate": "Fecha y hora"
+	},
+	"fulfillment": {
+		"step": "Paso 1 de 2",
+		"title": "¿Cómo recibes tu pedido?",
+		"delivery": {
+			"title": "Domicilio",
+			"description": "Recíbelo en la dirección que elijas."
+		},
+		"pickup": {
+			"title": "Punto de recogida",
+			"description": "Pide hoy, recoge mañana en tu campus.",
+			"freeShipping": "Envío gratis"
+		},
+		"continue": "Continuar"
+	},
+	"pickup": {
+		"step": "Paso 2 de 2",
+		"title": "Confirma tu recogida",
+		"pointLabel": "Punto de recogida",
+		"nextDay": "Recogida al día siguiente",
+		"dateTitle": "Recogida el {date}",
+		"dateBody": "Tu pedido estará listo para recoger en el horario indicado. El pago se realiza en el punto de recogida al momento de retirar tu bowl.",
+		"payNote": "💳 Pago en el punto de recogida al retirar tu pedido.",
+		"confirm": "Confirmar recogida - {price}",
+		"confirmNoPrice": "Confirmar recogida",
+		"errors": {
+			"unavailable": "Este punto de recogida ya no está disponible. Vuelve y elige otra opción."
 		}
 	}
 }

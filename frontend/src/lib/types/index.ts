@@ -33,7 +33,9 @@ export type {
 	CouponRecord,
 	CouponsResponse,
 	CreateCouponRequest,
-	UpdateCouponRequest
+	UpdateCouponRequest,
+	PickupPoint,
+	PickupPointInput
 } from '@aristaeus/shared';
 
 export {

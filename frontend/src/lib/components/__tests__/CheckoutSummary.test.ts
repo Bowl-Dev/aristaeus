@@ -12,7 +12,8 @@ const quote: CheckoutQuote = {
 	total: 7800,
 	totalBeforeDiscount: 7800,
 	coupon: null,
-	couponRejection: null
+	couponRejection: null,
+	pickupDate: null
 };
 
 const props = (q: CheckoutQuote | null = quote) => ({

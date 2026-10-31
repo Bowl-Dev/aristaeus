@@ -9,9 +9,10 @@
 	import type { OrderStatus } from '$lib/types';
 	import { resolve } from '$app/paths';
 	import { generateLabel } from '$lib/utils/labelGenerator';
-	import { _ } from 'svelte-i18n';
+	import { _, locale } from 'svelte-i18n';
 	import { CATEGORY_ORDER } from '$lib/constants';
 	import { formatCOP } from '$lib/utils/bowl';
+	import { formatPickupDate } from '$lib/utils/checkout';
 
 	// State
 	let orders = $state<AdminOrder[]>([]);
@@ -327,13 +328,26 @@
 								{#if order.user.email}
 									<p class="text-gray-500">{order.user.email}</p>
 								{/if}
-								<p class="text-gray-500 mt-2 text-xs">
-									{order.user.address.streetAddress}, {order.user.address.neighborhood}<br />
-									{order.user.address.city}, {order.user.address.department}
-									{#if order.user.address.postalCode}
-										- {order.user.address.postalCode}
-									{/if}
-								</p>
+								{#if order.pickup}
+									<span
+										class="inline-block mt-2 px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full"
+									>
+										{$_('admin.orders.pickupBadge', {
+											values: {
+												name: order.pickup.name,
+												date: formatPickupDate(order.pickup.date, $locale ?? 'es', true)
+											}
+										})}
+									</span>
+								{:else}
+									<p class="text-gray-500 mt-2 text-xs">
+										{order.user.address.streetAddress}, {order.user.address.neighborhood}<br />
+										{order.user.address.city}, {order.user.address.department}
+										{#if order.user.address.postalCode}
+											- {order.user.address.postalCode}
+										{/if}
+									</p>
+								{/if}
 								{#if order.deliveryInstructions}
 									<p class="text-gray-700 mt-2 text-xs">
 										<span class="font-medium">Delivery instructions:</span>

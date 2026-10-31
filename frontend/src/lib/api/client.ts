@@ -17,7 +17,9 @@ import type {
 	CouponRecord,
 	CouponsResponse,
 	CreateCouponRequest,
-	UpdateCouponRequest
+	UpdateCouponRequest,
+	PickupPoint,
+	PickupPointInput
 } from '$lib/types';
 
 export type { AdminOrder, AdminOrderItem } from '$lib/types';
@@ -371,5 +373,37 @@ export async function deleteCoupon(
 	return apiFetch<{ deleted: true; id: number }>(`/api/coupons/${id}`, {
 		method: 'DELETE',
 		headers: adminHeaders(token)
+	});
+}
+
+// ============================================
+// Pickup points (list is public; writes are admin)
+// ============================================
+
+/** Every pickup point, inactive included; the customer UI filters `active`. */
+export async function getPickupPoints(): Promise<PickupPoint[]> {
+	return apiFetch<PickupPoint[]>('/api/pickup-points');
+}
+
+export async function createPickupPoint(
+	point: PickupPointInput,
+	token: string
+): Promise<PickupPoint> {
+	return apiFetch<PickupPoint>('/api/pickup-points', {
+		method: 'POST',
+		headers: adminHeaders(token),
+		body: JSON.stringify(point)
+	});
+}
+
+export async function updatePickupPoint(
+	id: number,
+	patch: Partial<PickupPointInput>,
+	token: string
+): Promise<PickupPoint> {
+	return apiFetch<PickupPoint>(`/api/pickup-points/${id}`, {
+		method: 'PATCH',
+		headers: adminHeaders(token),
+		body: JSON.stringify(patch)
 	});
 }

@@ -326,6 +326,10 @@
 			"coupons": {
 				"title": "Coupons",
 				"description": "Create discount campaigns and review their budget."
+			},
+			"pickupPoints": {
+				"title": "Pickup points",
+				"description": "Manage campus pickup points and their hours."
 			}
 		},
 		"deliveryCalculator": {
@@ -499,6 +503,44 @@
 				"budget_below_redeemed": "The budget can't be lower than what has already been redeemed."
 			},
 			"deleteFailed": "Could not delete the coupon."
+		},
+		"orders": {
+			"pickupBadge": "Pickup · {name} · {date}"
+		},
+		"pickupPoints": {
+			"title": "Pickup points",
+			"subtitle": "Customers see the active points when choosing how to receive their order.",
+			"loadFailed": "Could not load pickup points.",
+			"saveFailed": "Could not save the pickup point.",
+			"toggleFailed": "Could not change the point status.",
+			"form": {
+				"title": "New pickup point",
+				"editTitle": "Edit {name}",
+				"name": "Name",
+				"location": "Location",
+				"hours": "Hours",
+				"hoursPlaceholder": "Monday to Friday, 11am – 2pm",
+				"displayOrder": "Order",
+				"active": "Active",
+				"submit": "Create point",
+				"update": "Save changes",
+				"saving": "Saving…",
+				"cancel": "Cancel",
+				"saved": "Point {name} created",
+				"updated": "Point {name} updated"
+			},
+			"list": {
+				"title": "Points",
+				"loading": "Loading…",
+				"empty": "No pickup points yet.",
+				"point": "Point",
+				"status": "Status",
+				"active": "Active",
+				"inactive": "Inactive",
+				"edit": "Edit",
+				"activate": "Activate",
+				"deactivate": "Deactivate"
+			}
 		}
 	},
 	"footer": {
@@ -604,7 +646,8 @@
 			"min_bowls": "You need to buy at least {count} bowls to use this coupon",
 			"inactive": "This coupon is no longer available",
 			"not_started": "This coupon is no longer available",
-			"budget_exhausted": "This coupon is no longer available"
+			"budget_exhausted": "This coupon is no longer available",
+			"pickup_free_shipping": "Free-shipping coupons don't apply to pickup: shipping is already free"
 		}
 	},
 	"order": {
@@ -622,6 +665,36 @@
 			"eyebrow": "Order not found",
 			"title": "We couldn't find your order",
 			"message": "The link is invalid or the order doesn't exist. If you already placed your order, message us and we'll look into it."
+		},
+		"pickupPoint": "Pickup point",
+		"pickupDate": "Date and time"
+	},
+	"fulfillment": {
+		"step": "Step 1 of 2",
+		"title": "How do you want your order?",
+		"delivery": {
+			"title": "Delivery",
+			"description": "Get it at the address you choose."
+		},
+		"pickup": {
+			"title": "Pickup point",
+			"description": "Order today, pick it up tomorrow on campus.",
+			"freeShipping": "Free shipping"
+		},
+		"continue": "Continue"
+	},
+	"pickup": {
+		"step": "Step 2 of 2",
+		"title": "Confirm your pickup",
+		"pointLabel": "Pickup point",
+		"nextDay": "Next-day pickup",
+		"dateTitle": "Pickup on {date}",
+		"dateBody": "Your order will be ready for pickup during the hours shown. You pay at the pickup point when you collect your bowl.",
+		"payNote": "💳 Pay at the pickup point when you collect your order.",
+		"confirm": "Confirm pickup - {price}",
+		"confirmNoPrice": "Confirm pickup",
+		"errors": {
+			"unavailable": "This pickup point is no longer available. Go back and choose another option."
 		}
 	}
 }

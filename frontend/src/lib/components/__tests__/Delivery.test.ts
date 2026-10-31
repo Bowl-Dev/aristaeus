@@ -67,7 +67,8 @@ const baseQuote: CheckoutQuote = {
 	total: 7800,
 	totalBeforeDiscount: 7800,
 	coupon: null,
-	couponRejection: null
+	couponRejection: null,
+	pickupDate: null
 };
 
 const checkoutResponse = { checkoutId: 'chk-1', orderNumber: 1000 };

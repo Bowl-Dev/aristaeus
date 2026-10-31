@@ -24,7 +24,8 @@ const received = {
 	checkoutId: 'chk-1',
 	orderNumber: 4342,
 	paymentStatus: 'not_required',
-	total: 9000
+	total: 9000,
+	pickup: null
 };
 
 function visit(search: string) {

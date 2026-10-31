@@ -9,7 +9,9 @@
 		lines,
 		quote,
 		subtotal,
-		hint
+		hint,
+		pickup = false,
+		note
 	}: {
 		/** One row per cart bowl; amounts are display-only client prices. */
 		lines: { label: string; amount: number }[];
@@ -18,6 +20,10 @@
 		/** Client subtotal, shown until a quote exists. */
 		subtotal: number;
 		hint: string;
+		/** Pickup carts have no courier, so no fee disclaimer. */
+		pickup?: boolean;
+		/** Shown in a beige pill under the total. */
+		note?: string;
 	} = $props();
 
 	const coupon = $derived(quote && quote.discount > 0 ? quote.coupon : null);
@@ -64,27 +70,29 @@
 		<div class="flex items-center justify-between">
 			<span class="flex items-center text-sm text-text-muted">
 				{$_('delivery.summary.shipping')}
-				<button
-					type="button"
-					class="-my-[14px] cursor-pointer border-none bg-transparent p-[14px] text-dark-green"
-					aria-label={$_('delivery.feeInfo.open')}
-					onclick={() => (feeInfoOpen = true)}
-				>
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						aria-hidden="true"
+				{#if !pickup}
+					<button
+						type="button"
+						class="-my-[14px] cursor-pointer border-none bg-transparent p-[14px] text-dark-green"
+						aria-label={$_('delivery.feeInfo.open')}
+						onclick={() => (feeInfoOpen = true)}
 					>
-						<circle cx="12" cy="12" r="10" />
-						<line x1="12" y1="16" x2="12" y2="12" />
-						<line x1="12" y1="8" x2="12.01" y2="8" />
-					</svg>
-				</button>
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							aria-hidden="true"
+						>
+							<circle cx="12" cy="12" r="10" />
+							<line x1="12" y1="16" x2="12" y2="12" />
+							<line x1="12" y1="8" x2="12.01" y2="8" />
+						</svg>
+					</button>
+				{/if}
 			</span>
 			{#if !quote}
 				<span class="text-xs text-text-muted">{hint}</span>
@@ -93,11 +101,13 @@
 					<s class="text-text-muted">{formatCOP(quote.deliveryFee)}</s>
 					<span class="font-bold text-dark-green">{$_('delivery.summary.free')}</span>
 				</span>
+			{:else if quote.deliveryFee === 0}
+				<span class="text-sm font-bold text-dark-green">{$_('delivery.summary.free')}</span>
 			{:else}
 				<span class="text-sm font-semibold text-text-black">{formatCOP(quote.deliveryFee)}</span>
 			{/if}
 		</div>
-		{#if quote}
+		{#if quote && !pickup}
 			<p class="m-0 text-xs leading-5 text-text-muted">
 				{$_('delivery.feeInfo.note')}
 				<button
@@ -126,6 +136,11 @@
 			</span>
 		</span>
 	</div>
+	{#if note}
+		<p class="m-0 rounded-xl bg-warm-beige px-3 py-2 text-xs font-semibold text-dark-green">
+			{note}
+		</p>
+	{/if}
 </Card>
 
 {#if feeInfoOpen}

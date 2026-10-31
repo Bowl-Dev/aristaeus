@@ -5,25 +5,7 @@
 	import type { CouponRecord, CouponType } from '$lib/types';
 	import { couponStatus } from '$lib/utils/coupons';
 	import { formatCOP } from '$lib/utils/bowl';
-
-	const TOKEN_KEY = 'aristaeus.adminToken';
-
-	function readToken(): string {
-		try {
-			return localStorage.getItem(TOKEN_KEY) ?? '';
-		} catch {
-			return '';
-		}
-	}
-
-	function saveToken(value: string) {
-		try {
-			if (value) localStorage.setItem(TOKEN_KEY, value);
-			else localStorage.removeItem(TOKEN_KEY);
-		} catch {
-			// Storage blocked: the token just lives for this page view.
-		}
-	}
+	import { readToken, saveToken } from '$lib/utils/adminToken';
 
 	let token = $state(readToken());
 	let tokenInput = $state('');

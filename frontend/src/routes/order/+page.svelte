@@ -2,11 +2,12 @@
 	// Delivery navigates here with ?c=<checkoutId> once the checkout (and its pending
 	// orders) exist. Fetches the checkout once to show its AG-#### number.
 	import { onMount } from 'svelte';
-	import { _ } from 'svelte-i18n';
+	import { _, locale } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getCheckoutStatus } from '$lib/api/client';
 	import type { CheckoutStatusResponse } from '$lib/types';
+	import { formatPickupDate } from '$lib/utils/checkout';
 	import Button from '$lib/components/atoms/Button.svelte';
 
 	let checkout = $state<CheckoutStatusResponse | null>(null);
@@ -78,11 +79,31 @@
 						{$_(`order.${view}.status`)}
 					</dd>
 				</div>
-				<div class="flex items-center justify-between px-5 py-4">
-					<dt>{$_('order.eta')}</dt>
-					<dd class="m-0 font-bold text-text-black">25 – 35 min</dd>
-				</div>
+				{#if checkout.pickup}
+					<div class="flex flex-col gap-1 px-5 py-4">
+						<dt>{$_('order.pickupPoint')}</dt>
+						<dd class="m-0 font-bold text-text-black">
+							{checkout.pickup.name} · {checkout.pickup.location}
+						</dd>
+					</div>
+					<div class="flex flex-col gap-1 px-5 py-4">
+						<dt>{$_('order.pickupDate')}</dt>
+						<dd class="m-0 font-bold text-text-black">
+							{formatPickupDate(checkout.pickup.date, $locale ?? 'es')} · {checkout.pickup.hours}
+						</dd>
+					</div>
+				{:else}
+					<div class="flex items-center justify-between px-5 py-4">
+						<dt>{$_('order.eta')}</dt>
+						<dd class="m-0 font-bold text-text-black">25 – 35 min</dd>
+					</div>
+				{/if}
 			</dl>
+			{#if checkout.pickup}
+				<p class="m-0 text-center text-sm font-semibold text-dark-green">
+					{$_('pickup.payNote')}
+				</p>
+			{/if}
 		{/if}
 
 		<Button fullWidth onclick={() => goto(resolve('/'))}>{$_('order.home')}</Button>

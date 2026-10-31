@@ -3,7 +3,13 @@ import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { locale, waitLocale } from 'svelte-i18n';
 import type { Ingredient, Menu } from '$lib/types';
 
-const { getIngredientsMock, getMenusMock, getCheckoutQuoteMock, FakeApiError } = vi.hoisted(() => {
+const {
+	getIngredientsMock,
+	getMenusMock,
+	getCheckoutQuoteMock,
+	getPickupPointsMock,
+	FakeApiError
+} = vi.hoisted(() => {
 	class FakeApiError extends Error {
 		status: number;
 		constructor(status: number, message: string) {
@@ -16,6 +22,7 @@ const { getIngredientsMock, getMenusMock, getCheckoutQuoteMock, FakeApiError } =
 		getIngredientsMock: vi.fn(),
 		getMenusMock: vi.fn(),
 		getCheckoutQuoteMock: vi.fn(),
+		getPickupPointsMock: vi.fn(),
 		FakeApiError
 	};
 });
@@ -24,6 +31,7 @@ vi.mock('$lib/api/client', () => ({
 	getIngredients: getIngredientsMock,
 	getMenus: getMenusMock,
 	getCheckoutQuote: getCheckoutQuoteMock,
+	getPickupPoints: getPickupPointsMock,
 	ApiError: FakeApiError
 }));
 
@@ -78,6 +86,8 @@ describe('/ +page (view state machine)', () => {
 		getIngredientsMock.mockReset();
 		getMenusMock.mockReset();
 		getCheckoutQuoteMock.mockReset();
+		getPickupPointsMock.mockReset();
+		getPickupPointsMock.mockResolvedValue([]);
 		locale.set('es');
 		await waitLocale();
 	});
@@ -260,7 +270,8 @@ describe('/ +page (view state machine)', () => {
 				total: 7800,
 				totalBeforeDiscount: 7800,
 				coupon: null,
-				couponRejection: null
+				couponRejection: null,
+				pickupDate: null
 			});
 			const { container } = render(Page);
 			await goToCartWithOneBowl(container);
@@ -281,6 +292,82 @@ describe('/ +page (view state machine)', () => {
 					quantity: 1
 				}
 			]);
+		});
+
+		// AL-55: the fulfillment step sits between the cart and the checkout screens.
+		describe('fulfillment step', () => {
+			const unal = {
+				id: 1,
+				name: 'UNAL',
+				location: 'Facultad de Medicina',
+				hours: 'Lunes a viernes, 11am – 2pm',
+				active: true,
+				displayOrder: 1
+			};
+			const closed = { ...unal, id: 2, name: 'CERRADO', active: false };
+
+			async function openFulfillment(points: (typeof unal)[]) {
+				getIngredientsMock.mockResolvedValue([rice]);
+				getMenusMock.mockResolvedValue([sampleMenu]);
+				getPickupPointsMock.mockResolvedValue(points);
+				getCheckoutQuoteMock.mockResolvedValue({
+					subtotal: 1800,
+					deliveryFee: 0,
+					discount: 0,
+					serviceFee: 0,
+					total: 1800,
+					totalBeforeDiscount: 1800,
+					coupon: null,
+					couponRejection: null,
+					pickupDate: '2026-11-02'
+				});
+				const { container } = render(Page);
+				await goToCartWithOneBowl(container);
+				await fireEvent.click(findButton(container, /Continuar a entrega/) as HTMLButtonElement);
+				return container;
+			}
+
+			const continueButton = (c: HTMLElement) =>
+				findButton(c, /^\s*Continuar\s*$/) as HTMLButtonElement;
+
+			it('lists only active points and goes to the pickup view', async () => {
+				const container = await openFulfillment([unal, closed]);
+				await waitFor(() => expect(container.textContent).toContain('¿Cómo recibes tu pedido?'));
+				expect(container.textContent).toContain('Facultad de Medicina');
+				expect(container.textContent).not.toContain('CERRADO');
+				expect(continueButton(container).disabled).toBe(true);
+
+				await fireEvent.click(container.querySelector('input[value="1"]') as HTMLInputElement);
+				await fireEvent.click(continueButton(container));
+				await waitFor(() => expect(container.textContent).toContain('Confirma tu recogida'));
+				expect(getCheckoutQuoteMock.mock.calls[0][0].pickupPointId).toBe(1);
+
+				await fireEvent.click(
+					container.querySelector('button[aria-label="Volver"]') as HTMLButtonElement
+				);
+				await waitFor(() => expect(container.textContent).toContain('¿Cómo recibes tu pedido?'));
+			});
+
+			it('Domicilio goes to the delivery view, whose back returns to the choice', async () => {
+				const container = await openFulfillment([unal]);
+				await waitFor(() => expect(container.textContent).toContain('Domicilio'));
+				await fireEvent.click(
+					container.querySelector('input[value="delivery"]') as HTMLInputElement
+				);
+				await fireEvent.click(continueButton(container));
+				await waitFor(() => expect(container.querySelector('#delivery-address')).toBeTruthy());
+
+				await fireEvent.click(
+					container.querySelector('button[aria-label="Volver"]') as HTMLButtonElement
+				);
+				await waitFor(() => expect(container.textContent).toContain('¿Cómo recibes tu pedido?'));
+			});
+
+			it('skips the step when no point is active', async () => {
+				const container = await openFulfillment([closed]);
+				await waitFor(() => expect(container.querySelector('#delivery-address')).toBeTruthy());
+				expect(container.textContent).not.toContain('¿Cómo recibes tu pedido?');
+			});
 		});
 	});
 

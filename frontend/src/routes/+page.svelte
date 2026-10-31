@@ -4,10 +4,11 @@
 		type Ingredient,
 		type Menu as MenuType,
 		type BowlSize,
+		type PickupPoint,
 		MAX_CART_BOWLS
 	} from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { getIngredients, getMenus, getConfig, ApiError } from '$lib/api/client';
+	import { getIngredients, getMenus, getConfig, getPickupPoints, ApiError } from '$lib/api/client';
 	import {
 		addBowl,
 		removeAt,
@@ -23,10 +24,14 @@
 	import Builder from '$lib/components/Builder.svelte';
 	import Cart from '$lib/components/Cart.svelte';
 	import Delivery from '$lib/components/Delivery.svelte';
+	import Fulfillment from '$lib/components/Fulfillment.svelte';
+	import Pickup from '$lib/components/Pickup.svelte';
 	import PauseModal from '$lib/components/PauseModal.svelte';
 
 	// View state
-	let view = $state<'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'delivery'>('landing');
+	let view = $state<
+		'landing' | 'menu' | 'size' | 'builder' | 'cart' | 'fulfillment' | 'delivery' | 'pickup'
+	>('landing');
 	let showLandingModal = $state(false);
 
 	// Service-paused state (fail-open: stays false unless backend says otherwise)
@@ -38,6 +43,11 @@
 	let menus = $state<MenuType[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	// Active pickup points. Empty (no points, or the fetch failed) skips the
+	// fulfillment step and the cart goes straight to delivery.
+	let pickupPoints = $state<PickupPoint[]>([]);
+	let fulfillment = $state<'delivery' | number | null>(null);
+	const pickupPoint = $derived(pickupPoints.find((p) => p.id === fulfillment));
 
 	// Bowl state
 	let selectedBowlSize = $state<BowlSize | null>(null);
@@ -81,9 +91,18 @@
 		}
 	}
 
+	async function loadPickupPoints() {
+		try {
+			pickupPoints = (await getPickupPoints()).filter((p) => p.active);
+		} catch {
+			pickupPoints = [];
+		}
+	}
+
 	onMount(() => {
 		loadIngredients();
 		loadConfig();
+		loadPickupPoints();
 	});
 
 	function clearSelection() {
@@ -236,15 +255,36 @@
 		{bowls}
 		{cartCount}
 		onBack={handleCartBack}
-		onProceedToDelivery={() => (view = 'delivery')}
+		onProceedToDelivery={() => (view = pickupPoints.length > 0 ? 'fulfillment' : 'delivery')}
 		onCreateAnother={() => (ordersPaused ? (showPauseModal = true) : (showLandingModal = true))}
 		onRemoveBowl={handleRemoveBowl}
 		onIncreaseBowl={handleIncreaseBowl}
 		onDecreaseBowl={handleDecreaseBowl}
 		onEditBowl={handleEditBowl}
 	/>
+{:else if view === 'fulfillment'}
+	<Fulfillment
+		points={pickupPoints}
+		{cartCount}
+		bind:selected={fulfillment}
+		onBack={() => (view = 'cart')}
+		onContinue={() => (view = pickupPoint ? 'pickup' : 'delivery')}
+	/>
 {:else if view === 'delivery'}
-	<Delivery {ingredients} {bowls} {cartCount} onBack={() => (view = 'cart')} />
+	<Delivery
+		{ingredients}
+		{bowls}
+		{cartCount}
+		onBack={() => (view = pickupPoints.length > 0 ? 'fulfillment' : 'cart')}
+	/>
+{:else if view === 'pickup' && pickupPoint}
+	<Pickup
+		{ingredients}
+		{bowls}
+		point={pickupPoint}
+		{cartCount}
+		onBack={() => (view = 'fulfillment')}
+	/>
 {/if}
 
 {#if showPauseModal}
