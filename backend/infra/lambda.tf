@@ -22,6 +22,9 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "createCoupon",
     "updateCoupon",
     "deleteCoupon",
+    "listPickupPoints",
+    "createPickupPoint",
+    "updatePickupPoint",
   ])
 
   name              = "/aws/lambda/${var.project_name}-${each.key}-${var.environment}"
@@ -528,6 +531,88 @@ resource "aws_lambda_function" "delete_coupon" {
   function_name = "${var.project_name}-deleteCoupon-${var.environment}"
   role          = aws_iam_role.lambda_execution.arn
   handler       = "handlers/coupons.deleteCoupon"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+      ADMIN_TOKEN  = var.admin_token
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# Pickup points (AL-55)
+
+resource "aws_lambda_function" "list_pickup_points" {
+  function_name = "${var.project_name}-listPickupPoints-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/pickupPoints.listPickupPoints"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "create_pickup_point" {
+  function_name = "${var.project_name}-createPickupPoint-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/pickupPoints.createPickupPoint"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+      ADMIN_TOKEN  = var.admin_token
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "update_pickup_point" {
+  function_name = "${var.project_name}-updatePickupPoint-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/pickupPoints.updatePickupPoint"
   runtime       = "nodejs20.x"
   timeout       = 30
   memory_size   = 256
