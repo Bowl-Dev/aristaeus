@@ -117,8 +117,8 @@ aristaeus/
 │   │   └── seed-menus.ts              # Separate menus seed script (5 curated menus)
 │   ├── infra/                         # Terraform infrastructure
 │   │   ├── main.tf                    # Main Terraform config
-│   │   ├── lambda.tf                  # Lambda function definitions (19 functions)
-│   │   ├── api_gateway.tf             # API Gateway configuration (19 routes)
+│   │   ├── lambda.tf                  # Lambda function definitions (22 functions)
+│   │   ├── api_gateway.tf             # API Gateway configuration (22 routes)
 │   │   ├── iam.tf                     # IAM roles and policies
 │   │   ├── variables.tf               # Terraform variables
 │   │   ├── outputs.tf                 # Terraform outputs
