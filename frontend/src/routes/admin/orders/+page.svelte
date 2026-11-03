@@ -329,6 +329,12 @@
 									<p class="text-gray-500">{order.user.email}</p>
 								{/if}
 								{#if order.pickup}
+									<p class="font-semibold text-amber-800 mt-2 text-xs">
+										{$_('admin.orders.pickupLine')}
+									</p>
+									<p class="text-gray-500 text-xs">
+										{order.pickup.name} · {order.pickup.location}
+									</p>
 									<span
 										class="inline-block mt-2 px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full"
 									>

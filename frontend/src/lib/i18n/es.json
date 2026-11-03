@@ -506,7 +506,8 @@
 			"deleteFailed": "No se pudo eliminar el cupón."
 		},
 		"orders": {
-			"pickupBadge": "Recogida · {name} · {date}"
+			"pickupBadge": "Recogida · {name} · {date}",
+			"pickupLine": "Pedido para recoger en punto, no es domicilio"
 		},
 		"pickupPoints": {
 			"title": "Puntos de recogida",
@@ -520,7 +521,7 @@
 				"name": "Nombre",
 				"location": "Ubicación",
 				"hours": "Horario",
-				"hoursPlaceholder": "Lunes a viernes, 11am – 2pm",
+				"hoursPlaceholder": "Lunes a viernes, 12pm – 2pm",
 				"displayOrder": "Orden",
 				"active": "Activo",
 				"submit": "Crear punto",

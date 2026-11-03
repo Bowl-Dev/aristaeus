@@ -330,7 +330,7 @@ export interface PickupPoint {
 	id: number;
 	name: string;
 	location: string;
-	/** Free text shown as-is, e.g. "Lunes a viernes, 11am – 2pm". */
+	/** Free text shown as-is, e.g. "Lunes a viernes, 12pm – 2pm". */
 	hours: string;
 	active: boolean;
 	displayOrder: number | null;

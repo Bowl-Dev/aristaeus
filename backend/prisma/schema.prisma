@@ -388,7 +388,7 @@ model PickupPoint {
   id           Int        @id @default(autoincrement())
   name         String     @db.VarChar(100)
   location     String     @db.VarChar(200)
-  /// Free text shown as-is, e.g. "Lunes a viernes, 11am – 2pm"
+  /// Free text shown as-is, e.g. "Lunes a viernes, 12pm – 2pm"
   hours        String     @db.VarChar(100)
   active       Boolean    @default(true)
   displayOrder Int?       @map("display_order")
