@@ -27,7 +27,7 @@ const admin = { 'x-admin-token': 'secret-token' };
 const input = {
 	name: 'UNAL',
 	location: 'Facultad de Medicina',
-	hours: 'Lunes a viernes, 11am – 2pm',
+	hours: 'Lunes a viernes, 12pm – 2pm',
 	active: true,
 	displayOrder: 1
 };
