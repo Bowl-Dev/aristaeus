@@ -651,15 +651,10 @@
 		}
 	},
 	"order": {
-		"number": "Order number",
-		"status": "Status",
 		"eta": "Estimated time",
 		"home": "Back to home",
 		"received": {
-			"eyebrow": "Order received",
-			"title": "Thanks for your order!",
-			"message": "We're preparing your bowl with great care. We'll let you know as soon as it's ready.",
-			"status": "Received"
+			"eyebrow": "Order confirmed"
 		},
 		"notFound": {
 			"eyebrow": "Order not found",
@@ -667,7 +662,10 @@
 			"message": "The link is invalid or the order doesn't exist. If you already placed your order, message us and we'll look into it."
 		},
 		"pickupPoint": "Pickup point",
-		"pickupDate": "Date and time"
+		"pickupDate": "Date and time",
+		"whatsapp": "Questions? Message us",
+		"whatsappMessage": "Hi alGramo, I have a question about my order AG-{number}",
+		"whatsappMessageGeneric": "Hi alGramo, I have a question about my order"
 	},
 	"fulfillment": {
 		"step": "Step 1 of 2",
