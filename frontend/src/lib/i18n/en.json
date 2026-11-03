@@ -305,7 +305,8 @@
 			"bowl": "Bowl",
 			"delivery": "Delivery",
 			"discount": "Discount",
-			"amountDue": "Amount due"
+			"amountDue": "Amount due",
+			"pickupNote": "Pickup order at {name}: not delivered"
 		},
 		"printLabel": "Print Label",
 		"generatingLabel": "Generating...",

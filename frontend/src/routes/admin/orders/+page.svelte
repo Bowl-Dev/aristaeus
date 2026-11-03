@@ -409,6 +409,11 @@
 										<span class="text-gray-500">{$_('admin.price.delivery')}</span>
 										<span class="font-medium">{formatCOP(order.deliveryFee)}</span>
 									</div>
+									{#if order.pickup}
+										<div class="col-span-2 text-gray-500">
+											{$_('admin.price.pickupNote', { values: { name: order.pickup.name } })}
+										</div>
+									{/if}
 									{#if order.discount}
 										<div class="flex justify-between col-span-2">
 											<span class="text-gray-500">{$_('admin.price.discount')}</span>

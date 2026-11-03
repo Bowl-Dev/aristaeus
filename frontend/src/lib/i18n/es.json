@@ -305,7 +305,8 @@
 			"bowl": "Bowl",
 			"delivery": "Domicilio",
 			"discount": "Descuento",
-			"amountDue": "Total a cobrar"
+			"amountDue": "Total a cobrar",
+			"pickupNote": "Pedido para recoger en {name}: no se envía a domicilio"
 		},
 		"printLabel": "Imprimir Etiqueta",
 		"generatingLabel": "Generando...",
