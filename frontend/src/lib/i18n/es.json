@@ -520,7 +520,7 @@
 				"name": "Nombre",
 				"location": "Ubicación",
 				"hours": "Horario",
-				"hoursPlaceholder": "Lunes a viernes, 11am – 2pm",
+				"hoursPlaceholder": "Lunes a viernes, 12pm – 2pm",
 				"displayOrder": "Orden",
 				"active": "Activo",
 				"submit": "Crear punto",
