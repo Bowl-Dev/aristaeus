@@ -506,7 +506,8 @@
 			"deleteFailed": "Could not delete the coupon."
 		},
 		"orders": {
-			"pickupBadge": "Pickup · {name} · {date}"
+			"pickupBadge": "Pickup · {name} · {date}",
+			"pickupLine": "Pickup order, not for delivery"
 		},
 		"pickupPoints": {
 			"title": "Pickup points",

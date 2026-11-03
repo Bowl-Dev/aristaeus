@@ -506,7 +506,8 @@
 			"deleteFailed": "No se pudo eliminar el cupón."
 		},
 		"orders": {
-			"pickupBadge": "Recogida · {name} · {date}"
+			"pickupBadge": "Recogida · {name} · {date}",
+			"pickupLine": "Pedido para recoger en punto, no es domicilio"
 		},
 		"pickupPoints": {
 			"title": "Puntos de recogida",

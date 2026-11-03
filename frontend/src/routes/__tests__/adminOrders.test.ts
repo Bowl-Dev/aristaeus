@@ -64,6 +64,8 @@ describe('/admin/orders price breakdown', () => {
 			)
 		);
 		expect(container.textContent).toContain('Domicilio');
+		expect(container.textContent).toContain('Pedido para recoger en punto, no es domicilio');
+		expect(container.textContent).toContain('Oficina · Calle 1');
 	});
 
 	it('shows no pickup note for a delivery order', async () => {
