@@ -49,7 +49,7 @@
 					type="radio"
 					name="fulfillment"
 					value="delivery"
-					class="h-5 w-5 accent-dark-green"
+					class="h-5 w-5 text-dark-green focus:ring-dark-green"
 					bind:group={selected}
 				/>
 			</span>
@@ -81,7 +81,7 @@
 						type="radio"
 						name="fulfillment"
 						value={point.id}
-						class="h-5 w-5 accent-dark-green"
+						class="h-5 w-5 text-dark-green focus:ring-dark-green"
 						bind:group={selected}
 					/>
 				</label>
