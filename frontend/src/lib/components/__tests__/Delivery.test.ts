@@ -365,4 +365,29 @@ describe('Delivery', () => {
 		await waitFor(() => expect(container.querySelector('#delivery-name-error')).toBeFalsy());
 		expect(container.querySelector('#delivery-phone-error')).toBeTruthy();
 	});
+
+	it('submits while the phone-blur re-quote is still pending (tap not lost)', async () => {
+		getCheckoutQuoteMock
+			.mockResolvedValueOnce(baseQuote)
+			.mockResolvedValueOnce({
+				...baseQuote,
+				discount: 200,
+				total: 7600,
+				coupon: { code: 'ALGRAMO10', type: 'percent', value: 10 }
+			})
+			.mockReturnValueOnce(new Promise(() => {}));
+		createCheckoutMock.mockResolvedValue(checkoutResponse);
+		const { container } = render(Delivery, { props: makeProps() });
+		await fillAll(container);
+		await typeCoupon(container, 'ALGRAMO10');
+		await fireEvent.click(getApply(container));
+		await waitFor(() => expect(container.textContent).toContain('¡Cupón aplicado!'));
+		await fireEvent.blur($(container, '#delivery-phone'));
+		await waitFor(() => expect(getCheckoutQuoteMock).toHaveBeenCalledTimes(3));
+		// jsdom dispatches clicks on disabled buttons; a real browser drops them.
+		expect(getCta(container).disabled).toBe(false);
+		await fireEvent.click(getCta(container));
+		await waitFor(() => expect(createCheckoutMock).toHaveBeenCalledTimes(1));
+		expect(createCheckoutMock.mock.calls[0][0].couponCode).toBe('ALGRAMO10');
+	});
 });

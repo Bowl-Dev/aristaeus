@@ -40,22 +40,51 @@ describe('/order', () => {
 		await waitLocale();
 	});
 
-	it('shows the received order with its AG number, fetched once', async () => {
+	it('shows the AG number as the title and the delivery ETA, fetched once', async () => {
 		getCheckoutStatusMock.mockResolvedValue(received);
 		const { container } = visit('?c=chk-1');
-		await waitFor(() => expect(container.textContent).toContain('AG-4342'));
+		await waitFor(() => expect(container.querySelector('h1')?.textContent).toContain('AG-4342'));
 		expect(getCheckoutStatusMock).toHaveBeenCalledOnce();
 		expect(getCheckoutStatusMock).toHaveBeenCalledWith('chk-1');
-		expect(container.textContent).toContain('Pedido recibido');
-		expect(container.textContent).toContain('¡Gracias por tu pedido!');
+		expect(container.textContent).toContain('Pedido confirmado');
+		expect(container.textContent).toContain('Tiempo estimado');
 		expect(container.textContent).toContain('25 – 35 min');
+		expect(container.textContent).not.toContain('Punto de recogida');
 		expect(container.textContent).toContain('Volver al inicio');
 	});
 
-	it('shows a friendly error when c is missing', async () => {
+	it('shows the pickup point and date for a pickup checkout', async () => {
+		getCheckoutStatusMock.mockResolvedValue({
+			...received,
+			pickup: { name: 'Oficina', location: 'Calle 1', hours: '12:00 – 14:00', date: '2026-09-02' }
+		});
+		const { container } = visit('?c=chk-1');
+		await waitFor(() => expect(container.textContent).toContain('Punto de recogida'));
+		expect(container.textContent).toContain('Oficina · Calle 1');
+		expect(container.textContent).toContain('Fecha y hora');
+		expect(container.textContent).toContain('miércoles, 2 de septiembre · 12:00 – 14:00');
+		expect(container.textContent).not.toContain('Tiempo estimado');
+	});
+
+	it('links WhatsApp with the AG number prefilled', async () => {
+		getCheckoutStatusMock.mockResolvedValue(received);
+		const { container } = visit('?c=chk-1');
+		await waitFor(() => expect(container.textContent).toContain('AG-4342'));
+		const link = container.querySelector('a[href^="https://wa.me/"]');
+		expect(link?.textContent).toContain('¿Tienes preguntas? Escríbenos');
+		expect(link?.getAttribute('target')).toBe('_blank');
+		expect(link?.getAttribute('href')).toBe(
+			`https://wa.me/573024712948?text=${encodeURIComponent('Hola alGramo, tengo una pregunta sobre mi pedido AG-4342')}`
+		);
+	});
+
+	it('shows a friendly error and a generic WhatsApp link when c is missing', async () => {
 		const { container } = visit('');
 		await waitFor(() => expect(container.textContent).toContain('No encontramos tu pedido'));
 		expect(getCheckoutStatusMock).not.toHaveBeenCalled();
+		expect(container.querySelector('a[href^="https://wa.me/"]')?.getAttribute('href')).toBe(
+			`https://wa.me/573024712948?text=${encodeURIComponent('Hola alGramo, tengo una pregunta sobre mi pedido')}`
+		);
 	});
 
 	it('shows a friendly error when the checkout is unknown', async () => {

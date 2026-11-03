@@ -132,4 +132,55 @@ describe('Pickup', () => {
 		});
 		expect(req.address).toBeUndefined();
 	});
+
+	it('submits while the phone-blur re-quote is still pending (tap not lost)', async () => {
+		const couponQuote = {
+			...quote,
+			discount: 180,
+			total: 1620,
+			coupon: { code: 'PRUEBA10', type: 'percent' as const, value: 10 }
+		};
+		getCheckoutQuoteMock
+			.mockResolvedValueOnce(quote)
+			.mockResolvedValueOnce(couponQuote)
+			.mockReturnValueOnce(new Promise(() => {}));
+		createCheckoutMock.mockResolvedValue({ checkoutId: 'chk-1', orderNumber: 1000 });
+		const { container } = render(Pickup, {
+			props: {
+				ingredients: [rice],
+				bowls: [
+					{
+						bowlSize: 450 as BowlSize,
+						items: new Map([[1, 100]]),
+						quantity: 1,
+						includeCutlery: false
+					}
+				],
+				point,
+				onBack: vi.fn()
+			}
+		});
+		await fireEvent.input(container.querySelector('#pickup-name') as HTMLInputElement, {
+			target: { value: 'Ana' }
+		});
+		await fireEvent.input(container.querySelector('#delivery-coupon') as HTMLInputElement, {
+			target: { value: 'PRUEBA10' }
+		});
+		const button = (re: RegExp) =>
+			Array.from(container.querySelectorAll('button')).find((b) =>
+				re.test(b.textContent ?? '')
+			) as HTMLButtonElement;
+		await fireEvent.click(button(/Aplicar/));
+		await waitFor(() => expect(container.textContent).toContain('¡Cupón aplicado!'));
+		const phone = container.querySelector('#pickup-phone') as HTMLInputElement;
+		await fireEvent.input(phone, { target: { value: '3001234567' } });
+		await fireEvent.blur(phone);
+		await waitFor(() => expect(getCheckoutQuoteMock).toHaveBeenCalledTimes(3));
+		// jsdom dispatches clicks on disabled buttons; a real browser drops them.
+		expect(button(/Confirmar recogida/).disabled).toBe(false);
+		await fireEvent.click(button(/Confirmar recogida/));
+
+		await waitFor(() => expect(createCheckoutMock).toHaveBeenCalledTimes(1));
+		expect(createCheckoutMock.mock.calls[0][0].couponCode).toBe('PRUEBA10');
+	});
 });

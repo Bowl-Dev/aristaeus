@@ -245,7 +245,7 @@
 
 		<button
 			type="button"
-			disabled={submitting || quoting || !quote || !name.trim() || phone.length !== 10}
+			disabled={submitting || !quote || !name.trim() || phone.length !== 10}
 			onclick={handleSubmit}
 			class="w-full cursor-pointer rounded-full border-none bg-dark-green px-6 py-4 text-sm font-bold text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
 		>

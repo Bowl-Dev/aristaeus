@@ -305,7 +305,8 @@
 			"bowl": "Bowl",
 			"delivery": "Domicilio",
 			"discount": "Descuento",
-			"amountDue": "Total a cobrar"
+			"amountDue": "Total a cobrar",
+			"pickupNote": "Pedido para recoger en {name}: no se envía a domicilio"
 		},
 		"printLabel": "Imprimir Etiqueta",
 		"generatingLabel": "Generando...",
@@ -651,15 +652,10 @@
 		}
 	},
 	"order": {
-		"number": "Número de pedido",
-		"status": "Estado",
 		"eta": "Tiempo estimado",
 		"home": "Volver al inicio",
 		"received": {
-			"eyebrow": "Pedido recibido",
-			"title": "¡Gracias por tu pedido!",
-			"message": "Estamos preparando tu bowl con mucho cuidado. Te notificaremos en cuanto esté listo.",
-			"status": "Recibido"
+			"eyebrow": "Pedido confirmado"
 		},
 		"notFound": {
 			"eyebrow": "Pedido no encontrado",
@@ -667,7 +663,10 @@
 			"message": "El enlace no es válido o el pedido no existe. Si ya hiciste tu pedido, escríbenos y lo revisamos."
 		},
 		"pickupPoint": "Punto de recogida",
-		"pickupDate": "Fecha y hora"
+		"pickupDate": "Fecha y hora",
+		"whatsapp": "¿Tienes preguntas? Escríbenos",
+		"whatsappMessage": "Hola alGramo, tengo una pregunta sobre mi pedido AG-{number}",
+		"whatsappMessageGeneric": "Hola alGramo, tengo una pregunta sobre mi pedido"
 	},
 	"fulfillment": {
 		"step": "Paso 1 de 2",

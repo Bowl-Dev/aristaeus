@@ -277,7 +277,6 @@
 		<button
 			type="button"
 			disabled={submitting ||
-				quoting ||
 				!freshQuote ||
 				!name.trim() ||
 				phone.length !== 10 ||
