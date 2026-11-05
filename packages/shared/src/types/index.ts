@@ -105,6 +105,17 @@ export function roundToNearestCoin(amount: number): number {
 	return Math.round(amount / 100) * 100;
 }
 
+/**
+ * Grams that count toward bowl capacity: sauces (`dressing`) ride on top and
+ * don't fill the bowl, though they are still priced and weighed on the label.
+ */
+export function capacityWeightG(items: { category: string; quantityGrams: number }[]): number {
+	return items.reduce(
+		(sum, item) => (item.category === 'dressing' ? sum : sum + item.quantityGrams),
+		0
+	);
+}
+
 // Order types
 export type OrderStatus =
 	| 'pending'

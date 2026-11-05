@@ -26,6 +26,7 @@ import { createCheckout, quoteCheckout } from '../checkout.js';
 const decimal = (n: number) => ({ toNumber: () => n });
 const rice = {
 	id: 1,
+	category: 'base',
 	caloriesPer100g: decimal(130),
 	proteinGPer100g: decimal(2.7),
 	carbsGPer100g: decimal(28),
@@ -33,6 +34,11 @@ const rice = {
 	fiberGPer100g: null,
 	pricePerG: decimal(50)
 };
+const sauce = { ...rice, id: 2, category: 'dressing', pricePerG: decimal(20) };
+const fullBowl = (items: { ingredientId: number; quantityGrams: number }[]) => ({
+	...request,
+	bowls: [{ bowlSize: 450, items, includeCutlery: false, quantity: 1 }]
+});
 const checkoutId = 'c0ffee00-0000-4000-8000-000000000000';
 const request = {
 	checkoutId,
@@ -99,6 +105,37 @@ describe('checkout handlers', () => {
 			couponRejection: null,
 			pickupDate: null
 		});
+	});
+
+	it('accepts a full 450 g bowl plus 50 g of sauce, pricing the sauce', async () => {
+		vi.mocked(prisma.ingredient.findMany).mockResolvedValue([rice, sauce] as never);
+
+		const response = await call(
+			quoteCheckout,
+			fullBowl([
+				{ ingredientId: 1, quantityGrams: 450 },
+				{ ingredientId: 2, quantityGrams: 50 }
+			])
+		);
+
+		// 1300 packaging + 450g x 50 + 50g sauce x 20 = 24800
+		expect(response.statusCode).toBe(200);
+		expect(response.json).toMatchObject({ subtotal: 24800 });
+	});
+
+	it('still rejects a bowl overweight without sauce', async () => {
+		vi.mocked(prisma.ingredient.findMany).mockResolvedValue([rice, sauce] as never);
+
+		const response = await call(
+			quoteCheckout,
+			fullBowl([
+				{ ingredientId: 1, quantityGrams: 460 },
+				{ ingredientId: 2, quantityGrams: 50 }
+			])
+		);
+
+		expect(response.statusCode).toBe(400);
+		expect(response.json.message).toMatch(/460g\) exceed bowl capacity \(450g\)/);
 	});
 
 	it('quotes a rejected coupon as 200 with the reason', async () => {
