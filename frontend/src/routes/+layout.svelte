@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
 	import { locale, setLocale, waitForLocale } from '$lib/i18n';
 	import { isLoading } from 'svelte-i18n';
 	import { onMount } from 'svelte';
@@ -36,10 +35,6 @@
 		setLocale(currentLocale === 'es' ? 'en' : 'es');
 	}
 </script>
-
-<svelte:head>
-	<link rel="icon" href={favicon} />
-</svelte:head>
 
 {#if !ready || $isLoading}
 	<div class="flex items-center justify-center h-dvh">
