@@ -5,6 +5,7 @@
 		BOWL_SIZES,
 		MAX_CART_BOWLS,
 		roundToNearestCoin,
+		capacityWeightG,
 		type Ingredient,
 		type BowlSize
 	} from '$lib/types';
@@ -83,8 +84,18 @@
 	// ──────────────────────────────────────────────
 	const totals = $derived(computeBowlTotals(selectedItems, ingredients));
 
-	const remaining = $derived(bowlSize - totals.weight);
-	const isOverCapacity = $derived(totals.weight > bowlSize);
+	// Sauces ship in their own containers, so they don't fill the bowl (ENG-76).
+	// They still count in totals.weight (nutrition, price), just not capacity.
+	const capacityUsed = $derived(
+		capacityWeightG(
+			[...selectedItems].flatMap(([id, quantityGrams]) => {
+				const ing = ingredients.find((i) => i.id === id);
+				return ing ? [{ category: ing.category, quantityGrams }] : [];
+			})
+		)
+	);
+	const remaining = $derived(bowlSize - capacityUsed);
+	const isOverCapacity = $derived(capacityUsed > bowlSize);
 	const hasItems = $derived(selectedItems.size > 0);
 	const cartBlocked = $derived(cartFull && !isEditing);
 
@@ -139,21 +150,26 @@
 		return getQuantityIncrement(ing?.category ?? '');
 	}
 
+	function isDressing(id: number): boolean {
+		return ingredients.find((i) => i.id === id)?.category === 'dressing';
+	}
+
 	function handleAdd(id: number) {
 		const step = getIncrement(id);
-		if (remaining < step) {
+		const dressing = isDressing(id);
+		if (!dressing && remaining < step) {
 			registerBlockedAttempt();
 			return;
 		}
 		const ing = ingredients.find((i) => i.id === id);
 		const initial = getInitialQuantity(ing?.category ?? '');
-		// Clamp to available capacity
-		selectedItems.set(id, Math.min(initial, remaining));
+		// Clamp to available capacity (sauces don't take bowl capacity)
+		selectedItems.set(id, dressing ? initial : Math.min(initial, remaining));
 	}
 
 	function handleIncrease(id: number) {
 		const step = getIncrement(id);
-		if (remaining < step) {
+		if (!isDressing(id) && remaining < step) {
 			registerBlockedAttempt();
 			return;
 		}
@@ -345,13 +361,13 @@
 				<!-- Weight row (price lives only in the add-to-cart bar) -->
 				<div class="flex items-center justify-between px-4 text-sm text-pure-white/70">
 					<p class="m-0">
-						{$_('builder.weight', { values: { used: totals.weight, total: bowlSize } })}
+						{$_('builder.weight', { values: { used: capacityUsed, total: bowlSize } })}
 					</p>
 				</div>
 
 				{#if isOverCapacity}
 					<p class="m-0 px-4 text-center text-xs font-semibold text-red-400">
-						{$_('builder.overCapacity', { values: { amount: totals.weight - bowlSize } })}
+						{$_('builder.overCapacity', { values: { amount: capacityUsed - bowlSize } })}
 					</p>
 				{/if}
 

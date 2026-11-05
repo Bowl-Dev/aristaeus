@@ -44,7 +44,8 @@ export {
 	CUTLERY_PRICE,
 	MAX_BOWL_QUANTITY,
 	MAX_CART_BOWLS,
-	roundToNearestCoin
+	roundToNearestCoin,
+	capacityWeightG
 } from '@aristaeus/shared';
 
 // ponytail: BOWL_SIZE_LABELS and DRESSING_CONTAINER_GRAMS have no callers, and the
