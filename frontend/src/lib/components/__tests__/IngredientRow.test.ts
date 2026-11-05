@@ -89,25 +89,13 @@ describe('IngredientRow', () => {
 		expect(addBtn.getAttribute('aria-disabled')).toBe('false');
 	});
 
-	it('quantizes dressings to half-container (12g) steps (Add blocked below a half container)', () => {
+	it('never blocks dressings on capacity, even with no room left (ENG-76)', () => {
 		const dressing: Ingredient = { ...baseIngredient, category: 'dressing' };
-		const tooLittle = render(IngredientRow, {
-			props: makeProps({ ingredient: dressing, remaining: 6 })
+		const { container } = render(IngredientRow, {
+			props: makeProps({ ingredient: dressing, remaining: 0 })
 		});
-		expect(
-			(tooLittle.container.querySelector('button') as HTMLButtonElement).getAttribute(
-				'aria-disabled'
-			)
-		).toBe('true');
-
-		const halfContainer = render(IngredientRow, {
-			props: makeProps({ ingredient: dressing, remaining: 12 })
-		});
-		expect(
-			(halfContainer.container.querySelector('button') as HTMLButtonElement).getAttribute(
-				'aria-disabled'
-			)
-		).toBe('false');
+		const addBtn = container.querySelector('button') as HTMLButtonElement;
+		expect(addBtn.getAttribute('aria-disabled')).toBe('false');
 	});
 
 	it('labels a half-container dressing as ½ container, not grams', () => {

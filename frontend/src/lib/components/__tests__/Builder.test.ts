@@ -53,6 +53,22 @@ const lettuce: Ingredient = {
 	pricePerG: 3
 };
 
+const sauce: Ingredient = {
+	id: 4,
+	name: 'Sauce',
+	nameEs: 'Salsa',
+	nameEn: 'Sauce',
+	category: 'dressing',
+	caloriesPer100g: 300,
+	proteinGPer100g: 0,
+	carbsGPer100g: 5,
+	fatGPer100g: 30,
+	fiberGPer100g: 0,
+	available: true,
+	displayOrder: 1,
+	pricePerG: 8
+};
+
 const ingredients: Ingredient[] = [rice, chicken];
 
 const makeProps = (
@@ -180,6 +196,57 @@ describe('Builder', () => {
 	it('shows the loading state when loading is true', () => {
 		const { container } = render(Builder, { props: makeProps({ loading: true }) });
 		expect(container.textContent).toContain('Cargando');
+	});
+
+	describe('sauces outside bowl capacity (ENG-76)', () => {
+		const fullWithSauce = () =>
+			render(Builder, {
+				props: {
+					...makeProps({
+						selectedItems: new SvelteMap<number, number>([
+							[1, 450],
+							[4, 24]
+						]),
+						bowlSize: 450
+					}),
+					ingredients: [rice, chicken, sauce]
+				}
+			});
+
+		it('does not count sauce toward the weight bar or over-capacity', () => {
+			const { container } = fullWithSauce();
+			expect(container.textContent).toContain('450g / 450g');
+			expect(container.textContent).not.toContain('Excede la capacidad');
+			const cta = Array.from(container.querySelectorAll('button')).find((b) =>
+				(b.textContent ?? '').includes('Agregar al carrito')
+			) as HTMLButtonElement;
+			expect(cta.disabled).toBe(false);
+		});
+
+		it('still lets a full bowl increase sauce, but not add a non-sauce item', async () => {
+			const items = new SvelteMap<number, number>([[1, 450]]);
+			const { container } = render(Builder, {
+				props: {
+					...makeProps({ selectedItems: items, bowlSize: 450 }),
+					ingredients: [rice, chicken, sauce]
+				}
+			});
+			const addSauce = await openRowsAndFind(container, 'Agregar Salsa');
+			await fireEvent.click(addSauce);
+			expect(items.get(4)).toBeGreaterThan(0);
+			const before = items.get(4)!;
+			const increaseSauce = container.querySelector(
+				'button[aria-label="Aumentar Salsa"]'
+			) as HTMLButtonElement;
+			await fireEvent.click(increaseSauce);
+			expect(items.get(4)).toBeGreaterThan(before);
+
+			const addChicken = container.querySelector(
+				'button[aria-label="Agregar Pollo"]'
+			) as HTMLButtonElement;
+			await fireEvent.click(addChicken);
+			expect(items.has(2)).toBe(false);
+		});
 	});
 
 	describe('full-bowl prompt (ENG-88)', () => {

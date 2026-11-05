@@ -32,8 +32,9 @@
 	// parent: a truly disabled button swallows the click, leaving the customer
 	// with no feedback about why nothing happened (ENG-88). The parent guards the
 	// capacity check and explains after a repeated attempt.
-	const addDisabled = $derived(remaining < step);
-	const increaseDisabled = $derived(remaining < step);
+	// Sauces don't take bowl capacity (ENG-76), so they're never blocked.
+	const addDisabled = $derived(ingredient.category !== 'dressing' && remaining < step);
+	const increaseDisabled = $derived(addDisabled);
 
 	// Nutritional chips — per-100g reference values until the ingredient is
 	// added, then scaled to the selected quantity: (per100g * grams) / 100

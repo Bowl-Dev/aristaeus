@@ -12,6 +12,7 @@ import type { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
 import { Prisma, type Coupon } from '@prisma/client';
 import { z } from 'zod';
 import {
+	capacityWeightG,
 	MAX_BOWL_QUANTITY,
 	MAX_CART_BOWLS,
 	type CheckoutQuote,
@@ -105,10 +106,17 @@ async function priceCart(cart: Cart, phone: string | undefined) {
 	const ingredientMap = new Map(ingredients.map((i) => [i.id, i]));
 
 	const bowls = cart.bowls.map((bowl) => ({ bowl, ...priceBowl(bowl, ingredientMap) }));
-	const overweight = bowls.find((b) => b.nutrition.totalWeightG > b.bowl.bowlSize);
+	const capacityOf = (bowl: Cart['bowls'][number]) =>
+		capacityWeightG(
+			bowl.items.map((i) => ({
+				category: ingredientMap.get(i.ingredientId)!.category,
+				quantityGrams: i.quantityGrams
+			}))
+		);
+	const overweight = bowls.find((b) => capacityOf(b.bowl) > b.bowl.bowlSize);
 	if (overweight) {
 		return badRequest(
-			`Total weight (${overweight.nutrition.totalWeightG}g) exceeds bowl capacity (${overweight.bowl.bowlSize}g)`
+			`Bowl contents without sauces (${capacityOf(overweight.bowl)}g) exceed bowl capacity (${overweight.bowl.bowlSize}g)`
 		);
 	}
 	const subtotal = bowls.reduce((sum, b) => sum + b.unitPrice * b.bowl.quantity, 0);
