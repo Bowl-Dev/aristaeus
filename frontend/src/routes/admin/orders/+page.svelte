@@ -121,7 +121,7 @@
 	async function handleGenerateLabel(order: AdminOrder) {
 		generatingLabelForOrderId = order.id;
 		try {
-			await generateLabel(order);
+			await generateLabel([order]);
 		} catch (e) {
 			console.error('Label generation failed:', e);
 			alert('Error al generar la etiqueta. Intente de nuevo.');

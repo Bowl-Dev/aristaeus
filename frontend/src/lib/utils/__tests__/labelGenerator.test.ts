@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { buildIngredientList } from '../labelGenerator';
-import type { AdminOrderItem, IngredientCategory } from '$lib/types';
+import { describe, it, expect, vi } from 'vitest';
+import { buildIngredientList, buildLabelPdf } from '../labelGenerator';
+import type { AdminOrder, AdminOrderItem, IngredientCategory } from '$lib/types';
 
 function item(
 	nameEs: string,
@@ -52,5 +52,85 @@ describe('buildIngredientList', () => {
 
 	it('returns an empty string when there are no items', () => {
 		expect(buildIngredientList([])).toBe('');
+	});
+});
+
+// Records every text call with its left/right extent so we can check page bounds.
+const drawn: { text: string; left: number; right: number; y: number }[] = [];
+vi.mock('jspdf', async (importOriginal) => {
+	const { jsPDF } = await importOriginal<typeof import('jspdf')>();
+	// jsPDF assigns `text` on the instance, so wrap it after construction.
+	class SpyPDF extends jsPDF {
+		constructor(...ctorArgs: ConstructorParameters<typeof jsPDF>) {
+			super(...ctorArgs);
+			const text = this.text.bind(this);
+			this.text = ((
+				lines: string | string[],
+				x: number,
+				y: number,
+				options?: { align?: string }
+			) => {
+				for (const line of ([] as string[]).concat(lines)) {
+					const w = this.getTextWidth(line);
+					const left = options?.align === 'right' ? x - w : x;
+					drawn.push({ text: line, left, right: left + w, y });
+				}
+				return text(lines, x, y, options as Parameters<typeof text>[3]);
+			}) as typeof text;
+		}
+	}
+	return { jsPDF: SpyPDF };
+});
+
+function order(id: number, items: AdminOrderItem[], name = 'Juan'): AdminOrder {
+	return {
+		id,
+		user: { name },
+		items,
+		totalWeightG: 600,
+		totalCalories: 936.4,
+		totalProteinG: 63.2,
+		totalCarbsG: 69.6,
+		totalFatG: 44.5,
+		totalFiberG: 11.6,
+		totalPrice: 25100
+	} as AdminOrder;
+}
+
+const longBowl = [
+	item('Arroz integral con quinoa y ajonjolí', 'base', 1, 120),
+	item('Pechuga de pollo a la plancha marinada', 'protein', 2, 120),
+	item('Salmón ahumado del Pacífico colombiano', 'protein', 3, 60),
+	item('Mango tommy maduro en cubos', 'vegetable', 4, 50),
+	item('Aguacate hass en láminas finas', 'vegetable', 5, 50),
+	item('Pepino cohombro encurtido en casa', 'vegetable', 6, 40),
+	item('Zanahoria rallada con jengibre', 'vegetable', 7, 40),
+	item('Maní tostado y garrapiñado', 'topping', 8, 20),
+	item('Cebolla crocante caramelizada', 'topping', 9, 20),
+	item('Salsa teriyaki de la casa con miel', 'dressing', 10, 75)
+];
+
+describe('buildLabelPdf', () => {
+	it('makes one 60 × 55 mm page per bowl', async () => {
+		const doc = await buildLabelPdf([order(1, longBowl), order(2, longBowl.slice(0, 2))]);
+		expect(doc.internal.pageSize.getWidth()).toBeCloseTo(60, 1);
+		expect(doc.internal.pageSize.getHeight()).toBeCloseTo(55, 1);
+		expect(doc.getNumberOfPages()).toBe(2);
+	});
+
+	it('keeps a long 10-ingredient bowl and a long name inside the page', async () => {
+		drawn.length = 0;
+		await buildLabelPdf([order(1, longBowl, 'María Fernanda Rodríguez de la Torre Villamizar')]);
+		expect(drawn.length).toBeGreaterThan(10);
+		for (const t of drawn) {
+			expect(t.left, t.text).toBeGreaterThanOrEqual(0);
+			expect(t.right, t.text).toBeLessThanOrEqual(60);
+			expect(t.y, t.text).toBeGreaterThan(0);
+			expect(t.y, t.text).toBeLessThanOrEqual(55);
+		}
+		// Precio still lands above the nutrition heading after the long list.
+		const precio = drawn.find((t) => t.text.startsWith('Precio'))!;
+		const heading = drawn.find((t) => t.text.startsWith('Información'))!;
+		expect(precio.y).toBeLessThan(heading.y);
 	});
 });
