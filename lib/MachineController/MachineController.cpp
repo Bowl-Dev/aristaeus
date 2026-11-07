@@ -201,6 +201,35 @@ bool MachineController::processJobRequest(const JobRequest& request)
             emitEvent(request.actuator, MachineEventType::JobFinished);
             return true;
 
+        case JobType::MoveServo:
+
+            if (request.actuator >= NUM_LOAD_CELLS)
+            {
+                Serial.println("Invalid actuator");
+                return false;
+            }
+
+            // Manual gate control for clearing a jam or cleaning - must not
+            // fight an active dispense/flush cycle on this actuator, or (on
+            // synchronized-flush units) desync the sibling actuator waiting
+            // to flush alongside it.
+            if (currentState.actuator[request.actuator].mode == MachineMode::Dispensing ||
+                currentState.actuator[request.actuator].mode == MachineMode::Flushing ||
+                currentState.actuator[request.actuator].mode == MachineMode::WaitingToFlush)
+            {
+                jobRejected(request.actuator, "Cannot move the gate while a dispense job is active");
+                return false;
+            }
+
+            if (request.openGate)
+                services.servo.openGate(request.actuator);
+            else
+                services.servo.closeGate(request.actuator);
+
+            jobAccepted(request.actuator);
+            emitEvent(request.actuator, MachineEventType::JobFinished);
+            return true;
+
         case JobType::Reset:
 
             if (request.actuator >= NUM_LOAD_CELLS)

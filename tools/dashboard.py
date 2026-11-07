@@ -677,6 +677,8 @@ PAGE = """<!DOCTYPE html>
   <button id="btnTare">Tare</button>
   <button id="btnResume">Resume</button>
   <button id="btnReset">Reset</button>
+  <button id="btnOpenGate" class="btn-run">Open Gate</button>
+  <button id="btnCloseGate" class="btn-danger">Close Gate</button>
   <span id="commandStatus"></span>
 </div>
 
@@ -853,6 +855,12 @@ async function sendCommand(action) {
     return;
   }
   if (action === "resume" && !confirm(`Resume ${ingredient} (${device} #${actuator})? This will restart the motor from where it stalled.`)) {
+    return;
+  }
+  if (action === "openGate" && !confirm(`Open the gate on ${ingredient} (${device} #${actuator})? Keep hands and tools clear of the mechanism.`)) {
+    return;
+  }
+  if (action === "closeGate" && !confirm(`Close the gate on ${ingredient} (${device} #${actuator})? Make sure hands and tools are clear before it moves.`)) {
     return;
   }
 
@@ -1385,6 +1393,8 @@ document.getElementById("btnDispense").addEventListener("click", () => sendComma
 document.getElementById("btnTare").addEventListener("click", () => sendCommand("tare"));
 document.getElementById("btnResume").addEventListener("click", () => sendCommand("resume"));
 document.getElementById("btnReset").addEventListener("click", () => sendCommand("reset"));
+document.getElementById("btnOpenGate").addEventListener("click", () => sendCommand("openGate"));
+document.getElementById("btnCloseGate").addEventListener("click", () => sendCommand("closeGate"));
 document.getElementById("btnCalibrate").addEventListener("click", sendCalibrate);
 document.getElementById("btnToggleCalibrate").addEventListener("click", () => {
   const wrap = document.getElementById("calibrateControls");
@@ -1490,6 +1500,18 @@ class Handler(BaseHTTPRequestHandler):
                 command = {
                     "command": "resume",
                     "actuator": int(body.get("actuator", 0)),
+                }
+            elif action == "openGate":
+                command = {
+                    "command": "gate",
+                    "actuator": int(body.get("actuator", 0)),
+                    "open": True,
+                }
+            elif action == "closeGate":
+                command = {
+                    "command": "gate",
+                    "actuator": int(body.get("actuator", 0)),
+                    "open": False,
                 }
             elif action == "calibrate":
                 known_weight = float(body.get("knownWeight", 0))

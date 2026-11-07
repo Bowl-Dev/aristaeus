@@ -76,4 +76,10 @@ struct JobRequest
     float targetWeight = 0.0f;
 
     uint32_t speed = 1000;
+
+    // For MoveServo: true to open the gate, false to close it. Manual,
+    // on-demand control for clearing a jam or cleaning - independent of any
+    // dispense job (rejected while one is actively running on this
+    // actuator).
+    bool openGate = false;
 };

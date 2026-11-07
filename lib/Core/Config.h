@@ -28,7 +28,27 @@ struct ServoConfig
 constexpr char WIFI_SSID[] = "REDACTED";
 constexpr char WIFI_PASSWORD[] = "REDACTED";
 
-constexpr char MQTT_SERVER[] = "192.168.2.9";   // Your broker IP
+// The broker (mosquitto + dashboard.py) runs on Juan's PC, whose IP can
+// change whenever Windows renews its DHCP lease. Solved via mDNS instead of
+// a fixed IP: this hostname is resolved to whatever IP the PC currently has
+// at runtime (see MQTTManager::resolveBrokerAddress()), re-resolved on
+// every reconnect attempt - so the firmware follows the broker to a new IP
+// automatically, no reflash needed. Find the PC's hostname by running
+// `hostname` in PowerShell or cmd - do NOT include ".local", queryHost()
+// appends that itself. Set via platformio.ini build_flags; shared by every
+// unit since they all talk to the same broker.
+#ifndef MQTT_BROKER_HOSTNAME
+#define MQTT_BROKER_HOSTNAME "CHANGE-ME-PC-HOSTNAME"
+#endif
+
+// Used only until the first successful mDNS resolution after boot (or if
+// mDNS is ever unavailable on the network) - once resolveBrokerAddress()
+// succeeds once, its result is kept from then on and this fallback is not
+// consulted again unless the device reboots. Update it if you happen to
+// learn the PC's current IP, as a safety net - it's a backstop now, not the
+// primary mechanism.
+constexpr char MQTT_SERVER_FALLBACK[] = "192.168.2.17";
+
 constexpr uint16_t MQTT_PORT = 1883;
 
 #ifndef DEVICE_ID

@@ -23,15 +23,69 @@ void ServoManager::begin()
             SERVO_CONFIGS[i].maxPulse);
 
         servos[i].write(SERVO_CONFIGS[i].closedAngle);
+        attached[i] = true;
 
         gateOpen[i] = false;
+        currentAngle[i] = SERVO_CONFIGS[i].closedAngle;
+        targetAngle[i] = SERVO_CONFIGS[i].closedAngle;
+        lastStepAt[i] = millis();
         context.servo[i].position = SERVO_CONFIGS[i].closedAngle;
     }
 }
 
 void ServoManager::update()
 {
-    // Timing is computed on demand in isFlushing(); nothing to poll here.
+    // Moves each servo one degree at a time toward its target angle instead
+    // of snapping there instantly - openGate()/closeGate() just set the
+    // target, this is what actually walks currentAngle toward it over time.
+    // SERVO_STEP_INTERVAL_MS (Pins.h) controls how slow: raise it to slow
+    // the gates down further, lower it to speed them back up.
+    uint32_t now = millis();
+
+    for (uint8_t i = 0; i < NUM_LOAD_CELLS; i++)
+    {
+        if (currentAngle[i] == targetAngle[i])
+        {
+            // Arrived: once the servo has had time to finish travelling,
+            // release it so it stops hunting around the target.
+            if (attached[i] && now - lastStepAt[i] >= SERVO_RELEASE_DELAY_MS)
+            {
+                servos[i].detach();
+                attached[i] = false;
+            }
+            continue;
+        }
+
+        if (now - lastStepAt[i] < SERVO_STEP_INTERVAL_MS)
+            continue;
+
+        lastStepAt[i] = now;
+
+        if (currentAngle[i] < targetAngle[i])
+            currentAngle[i]++;
+        else
+            currentAngle[i]--;
+
+        servos[i].write(currentAngle[i]);
+        context.servo[i].position = currentAngle[i];
+    }
+}
+
+void ServoManager::attachServo(uint8_t actuator)
+{
+    if (attached[actuator])
+        return;
+
+    servos[actuator].setPeriodHertz(50);
+    servos[actuator].attach(
+        SERVO_CONFIGS[actuator].pin,
+        SERVO_CONFIGS[actuator].minPulse,
+        SERVO_CONFIGS[actuator].maxPulse);
+
+    // Start from where the gate currently is, so re-attaching doesn't jerk it.
+    servos[actuator].write(currentAngle[actuator]);
+    attached[actuator] = true;
+    lastStepAt[actuator] = millis();
 }
 
 void ServoManager::openGate(uint8_t actuator)
@@ -39,12 +93,13 @@ void ServoManager::openGate(uint8_t actuator)
     if (actuator >= NUM_LOAD_CELLS)
         return;
 
-    servos[actuator].write(SERVO_CONFIGS[actuator].openAngle);
+    if (currentAngle[actuator] != SERVO_CONFIGS[actuator].openAngle)
+        attachServo(actuator);
+
+    targetAngle[actuator] = SERVO_CONFIGS[actuator].openAngle;
 
     gateOpen[actuator] = true;
     openedAt[actuator] = millis();
-
-    context.servo[actuator].position = SERVO_CONFIGS[actuator].openAngle;
 }
 
 void ServoManager::closeGate(uint8_t actuator)
@@ -52,11 +107,12 @@ void ServoManager::closeGate(uint8_t actuator)
     if (actuator >= NUM_LOAD_CELLS)
         return;
 
-    servos[actuator].write(SERVO_CONFIGS[actuator].closedAngle);
+    if (currentAngle[actuator] != SERVO_CONFIGS[actuator].closedAngle)
+        attachServo(actuator);
+
+    targetAngle[actuator] = SERVO_CONFIGS[actuator].closedAngle;
 
     gateOpen[actuator] = false;
-
-    context.servo[actuator].position = SERVO_CONFIGS[actuator].closedAngle;
 }
 
 bool ServoManager::isFlushing(uint8_t actuator) const

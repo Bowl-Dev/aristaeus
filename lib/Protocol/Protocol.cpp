@@ -37,6 +37,9 @@ bool Protocol::parse(const char* json, JobRequest& request)
             return true;
         }
 
+    if (command == "gate")
+        return parseGate(doc, request);
+
     return false;
 }
 
@@ -67,6 +70,14 @@ bool Protocol::parseCalibrate(JsonDocument& doc, JobRequest& request)
 bool Protocol::parseStatus( JsonDocument&, JobRequest& request)
 {
     request.type = JobType::Status;
+    return true;
+}
+
+bool Protocol::parseGate(JsonDocument& doc, JobRequest& request)
+{
+    request.type = JobType::MoveServo;
+    request.actuator = doc["actuator"];
+    request.openGate = doc["open"] | false;
     return true;
 }
 

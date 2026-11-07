@@ -28,4 +28,8 @@ private:
     bool parseStatus(
         JsonDocument& doc,
         JobRequest& request);
+
+    bool parseGate(
+        JsonDocument& doc,
+        JobRequest& request);
 };

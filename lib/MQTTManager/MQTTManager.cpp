@@ -2,6 +2,7 @@
 #include "Protocol.h"
 #include "Config.h"
 #include <WiFi.h>
+#include <ESPmDNS.h>
 #include "MachineController.h"
 
 MQTTManager* MQTTManager::instance = nullptr;
@@ -23,12 +24,40 @@ void MQTTManager::begin()
     // (topic + payload + MQTT header) already exceeds. Give it headroom.
     mqtt.setBufferSize(1024);
 
-    mqtt.setServer(MQTT_SERVER, MQTT_PORT);
-    Serial.print("MQTT server: ");
-    Serial.print(MQTT_SERVER);
-    Serial.print(":");
-    Serial.println(MQTT_PORT);
+    // WiFi isn't connected yet at this point (wifiManager.begin() just
+    // started the connection attempt, non-blocking), so mDNS can't resolve
+    // anything yet either - start out pointed at the fallback IP.
+    // reconnect() takes over via mDNS as soon as WiFi actually comes up,
+    // and keeps the address current from then on even if the PC's IP
+    // changes later.
+    brokerAddress.fromString(MQTT_SERVER_FALLBACK);
+    mqtt.setServer(brokerAddress, MQTT_PORT);
+    Serial.print("MQTT broker (fallback, until mDNS resolves " MQTT_BROKER_HOSTNAME ".local): ");
+    Serial.println(brokerAddress);
+
     mqtt.setCallback(mqttCallback);
+}
+
+void MQTTManager::resolveBrokerAddress()
+{
+    IPAddress resolved = MDNS.queryHost(MQTT_BROKER_HOSTNAME, 2000);
+
+    if (resolved == IPAddress(0, 0, 0, 0))
+    {
+        // Lookup failed - keep using whatever address we already have (the
+        // fallback IP, or the last one that DID resolve) instead of losing
+        // a known-good address over one missed query.
+        Serial.println("mDNS lookup failed, keeping current broker address");
+        return;
+    }
+
+    if (resolved != brokerAddress)
+    {
+        Serial.print("Broker resolved via mDNS (" MQTT_BROKER_HOSTNAME ".local): ");
+        Serial.println(resolved);
+    }
+
+    brokerAddress = resolved;
 }
 
 bool MQTTManager::connected()
@@ -88,7 +117,12 @@ void MQTTManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
 void MQTTManager::reconnect()
 {
     if (WiFi.status() != WL_CONNECTED)
+    {
+        // Re-init mDNS next time WiFi comes back, in case the interface
+        // dropped and got a different IP of its own in the meantime.
+        mdnsStarted = false;
         return;
+    }
 
     if (mqtt.connected())
         return;
@@ -99,6 +133,20 @@ void MQTTManager::reconnect()
         return;
 
     lastReconnectAttempt = now;
+
+    if (!mdnsStarted)
+    {
+        mdnsStarted = MDNS.begin(DEVICE_ID);
+        if (!mdnsStarted)
+            Serial.println("mDNS init failed");
+    }
+
+    // Re-resolve on every reconnect attempt (at most once per 5s thanks to
+    // the backoff above) rather than once at boot - this is what lets the
+    // firmware follow the broker to a new IP automatically if it changes
+    // while we're disconnected, with no reflash needed.
+    resolveBrokerAddress();
+    mqtt.setServer(brokerAddress, MQTT_PORT);
 
     Serial.println("Connecting MQTT...");
 
