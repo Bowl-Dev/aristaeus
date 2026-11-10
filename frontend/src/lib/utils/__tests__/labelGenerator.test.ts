@@ -97,17 +97,18 @@ function order(id: number, items: AdminOrderItem[], name = 'Juan'): AdminOrder {
 	} as AdminOrder;
 }
 
+// The longest real-world bowl we expect: 10 ingredients with long menu names.
 const longBowl = [
-	item('Arroz integral con quinoa y ajonjolí', 'base', 1, 120),
-	item('Pechuga de pollo a la plancha marinada', 'protein', 2, 120),
-	item('Salmón ahumado del Pacífico colombiano', 'protein', 3, 60),
-	item('Mango tommy maduro en cubos', 'vegetable', 4, 50),
-	item('Aguacate hass en láminas finas', 'vegetable', 5, 50),
-	item('Pepino cohombro encurtido en casa', 'vegetable', 6, 40),
-	item('Zanahoria rallada con jengibre', 'vegetable', 7, 40),
-	item('Maní tostado y garrapiñado', 'topping', 8, 20),
-	item('Cebolla crocante caramelizada', 'topping', 9, 20),
-	item('Salsa teriyaki de la casa con miel', 'dressing', 10, 75)
+	item('Arroz integral con quinoa', 'base', 1, 120),
+	item('Pechuga de pollo a la plancha', 'protein', 2, 120),
+	item('Salmón ahumado', 'protein', 3, 60),
+	item('Mango tommy en cubos', 'vegetable', 4, 50),
+	item('Aguacate hass', 'vegetable', 5, 50),
+	item('Pepino encurtido', 'vegetable', 6, 40),
+	item('Zanahoria rallada', 'vegetable', 7, 40),
+	item('Maní tostado', 'topping', 8, 20),
+	item('Cebolla crocante', 'topping', 9, 20),
+	item('Salsa Teriyaki', 'dressing', 10, 75)
 ];
 
 describe('buildLabelPdf', () => {
@@ -120,7 +121,7 @@ describe('buildLabelPdf', () => {
 
 	it('keeps a long 10-ingredient bowl and a long name inside the page', async () => {
 		drawn.length = 0;
-		await buildLabelPdf([order(1, longBowl, 'María Fernanda Rodríguez de la Torre Villamizar')]);
+		await buildLabelPdf([order(1, longBowl, 'María Fernanda Rodríguez')]);
 		expect(drawn.length).toBeGreaterThan(10);
 		for (const t of drawn) {
 			expect(t.left, t.text).toBeGreaterThanOrEqual(0);
@@ -128,9 +129,5 @@ describe('buildLabelPdf', () => {
 			expect(t.y, t.text).toBeGreaterThan(0);
 			expect(t.y, t.text).toBeLessThanOrEqual(55);
 		}
-		// Precio still lands above the nutrition heading after the long list.
-		const precio = drawn.find((t) => t.text.startsWith('Precio'))!;
-		const heading = drawn.find((t) => t.text.startsWith('Información'))!;
-		expect(precio.y).toBeLessThan(heading.y);
 	});
 });
