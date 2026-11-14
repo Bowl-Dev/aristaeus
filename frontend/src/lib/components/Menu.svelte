@@ -10,14 +10,14 @@
 		loading,
 		onBack,
 		onCart,
-		onCustomize,
+		onSelect,
 		cartCount
 	}: {
 		menus: MenuType[];
 		loading: boolean;
 		onBack: () => void;
 		onCart?: () => void;
-		onCustomize: (menu: MenuType) => void;
+		onSelect: (menu: MenuType) => void;
 		cartCount?: number;
 	} = $props();
 </script>
@@ -35,7 +35,7 @@
 		{:else}
 			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
 				{#each menus as menu (menu.id)}
-					<MenuCard {menu} locale={$locale ?? 'es'} {onCustomize} />
+					<MenuCard {menu} locale={$locale ?? 'es'} {onSelect} />
 				{/each}
 			</div>
 		{/if}

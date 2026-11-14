@@ -13,6 +13,7 @@
 	import Card from './molecules/Card.svelte';
 	import NutritionChips from './molecules/NutritionChips.svelte';
 	import IconButton from './atoms/IconButton.svelte';
+	import Button from './atoms/Button.svelte';
 	import ConfirmModal from './organisms/ConfirmModal.svelte';
 
 	interface BowlSnapshot {
@@ -142,7 +143,7 @@
 	<div class="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 pb-6">
 		{#each bowlData as bowl, i (i)}
 			<Card>
-				<!-- Card header: title + delete -->
+				<!-- Card header: title + edit -->
 				<div class="flex items-start justify-between gap-2">
 					<div>
 						<p class="m-0 text-sm font-bold uppercase tracking-[0.5px] text-text-black">
@@ -150,26 +151,9 @@
 						</p>
 						<p class="m-0 text-sm text-text-muted">{bowl.weight}g</p>
 					</div>
-					<IconButton
-						variant="outline"
-						ariaLabel={$_('cart.bowl.edit')}
-						onclick={() => onEditBowl(i)}
-					>
-						<svg
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M12 20h9" />
-							<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-						</svg>
-					</IconButton>
+					<Button size="sm" ariaLabel={$_('cart.bowl.edit')} onclick={() => onEditBowl(i)}>
+						{$_('cart.bowl.editShort')}
+					</Button>
 				</div>
 
 				<!-- Ingredient summary -->

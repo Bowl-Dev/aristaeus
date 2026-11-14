@@ -25,7 +25,7 @@
 			"fat": "FAT",
 			"carbs": "CARBS",
 			"price": "Total price",
-			"customize": "Customize bowl"
+			"select": "Select bowl"
 		}
 	},
 	"size": {
@@ -215,6 +215,7 @@
 		"bowl": {
 			"title": "Bowl {n} - {size}",
 			"edit": "Edit bowl",
+			"editShort": "Edit",
 			"remove": "Remove bowl",
 			"nutrition": "Nutritional summary",
 			"decrease": "Decrease quantity",
