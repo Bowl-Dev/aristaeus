@@ -41,7 +41,7 @@ const menu: Menu = {
 const makeProps = (overrides: Record<string, unknown> = {}) => ({
 	menu,
 	locale: 'es',
-	onCustomize: vi.fn(),
+	onSelect: vi.fn(),
 	...overrides
 });
 

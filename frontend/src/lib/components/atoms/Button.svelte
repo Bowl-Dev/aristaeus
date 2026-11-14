@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	type Variant = 'primary' | 'ghost' | 'link';
-	type Size = 'md' | 'lg';
+	type Size = 'sm' | 'md' | 'lg';
 
 	let {
 		variant = 'primary',
@@ -37,6 +37,7 @@
 	};
 
 	const sizes: Record<Size, string> = {
+		sm: 'px-4 py-2 text-xs',
 		md: 'px-6 py-3 text-sm',
 		lg: 'px-[72px] py-4 text-sm'
 	};

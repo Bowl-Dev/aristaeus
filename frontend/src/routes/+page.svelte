@@ -56,7 +56,7 @@
 
 	// Navigation breadcrumbs: track how the user entered Builder / Cart so the
 	// back button returns to the actual previous view instead of always Landing.
-	let builderEntry = $state<'size' | 'menu' | 'cart' | null>(null);
+	let builderEntry = $state<'size' | 'cart' | null>(null);
 	let cartEntry = $state<'menu' | 'size' | 'builder'>('builder');
 
 	// Index of the cart bowl currently being edited, or null when the Builder is
@@ -111,17 +111,16 @@
 		includeCutlery = false;
 	}
 
-	function handleMenuSelect(
-		menu: MenuType,
-		scaledItems: { ingredientId: number; quantityGrams: number }[]
-	) {
-		clearSelection();
-		selectedBowlSize = menu.bowlSize;
-		scaledItems.forEach(({ ingredientId, quantityGrams }) => {
-			selectedItems.set(ingredientId, quantityGrams);
-		});
-		builderEntry = 'menu';
-		view = 'builder';
+	// A menu bowl goes straight into the cart with its recipe (ENG-118); the
+	// customer edits it from there if they want changes.
+	function handleMenuSelect(menu: MenuType) {
+		bowls = addBowl(
+			bowls,
+			menu.bowlSize,
+			new Map(menu.ingredients.map((i) => [i.ingredientId, i.quantityGrams]))
+		);
+		cartEntry = 'menu';
+		view = 'cart';
 	}
 
 	// Menu and Size are reached directly from Landing, so their back goes there.
@@ -130,11 +129,11 @@
 		view = 'landing';
 	}
 
-	// Builder returns to whichever step opened it (Size, Menu or Cart). Ingredient
+	// Builder returns to whichever step opened it (Size or Cart). Ingredient
 	// progress and bowl size are intentionally discarded on Back (see ENG-63) —
 	// which for an edit means the cart bowl is left exactly as it was.
 	function handleBuilderBack() {
-		const target = builderEntry === 'menu' ? 'menu' : builderEntry === 'cart' ? 'cart' : 'size';
+		const target = builderEntry === 'cart' ? 'cart' : 'size';
 		clearSelection();
 		builderEntry = null;
 		editingIndex = null;
@@ -213,15 +212,7 @@
 		{cartCount}
 		onBack={backToLanding}
 		onCart={goToCart}
-		onCustomize={(menu) => {
-			handleMenuSelect(
-				menu,
-				menu.ingredients.map((i) => ({
-					ingredientId: i.ingredientId,
-					quantityGrams: i.quantityGrams
-				}))
-			);
-		}}
+		onSelect={handleMenuSelect}
 	/>
 {:else if view === 'size'}
 	<Size

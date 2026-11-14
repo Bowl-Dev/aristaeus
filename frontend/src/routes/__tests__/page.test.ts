@@ -184,16 +184,14 @@ describe('/ +page (view state machine)', () => {
 	// ENG-75: editing a cart bowl round-trips through the Builder and replaces
 	// the entry in place instead of appending a second one.
 	describe('cart edit flow (ENG-75)', () => {
-		// landing → menu → builder → cart, leaving one 450g bowl of 100g rice.
+		// landing → menu → cart (ENG-118), leaving one 450g bowl of 100g rice.
 		async function goToCartWithOneBowl(container: HTMLElement) {
 			await waitFor(() => expect(findButton(container, /Ordena ahora/)).toBeTruthy());
 			await fireEvent.click(findButton(container, /Ordena ahora/) as HTMLButtonElement);
 			await waitFor(() => expect(findButton(container, /Menú/)).toBeTruthy());
 			await fireEvent.click(findButton(container, /Menú/) as HTMLButtonElement);
 			await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));
-			await fireEvent.click(findButton(container, /Personalizar bowl/) as HTMLButtonElement);
-			await waitFor(() => expect(findButton(container, /Agregar al carrito/)).toBeTruthy());
-			await fireEvent.click(findButton(container, /Agregar al carrito/) as HTMLButtonElement);
+			await fireEvent.click(findButton(container, /Seleccionar bowl/) as HTMLButtonElement);
 			await waitFor(() => expect(container.textContent).toContain('Tu carrito'));
 		}
 
@@ -371,7 +369,7 @@ describe('/ +page (view state machine)', () => {
 		});
 	});
 
-	it('Builder → Back returns to Menu when entered from Menu (not Landing)', async () => {
+	it('Menu → Seleccionar bowl adds it to the cart, and Back returns to Menu (ENG-118)', async () => {
 		getIngredientsMock.mockResolvedValue([rice]);
 		getMenusMock.mockResolvedValue([sampleMenu]);
 		const { container } = render(Page);
@@ -380,11 +378,11 @@ describe('/ +page (view state machine)', () => {
 		await waitFor(() => expect(findButton(container, /Menú/)).toBeTruthy());
 		await fireEvent.click(findButton(container, /Menú/) as HTMLButtonElement);
 		await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));
-		await fireEvent.click(findButton(container, /Personalizar bowl/) as HTMLButtonElement);
-		await waitFor(() =>
-			expect(container.textContent).toContain('Selecciona ingredientes y ajusta las cantidades')
-		);
-		// Back from Builder → Menu, not Landing
+		await fireEvent.click(findButton(container, /Seleccionar bowl/) as HTMLButtonElement);
+		// Straight to the cart, skipping the Builder.
+		await waitFor(() => expect(container.textContent).toContain('Tu carrito'));
+		expect(container.querySelectorAll('button[aria-label="Editar bowl"]').length).toBe(1);
+		// Back from Cart → Menu, not Landing
 		const backBtn = container.querySelector('button[aria-label="Volver"]') as HTMLButtonElement;
 		await fireEvent.click(backBtn);
 		await waitFor(() => expect(container.textContent).toContain('Menú sugerido'));

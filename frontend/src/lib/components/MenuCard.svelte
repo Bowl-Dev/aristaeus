@@ -11,11 +11,11 @@
 	let {
 		menu,
 		locale,
-		onCustomize
+		onSelect
 	}: {
 		menu: Menu;
 		locale: string;
-		onCustomize: (menu: Menu) => void;
+		onSelect: (menu: Menu) => void;
 	} = $props();
 
 	const name = $derived(locale === 'es' ? menu.nameEs : menu.nameEn);
@@ -115,9 +115,9 @@
 			variant="primary"
 			size="md"
 			extraClass="w-[264px] max-w-full"
-			onclick={() => onCustomize(menu)}
+			onclick={() => onSelect(menu)}
 		>
-			{$_('menu.card.customize')}
+			{$_('menu.card.select')}
 		</Button>
 	</div>
 </div>
