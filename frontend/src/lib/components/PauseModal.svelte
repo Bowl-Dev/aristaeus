@@ -1,8 +1,30 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import CenterModal from './organisms/CenterModal.svelte';
+	import type { WeeklyHours } from '$lib/types';
 
-	let { onDismiss }: { onDismiss: () => void } = $props();
+	// With `weeklyHours` this is the "closed, outside service hours" variant (ENG-117);
+	// without it, the manual-pause message.
+	let { onDismiss, weeklyHours }: { onDismiss: () => void; weeklyHours?: WeeklyHours } = $props();
+
+	// Monday-first lines, consecutive days with the same ranges grouped: "Lun – Vie: 9:30 – 15:00, 17:00 – 19:30".
+	const hourLines = $derived.by(() => {
+		if (!weeklyHours) return [];
+		const days = $_('store.days') as unknown as string[];
+		const ranges = (d: number) =>
+			(weeklyHours[d] ?? []).map((r) => r.map((t) => t.replace(/^0/, '')).join(' – ')).join(', ') ||
+			$_('store.closedDay');
+		const lines: string[] = [];
+		const order = [1, 2, 3, 4, 5, 6, 0];
+		for (let i = 0; i < order.length; ) {
+			let j = i;
+			while (j + 1 < order.length && ranges(order[j + 1]) === ranges(order[i])) j++;
+			const label = i === j ? days[order[i]] : `${days[order[i]]} – ${days[order[j]]}`;
+			lines.push(`${label}: ${ranges(order[i])}`);
+			i = j + 1;
+		}
+		return lines;
+	});
 
 	$effect(() => {
 		const btn = document.querySelector<HTMLElement>('[data-pause-dismiss]');
@@ -46,12 +68,21 @@
 		id="pause-title"
 		class="m-0 text-[24px] font-bold leading-tight tracking-[0.48px] text-light-green"
 	>
-		{$_('pause.title')}
+		{weeklyHours ? $_('store.closed.title') : $_('pause.title')}
 	</h2>
 
 	<div id="pause-desc" class="flex flex-col gap-3">
-		{#each $_('pause.body') as paragraph, i (i)}
-			<p class="m-0 text-base leading-[1.6] text-pure-white">{paragraph}</p>
-		{/each}
+		{#if weeklyHours}
+			<p class="m-0 text-base leading-[1.6] text-pure-white">{$_('store.closed.body')}</p>
+			<ul class="m-0 list-none p-0 text-base leading-[1.6] text-pure-white">
+				{#each hourLines as line (line)}
+					<li>{line}</li>
+				{/each}
+			</ul>
+		{:else}
+			{#each $_('pause.body') as paragraph, i (i)}
+				<p class="m-0 text-base leading-[1.6] text-pure-white">{paragraph}</p>
+			{/each}
+		{/if}
 	</div>
 </CenterModal>

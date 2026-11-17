@@ -17,9 +17,19 @@
 		bowls: BowlSnapshot[];
 		cartCount?: number;
 		onBack: () => void;
+		/** Outside service hours: the submit button looks blocked and shows the closed modal. */
+		storeClosed?: boolean;
+		onStoreClosed?: () => void;
 	}
 
-	let { ingredients, bowls, cartCount, onBack }: Props = $props();
+	let {
+		ingredients,
+		bowls,
+		cartCount,
+		onBack,
+		storeClosed = false,
+		onStoreClosed
+	}: Props = $props();
 
 	// Form state
 	let name = $state('');
@@ -143,6 +153,7 @@
 	const checkoutId = crypto.randomUUID();
 
 	async function handleSubmit() {
+		if (storeClosed) return onStoreClosed?.();
 		hasSubmitted = true;
 		if (!validate() || !freshQuote) return;
 
@@ -174,6 +185,9 @@
 				requestQuote();
 			} else if (isApiError(e, 503, 'ordersPaused')) {
 				formError = $_('delivery.errors.ordersPaused');
+			} else if (isApiError(e, 503, 'storeClosed')) {
+				formError = $_('store.closed.title');
+				onStoreClosed?.();
 			} else {
 				formError = $_('delivery.error');
 			}
@@ -276,12 +290,15 @@
 
 		<button
 			type="button"
-			disabled={submitting ||
-				!freshQuote ||
-				!name.trim() ||
-				phone.length !== 10 ||
-				!deliveryAddress.trim()}
+			disabled={!storeClosed &&
+				(submitting ||
+					!freshQuote ||
+					!name.trim() ||
+					phone.length !== 10 ||
+					!deliveryAddress.trim())}
+			aria-disabled={storeClosed}
 			onclick={handleSubmit}
+			class:opacity-50={storeClosed}
 			class="w-full cursor-pointer rounded-full border-none bg-dark-green px-6 py-4 text-sm font-bold text-light-green transition-all duration-200 hover:opacity-95 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [-webkit-tap-highlight-color:transparent]"
 		>
 			{#if submitting}

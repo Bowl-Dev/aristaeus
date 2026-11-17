@@ -194,6 +194,28 @@ resource "aws_apigatewayv2_route" "get_config" {
   target    = "integrations/${aws_apigatewayv2_integration.get_config.id}"
 }
 
+# PUT /api/config (admin, x-admin-token)
+resource "aws_apigatewayv2_integration" "update_config" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.update_config.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "update_config" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /api/config"
+  target    = "integrations/${aws_apigatewayv2_integration.update_config.id}"
+}
+
+resource "aws_lambda_permission" "update_config" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.update_config.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+
 # POST /api/delivery/estimate (admin/ops delivery cost estimate)
 resource "aws_apigatewayv2_route" "estimate_delivery_cost" {
   api_id    = aws_apigatewayv2_api.main.id

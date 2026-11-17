@@ -406,6 +406,7 @@ The `.env` files are auto-generated when running `npm run dev:local`, `dev:hybri
 
 - `GET /api/orders` - List all orders (admin view)
 - `PUT /api/orders/{orderId}/status` - Update order status (admin)
+- `PUT /api/config` - Close/open the store (`ordersPaused`) and edit `weeklyHours` (`/admin/store`, header `x-admin-token`). Outside hours only pickup orders are accepted (503 `storeClosed` for delivery); closed blocks all orders (503 `ordersPaused`)
 - `GET` / `POST /api/coupons`, `PATCH` / `DELETE /api/coupons/{id}` - Coupon admin (edit locks code/type/value once redeemed; delete only if never redeemed) (header `x-admin-token` = `ADMIN_TOKEN`)
 
 ---

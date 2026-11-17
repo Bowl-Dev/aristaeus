@@ -332,6 +332,10 @@
 			"pickupPoints": {
 				"title": "Puntos de recogida",
 				"description": "Administra los puntos de recogida en campus y sus horarios."
+			},
+			"store": {
+				"title": "Tienda",
+				"description": "Abre o cierra la tienda y edita el horario de servicio."
 			}
 		},
 		"deliveryCalculator": {
@@ -544,6 +548,30 @@
 				"activate": "Activar",
 				"deactivate": "Desactivar"
 			}
+		},
+		"store": {
+			"title": "Tienda",
+			"subtitle": "Fuera de horario solo se aceptan pedidos para recoger. Cerrada, no se acepta ningún pedido.",
+			"loadFailed": "No se pudo cargar la configuración de la tienda.",
+			"saveFailed": "No se pudo guardar.",
+			"saved": "Cambios guardados",
+			"status": {
+				"title": "Estado",
+				"open": "Abierta: se aplica el horario",
+				"paused": "Cerrada: no se aceptan pedidos",
+				"close": "Cerrar tienda",
+				"reopen": "Abrir tienda"
+			},
+			"hours": {
+				"title": "Horario semanal (hora Bogotá)",
+				"closedDay": "Cerrado",
+				"addRange": "+ Rango",
+				"removeRange": "Quitar rango",
+				"from": "Desde",
+				"to": "Hasta",
+				"save": "Guardar horario",
+				"saving": "Guardando…"
+			}
 		}
 	},
 	"footer": {
@@ -679,7 +707,7 @@
 		},
 		"pickup": {
 			"title": "Punto de recogida",
-			"description": "Pide hoy, recoge mañana en tu campus.",
+			"description": "Pide antes de las 9:30am y recoge hoy en tu campus; después, el siguiente día hábil.",
 			"freeShipping": "Envío gratis"
 		},
 		"continue": "Continuar"
@@ -696,6 +724,14 @@
 		"confirmNoPrice": "Confirmar recogida",
 		"errors": {
 			"unavailable": "Este punto de recogida ya no está disponible. Vuelve y elige otra opción."
+		}
+	},
+	"store": {
+		"days": ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+		"closedDay": "Cerrado",
+		"closed": {
+			"title": "Estamos cerrados en este momento.",
+			"body": "Recibimos pedidos a domicilio en nuestro horario de servicio. Puedes seguir explorando el menú y armando tu bowl, o pedir para recoger en campus."
 		}
 	}
 }

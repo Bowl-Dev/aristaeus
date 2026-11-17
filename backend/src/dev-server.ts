@@ -21,7 +21,7 @@ import { listCoupons, createCoupon, updateCoupon, deleteCoupon } from './handler
 import { listPickupPoints, createPickupPoint, updatePickupPoint } from './handlers/pickupPoints.js';
 import { checkPhone, deleteUser } from './handlers/users.js';
 import { getMenus } from './handlers/menus.js';
-import { getConfig } from './handlers/config.js';
+import { getConfig, updateConfig } from './handlers/config.js';
 import {
 	estimateDeliveryCost,
 	listDeliveryObservations,
@@ -124,6 +124,7 @@ app.get('/api/menus', wrapHandler(getMenus));
 
 // GET /api/config
 app.get('/api/config', wrapHandler(getConfig));
+app.put('/api/config', wrapHandler(updateConfig));
 
 // GET /api/users/check-phone (returning customer check)
 app.get('/api/users/check-phone', wrapHandler(checkPhone));
@@ -194,6 +195,7 @@ app.listen(PORT, () => {
 	console.log('  GET  /api/ingredients');
 	console.log('  GET  /api/menus');
 	console.log('  GET  /api/config');
+	console.log('  PUT  /api/config                  (admin, x-admin-token)');
 	console.log('  GET  /api/users/check-phone       (returning customer check)');
 	console.log('  DELETE /api/users                 (delete user data)');
 	console.log('  GET  /api/orders                  (list all - admin)');

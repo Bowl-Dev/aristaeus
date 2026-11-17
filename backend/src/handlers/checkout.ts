@@ -13,6 +13,7 @@ import { Prisma, type Coupon } from '@prisma/client';
 import { z } from 'zod';
 import {
 	capacityWeightG,
+	isOpenAt,
 	MAX_BOWL_QUANTITY,
 	MAX_CART_BOWLS,
 	type CheckoutQuote,
@@ -34,6 +35,7 @@ import {
 import { priceBowl, computeTotals } from '../lib/pricing.js';
 import { getDeliveryFee } from '../lib/delivery/estimate.js';
 import { evaluateCoupon, reserveBudget } from '../lib/coupons.js';
+import { readStoreConfig } from './config.js';
 import { nextPickupDate, toDateString } from '../lib/pickup.js';
 
 const MIN_QUANTITY_GRAMS = 5;
@@ -220,10 +222,13 @@ export const createCheckout: APIGatewayProxyHandler = async (event) => {
 		const replay = await existingCheckout(checkoutId);
 		if (replay) return replay;
 
-		// Fail open — if the config read throws, log and carry on.
+		// A manual close blocks everything; outside hours blocks delivery only (pickup
+		// orders any time). Fail open — if the config read throws, log and carry on.
 		try {
-			const storeConfig = await prisma.storeConfig.findFirst();
-			if (storeConfig?.ordersPaused === true) return serviceUnavailable('ordersPaused');
+			const storeConfig = await readStoreConfig();
+			if (storeConfig.ordersPaused) return serviceUnavailable('ordersPaused');
+			if (address !== undefined && !isOpenAt(new Date(), storeConfig.weeklyHours))
+				return serviceUnavailable('storeClosed');
 		} catch (configError) {
 			console.error('Error reading store config (failing open):', configError);
 		}

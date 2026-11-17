@@ -416,3 +416,45 @@ export type UpdateCouponRequest = Partial<
 		value: number | null;
 	}
 >;
+
+// ============================================
+// Store hours (ENG-117)
+// ============================================
+
+/** Bogotá-local opening ranges per weekday, keyed "0" (Sunday) – "6". At most two ranges a day; [] or a missing day = closed. */
+export type WeeklyHours = Record<string, [string, string][]>;
+
+/** GET /api/config. PUT /api/config (admin) takes Partial of the writable fields. */
+export interface StoreConfigResponse {
+	ordersPaused: boolean;
+	weeklyHours: WeeklyHours;
+}
+
+const WEEKDAY: [string, string][] = [
+	['09:30', '15:00'],
+	['17:00', '19:30']
+];
+const WEEKEND: [string, string][] = [['11:00', '16:00']];
+
+/** Used until an admin saves hours. */
+export const DEFAULT_WEEKLY_HOURS: WeeklyHours = {
+	'0': WEEKEND,
+	'1': WEEKDAY,
+	'2': WEEKDAY,
+	'3': WEEKDAY,
+	'4': WEEKDAY,
+	'5': WEEKDAY,
+	'6': WEEKEND
+};
+
+const BOGOTA_OFFSET_MS = 5 * 60 * 60 * 1000; // UTC-5, no DST
+
+/** Bogotá wall clock for `now`, read with getUTC* methods. */
+export const bogotaTime = (now: Date) => new Date(now.getTime() - BOGOTA_OFFSET_MS);
+
+/** Whether `now` falls inside a range for its Bogotá weekday. Start inclusive, end exclusive. Holidays ignored. */
+export function isOpenAt(now: Date, hours: WeeklyHours): boolean {
+	const bogota = bogotaTime(now);
+	const hhmm = bogota.toISOString().slice(11, 16);
+	return (hours[bogota.getUTCDay()] ?? []).some(([start, end]) => start <= hhmm && hhmm < end);
+}

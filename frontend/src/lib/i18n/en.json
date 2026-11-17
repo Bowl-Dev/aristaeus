@@ -332,6 +332,10 @@
 			"pickupPoints": {
 				"title": "Pickup points",
 				"description": "Manage campus pickup points and their hours."
+			},
+			"store": {
+				"title": "Store",
+				"description": "Open or close the store and edit service hours."
 			}
 		},
 		"deliveryCalculator": {
@@ -544,6 +548,30 @@
 				"activate": "Activate",
 				"deactivate": "Deactivate"
 			}
+		},
+		"store": {
+			"title": "Store",
+			"subtitle": "Outside hours only pickup orders are accepted. Closed, no orders are accepted.",
+			"loadFailed": "Couldn't load the store settings.",
+			"saveFailed": "Couldn't save.",
+			"saved": "Changes saved",
+			"status": {
+				"title": "Status",
+				"open": "Open: service hours apply",
+				"paused": "Closed: no orders accepted",
+				"close": "Close store",
+				"reopen": "Open store"
+			},
+			"hours": {
+				"title": "Weekly hours (Bogotá time)",
+				"closedDay": "Closed",
+				"addRange": "+ Range",
+				"removeRange": "Remove range",
+				"from": "From",
+				"to": "To",
+				"save": "Save hours",
+				"saving": "Saving…"
+			}
 		}
 	},
 	"footer": {
@@ -679,7 +707,7 @@
 		},
 		"pickup": {
 			"title": "Pickup point",
-			"description": "Order today, pick it up tomorrow on campus.",
+			"description": "Order before 9:30am to pick it up on campus today; after that, the next weekday.",
 			"freeShipping": "Free shipping"
 		},
 		"continue": "Continue"
@@ -696,6 +724,14 @@
 		"confirmNoPrice": "Confirm pickup",
 		"errors": {
 			"unavailable": "This pickup point is no longer available. Go back and choose another option."
+		}
+	},
+	"store": {
+		"days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+		"closedDay": "Closed",
+		"closed": {
+			"title": "We're closed right now.",
+			"body": "We take delivery orders during service hours. You can keep browsing the menu and building your bowl, or order for campus pickup."
 		}
 	}
 }
