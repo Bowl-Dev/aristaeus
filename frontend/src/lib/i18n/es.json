@@ -512,7 +512,14 @@
 		},
 		"orders": {
 			"pickupBadge": "Recogida · {name} · {date}",
-			"pickupLine": "Pedido para recoger en punto, no es domicilio"
+			"pickupLine": "Pedido para recoger en punto, no es domicilio",
+			"tabTitle": "Pedidos",
+			"enableAlerts": "Activar alertas",
+			"alertsOn": "Alertas activas",
+			"newBadge": "Nuevo",
+			"dismissNew": "Marcar como visto",
+			"notifyTitle": "Nuevo pedido",
+			"notifyBody": "{count, plural, one {# pedido nuevo} other {# pedidos nuevos}}"
 		},
 		"pickupPoints": {
 			"title": "Puntos de recogida",

@@ -512,7 +512,14 @@
 		},
 		"orders": {
 			"pickupBadge": "Pickup · {name} · {date}",
-			"pickupLine": "Pickup order, not for delivery"
+			"pickupLine": "Pickup order, not for delivery",
+			"tabTitle": "Orders",
+			"enableAlerts": "Enable alerts",
+			"alertsOn": "Alerts on",
+			"newBadge": "New",
+			"dismissNew": "Mark as seen",
+			"notifyTitle": "New order",
+			"notifyBody": "{count, plural, one {# new order} other {# new orders}}"
 		},
 		"pickupPoints": {
 			"title": "Pickup points",
