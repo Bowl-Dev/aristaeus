@@ -32,6 +32,13 @@
 			titleKey: 'admin.hub.pickupPoints.title',
 			descriptionKey: 'admin.hub.pickupPoints.description',
 			ready: true
+		},
+		{
+			route: '/admin/store',
+			icon: '🕘',
+			titleKey: 'admin.hub.store.title',
+			descriptionKey: 'admin.hub.store.description',
+			ready: true
 		}
 	] as const;
 </script>

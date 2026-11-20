@@ -35,7 +35,9 @@ export type {
 	CreateCouponRequest,
 	UpdateCouponRequest,
 	PickupPoint,
-	PickupPointInput
+	PickupPointInput,
+	WeeklyHours,
+	StoreConfigResponse
 } from '@aristaeus/shared';
 
 export {
@@ -45,7 +47,8 @@ export {
 	MAX_BOWL_QUANTITY,
 	MAX_CART_BOWLS,
 	roundToNearestCoin,
-	capacityWeightG
+	capacityWeightG,
+	isOpenAt
 } from '@aristaeus/shared';
 
 // ponytail: BOWL_SIZE_LABELS and DRESSING_CONTAINER_GRAMS have no callers, and the

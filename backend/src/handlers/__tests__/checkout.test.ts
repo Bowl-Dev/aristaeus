@@ -85,6 +85,51 @@ describe('checkout handlers', () => {
 		vi.mocked(prisma.ingredient.findMany).mockResolvedValue([rice] as never);
 		vi.mocked(getDeliveryFee).mockResolvedValue(4000);
 		vi.mocked(prisma.checkout.findUnique).mockResolvedValue(null);
+		// Store hours are checked on create: pin the clock inside the default hours.
+		vi.useFakeTimers({ toFake: ['Date'] });
+		vi.setSystemTime(new Date('2026-11-03T17:00:00Z')); // Tuesday noon in Bogotá
+	});
+	afterEach(() => vi.useRealTimers());
+
+	describe('store hours', () => {
+		const tuesdayEvening = new Date('2026-11-03T21:00:00Z'); // 16:00 Bogotá, between ranges
+
+		it('rejects a delivery order outside hours with 503 storeClosed', async () => {
+			vi.setSystemTime(tuesdayEvening);
+			const response = await call(createCheckout, request);
+
+			expect(response.statusCode).toBe(503);
+			expect(response.body).toContain('storeClosed');
+			expect(prisma.$transaction).not.toHaveBeenCalled();
+		});
+
+		it('accepts a pickup order outside hours', async () => {
+			vi.setSystemTime(tuesdayEvening);
+			vi.mocked(prisma.pickupPoint.findUnique).mockResolvedValue(unal as never);
+			await call(createCheckout, pickupRequest);
+
+			expect(prisma.$transaction).toHaveBeenCalled();
+		});
+
+		it('rejects every order with 503 ordersPaused when closed manually', async () => {
+			vi.mocked(prisma.storeConfig.findFirst).mockResolvedValue({ ordersPaused: true } as never);
+			vi.mocked(prisma.pickupPoint.findUnique).mockResolvedValue(unal as never);
+			const response = await call(createCheckout, pickupRequest);
+
+			expect(response.statusCode).toBe(503);
+			expect(response.body).toContain('ordersPaused');
+		});
+
+		it('uses the saved weekly hours over the default', async () => {
+			vi.mocked(prisma.storeConfig.findFirst).mockResolvedValue({
+				ordersPaused: false,
+				weeklyHours: { '2': [] }
+			} as never);
+			const response = await call(createCheckout, request);
+
+			expect(response.statusCode).toBe(503);
+			expect(response.body).toContain('storeClosed');
+		});
 	});
 
 	it('quotes subtotal, delivery, discount, service fee and total', async () => {

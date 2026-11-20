@@ -11,6 +11,7 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
     "deleteUser",
     "getMenus",
     "getConfig",
+    "updateConfig",
     "estimateDeliveryCost",
     "listDeliveryObservations",
     "createDeliveryObservation",
@@ -351,6 +352,33 @@ resource "aws_lambda_function" "get_config" {
     variables = {
       DATABASE_URL = var.database_url
       NODE_ENV     = var.environment
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_lambda_function" "update_config" {
+  function_name = "${var.project_name}-updateConfig-${var.environment}"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "handlers/config.updateConfig"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = "${path.module}/../dist/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/lambda.zip")
+
+  environment {
+    variables = {
+      DATABASE_URL = var.database_url
+      NODE_ENV     = var.environment
+      ADMIN_TOKEN  = var.admin_token
     }
   }
 

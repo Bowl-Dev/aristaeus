@@ -232,6 +232,8 @@ model OrderItem {
 model StoreConfig {
   id           Int      @id @default(1)
   ordersPaused Boolean  @default(false) @map("orders_paused")
+  /// WeeklyHours (see @aristaeus/shared). Null = DEFAULT_WEEKLY_HOURS.
+  weeklyHours  Json?    @map("weekly_hours")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("store_config")

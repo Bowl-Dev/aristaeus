@@ -19,7 +19,8 @@ import type {
 	CreateCouponRequest,
 	UpdateCouponRequest,
 	PickupPoint,
-	PickupPointInput
+	PickupPointInput,
+	StoreConfigResponse
 } from '$lib/types';
 
 export type { AdminOrder, AdminOrderItem } from '$lib/types';
@@ -76,10 +77,8 @@ export class ApiError extends Error {
 // API Functions
 // ============================================
 
-/**
- * Fetch runtime configuration (e.g. whether ordering is paused)
- */
-export async function getConfig(): Promise<{ ordersPaused: boolean }> {
+/** Store config: manual pause + weekly hours. */
+export async function getConfig(): Promise<StoreConfigResponse> {
 	return apiFetch('/api/config');
 }
 
@@ -403,6 +402,18 @@ export async function updatePickupPoint(
 ): Promise<PickupPoint> {
 	return apiFetch<PickupPoint>(`/api/pickup-points/${id}`, {
 		method: 'PATCH',
+		headers: adminHeaders(token),
+		body: JSON.stringify(patch)
+	});
+}
+
+/** Admin: close/open the store or change its weekly hours. */
+export async function updateStoreConfig(
+	patch: Partial<StoreConfigResponse>,
+	token: string
+): Promise<StoreConfigResponse> {
+	return apiFetch<StoreConfigResponse>('/api/config', {
+		method: 'PUT',
 		headers: adminHeaders(token),
 		body: JSON.stringify(patch)
 	});

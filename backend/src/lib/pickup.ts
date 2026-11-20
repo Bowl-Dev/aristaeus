@@ -1,10 +1,15 @@
-const BOGOTA_OFFSET_MS = 5 * 60 * 60 * 1000; // UTC-5, no DST
+import { bogotaTime } from '@aristaeus/shared';
 
-/** Next weekday after today in Bogotá, as YYYY-MM-DD: Mon–Thu → tomorrow, Fri/Sat/Sun → Monday. Holidays ignored. */
+/**
+ * Pickup day in Bogotá, as YYYY-MM-DD. A weekday order before 09:30 is picked up today;
+ * otherwise the next weekday (Mon–Thu → tomorrow, Fri/Sat/Sun → Monday). Holidays ignored.
+ */
 export function nextPickupDate(now: Date): string {
-	const bogota = new Date(now.getTime() - BOGOTA_OFFSET_MS);
+	const bogota = bogotaTime(now);
 	const day = bogota.getUTCDay();
-	const days = day === 5 ? 3 : day === 6 ? 2 : 1;
+	const weekday = day >= 1 && day <= 5;
+	const beforeCutoff = bogota.toISOString().slice(11, 16) < '09:30';
+	const days = weekday && beforeCutoff ? 0 : day === 5 ? 3 : day === 6 ? 2 : 1;
 	bogota.setUTCDate(bogota.getUTCDate() + days);
 	return bogota.toISOString().slice(0, 10);
 }

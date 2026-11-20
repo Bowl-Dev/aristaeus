@@ -5,7 +5,9 @@
 		type Menu as MenuType,
 		type BowlSize,
 		type PickupPoint,
-		MAX_CART_BOWLS
+		type WeeklyHours,
+		MAX_CART_BOWLS,
+		isOpenAt
 	} from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { getIngredients, getMenus, getConfig, getPickupPoints, ApiError } from '$lib/api/client';
@@ -37,6 +39,27 @@
 	// Service-paused state (fail-open: stays false unless backend says otherwise)
 	let ordersPaused = $state(false);
 	let showPauseModal = $state(false);
+
+	// Outside service hours (ENG-117): delivery is blocked, browsing and pickup are not.
+	// Fail-open: null hours (config not loaded) count as open. `now` ticks so an open
+	// tab crosses opening/closing time without a reload.
+	let weeklyHours = $state<WeeklyHours | null>(null);
+	let now = $state(new Date());
+	const storeClosed = $derived(weeklyHours !== null && !isOpenAt(now, weeklyHours));
+	let showClosedModal = $state(false);
+	// Dismissing the closed modal opened from "Ordena" carries on to the landing modal.
+	let closedThenLanding = false;
+
+	function startOrder() {
+		if (ordersPaused) {
+			showPauseModal = true;
+		} else if (storeClosed) {
+			closedThenLanding = true;
+			showClosedModal = true;
+		} else {
+			showLandingModal = true;
+		}
+	}
 
 	// Data
 	let ingredients = $state<Ingredient[]>([]);
@@ -85,6 +108,7 @@
 		try {
 			const config = await getConfig();
 			ordersPaused = config.ordersPaused;
+			weeklyHours = config.weeklyHours;
 			if (ordersPaused) showPauseModal = true;
 		} catch {
 			ordersPaused = false;
@@ -103,6 +127,8 @@
 		loadIngredients();
 		loadConfig();
 		loadPickupPoints();
+		const tick = setInterval(() => (now = new Date()), 60_000);
+		return () => clearInterval(tick);
 	});
 
 	function clearSelection() {
@@ -202,9 +228,7 @@
 {/if}
 
 {#if view === 'landing'}
-	<Landing
-		onOrderNow={() => (ordersPaused ? (showPauseModal = true) : (showLandingModal = true))}
-	/>
+	<Landing onOrderNow={startOrder} />
 {:else if view === 'menu'}
 	<Menu
 		{menus}
@@ -247,7 +271,7 @@
 		{cartCount}
 		onBack={handleCartBack}
 		onProceedToDelivery={() => (view = pickupPoints.length > 0 ? 'fulfillment' : 'delivery')}
-		onCreateAnother={() => (ordersPaused ? (showPauseModal = true) : (showLandingModal = true))}
+		onCreateAnother={startOrder}
 		onRemoveBowl={handleRemoveBowl}
 		onIncreaseBowl={handleIncreaseBowl}
 		onDecreaseBowl={handleDecreaseBowl}
@@ -267,6 +291,8 @@
 		{bowls}
 		{cartCount}
 		onBack={() => (view = pickupPoints.length > 0 ? 'fulfillment' : 'cart')}
+		{storeClosed}
+		onStoreClosed={() => (showClosedModal = true)}
 	/>
 {:else if view === 'pickup' && pickupPoint}
 	<Pickup
@@ -280,6 +306,17 @@
 
 {#if showPauseModal}
 	<PauseModal onDismiss={() => (showPauseModal = false)} />
+{/if}
+
+{#if showClosedModal}
+	<PauseModal
+		weeklyHours={weeklyHours ?? undefined}
+		onDismiss={() => {
+			showClosedModal = false;
+			if (closedThenLanding) showLandingModal = true;
+			closedThenLanding = false;
+		}}
+	/>
 {/if}
 
 {#if showLandingModal}
