@@ -205,6 +205,8 @@ export interface AdminOrder {
 	orderNumber: number | null;
 	bowlSize: number;
 	includeCutlery: boolean;
+	/** Coupon used on the checkout, shown on every bowl of it; null without one. */
+	couponCode: string | null;
 	user: {
 		id: string;
 		name: string;

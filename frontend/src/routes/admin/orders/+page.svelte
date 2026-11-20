@@ -317,6 +317,12 @@
 										Cutlery
 									</span>
 								{/if}
+								{#if order.couponCode}
+									<span class="text-gray-300">|</span>
+									<span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold">
+										🏷 {order.couponCode}
+									</span>
+								{/if}
 							</div>
 						</div>
 
