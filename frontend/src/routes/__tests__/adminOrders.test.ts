@@ -18,6 +18,7 @@ const order = (over: Partial<AdminOrder> = {}): AdminOrder => ({
 	orderNumber: 4342,
 	bowlSize: 450,
 	includeCutlery: false,
+	couponCode: null,
 	user: {
 		id: 'u1',
 		name: 'Ana',

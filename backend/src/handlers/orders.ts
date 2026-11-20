@@ -129,6 +129,7 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 						orderNumber: true,
 						deliveryFee: true,
 						discount: true,
+						coupon: { select: { code: true } },
 						pickupDate: true,
 						pickupPoint: { select: { name: true, location: true } },
 						// The checkout's first bowl carries its delivery fee and discount
@@ -166,6 +167,7 @@ export const listOrders: APIGatewayProxyHandler = async (event) => {
 					orderNumber: order.checkout?.orderNumber ?? null,
 					bowlSize: order.bowlSize,
 					includeCutlery: order.includeCutlery,
+					couponCode: order.checkout?.coupon?.code ?? null,
 					user: {
 						id: order.user.id,
 						name: order.user.name,

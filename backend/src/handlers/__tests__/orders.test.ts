@@ -65,6 +65,20 @@ describe('listOrders price breakdown', () => {
 		expect(rows.reduce((sum, r) => sum + (r.amountDue ?? 0), 0)).toBe(63000);
 	});
 
+	it('shows the coupon code on every bowl of the checkout', async () => {
+		const checkout = {
+			orderNumber: 1002,
+			deliveryFee: 0,
+			discount: 3000,
+			coupon: { code: 'NACIONAL' },
+			orders: [{ id: 21 }]
+		};
+		const rows = await list([order(22, 20000, checkout), order(21, 20000, checkout)]);
+		expect(rows.map((r) => r.couponCode)).toEqual(['NACIONAL', 'NACIONAL']);
+		const [none] = await list([order(1, 20000, null)]);
+		expect(none.couponCode).toBeNull();
+	});
+
 	it('shows only the bowl price for orders without a checkout', async () => {
 		const [row] = await list([order(1, 20000, null)]);
 		expect(row).toMatchObject({ deliveryFee: null, discount: null, amountDue: 20000 });
