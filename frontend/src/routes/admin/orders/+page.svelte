@@ -13,6 +13,7 @@
 	import { CATEGORY_ORDER } from '$lib/constants';
 	import { formatCOP } from '$lib/utils/bowl';
 	import { formatPickupDate } from '$lib/utils/checkout';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	// State
 	let orders = $state<AdminOrder[]>([]);
@@ -94,6 +95,65 @@
 		loadOrders();
 	});
 
+	// New-order alerts (ENG-120): poll pending orders, beep + notify on ids above the last max seen.
+	// ponytail: polling, not push. Background tabs may throttle the timer to ~1/min.
+	const POLL_MS = 20_000;
+	let maxSeenId: number | null = null; // null until the first poll, which never alerts
+	const newIds = new SvelteSet<number>();
+	let alertsOn = $state(false);
+	let audioCtx: AudioContext | null = null;
+
+	// Browsers block audio until a user gesture, so the button unlocks sound and asks for notifications
+	async function enableAlerts() {
+		audioCtx ??= new AudioContext();
+		await audioCtx.resume();
+		if ('Notification' in window && Notification.permission === 'default') {
+			await Notification.requestPermission();
+		}
+		alertsOn = true;
+		beep();
+	}
+
+	function beep() {
+		if (!audioCtx) return;
+		const osc = audioCtx.createOscillator();
+		const gain = audioCtx.createGain();
+		const t = audioCtx.currentTime;
+		osc.frequency.setValueAtTime(880, t);
+		osc.frequency.setValueAtTime(1320, t + 0.2);
+		gain.gain.value = 0.3;
+		osc.connect(gain).connect(audioCtx.destination);
+		osc.start(t);
+		osc.stop(t + 0.45);
+	}
+
+	async function checkNewOrders() {
+		try {
+			const { orders: pending } = await listOrders({ status: 'pending', limit: 50 });
+			const max = Math.max(maxSeenId ?? 0, ...pending.map((o) => o.id));
+			const fresh = maxSeenId === null ? [] : pending.filter((o) => o.id > maxSeenId!);
+			maxSeenId = max;
+			if (fresh.length === 0) return;
+			for (const o of fresh) newIds.add(o.id);
+			beep();
+			if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+				new Notification($_('admin.orders.notifyTitle'), {
+					body: $_('admin.orders.notifyBody', { values: { count: fresh.length } }),
+					tag: 'new-order'
+				});
+			}
+			await loadOrders();
+		} catch (e) {
+			console.error('New-order check failed:', e);
+		}
+	}
+
+	$effect(() => {
+		checkNewOrders();
+		const timer = setInterval(checkNewOrders, POLL_MS);
+		return () => clearInterval(timer);
+	});
+
 	function handleFilterChange(newStatus: OrderStatus | 'all') {
 		statusFilter = newStatus;
 		currentPage = 1;
@@ -106,6 +166,7 @@
 
 	async function handleStatusUpdate(orderId: number, newStatus: string) {
 		updatingOrderId = orderId;
+		newIds.delete(orderId);
 		try {
 			await updateOrderStatus(orderId, newStatus);
 			await loadOrders();
@@ -175,6 +236,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{newIds.size ? `(${newIds.size}) ` : ''}{$_('admin.orders.tabTitle')}</title>
+</svelte:head>
+
 <main class="min-h-dvh bg-gray-50 p-4 md:p-8">
 	<div class="max-w-7xl mx-auto">
 		<!-- Header -->
@@ -203,6 +268,17 @@
 						disabled={loading}
 					>
 						{loading ? 'Loading...' : 'Refresh'}
+					</button>
+					<button
+						class="px-4 py-2 rounded-xl text-sm font-semibold transition-colors {alertsOn
+							? 'bg-green-100 text-green-800'
+							: 'bg-amber-400 text-gray-900 hover:bg-amber-300'}"
+						onclick={enableAlerts}
+						disabled={alertsOn}
+					>
+						{alertsOn
+							? `🔔 ${$_('admin.orders.alertsOn')}`
+							: `🔕 ${$_('admin.orders.enableAlerts')}`}
 					</button>
 				</div>
 			</div>
@@ -281,8 +357,17 @@
 						class="bg-white border border-gray-200 rounded-xl overflow-hidden transition-all hover:shadow-md {updatingOrderId ===
 						order.id
 							? 'opacity-60 pointer-events-none'
-							: ''}"
+							: ''} {newIds.has(order.id) ? 'ring-4 ring-amber-400' : ''}"
 					>
+						{#if newIds.has(order.id)}
+							<button
+								class="w-full px-4 py-2 bg-amber-400 text-gray-900 text-sm font-bold uppercase flex justify-between"
+								onclick={() => newIds.delete(order.id)}
+							>
+								<span>🔔 {$_('admin.orders.newBadge')}</span>
+								<span class="normal-case font-medium">{$_('admin.orders.dismissNew')} ✕</span>
+							</button>
+						{/if}
 						<!-- Order Header -->
 						<div class="p-4 sm:p-5 border-b border-gray-100">
 							<div class="flex items-center justify-between mb-3">
