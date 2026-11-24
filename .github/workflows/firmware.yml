@@ -1,0 +1,54 @@
+# Builds every dispenser env and runs the host-side unit tests.
+
+name: Firmware
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'firmware/**'
+      - '.github/workflows/firmware.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'firmware/**'
+      - '.github/workflows/firmware.yml'
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firmware
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ hashFiles('firmware/platformio.ini') }}
+
+      - name: Install PlatformIO and dashboard deps
+        run: pip install platformio -r tools/requirements.txt
+
+      - name: Placeholder WiFi secrets
+        run: cp lib/Core/secrets.example.h lib/Core/secrets.h
+
+      - name: Build all boards
+        run: pio run -e esp32_01 -e esp32_02 -e esp32_03 -e esp32_04
+
+      - name: Unit tests
+        run: pio test -e native
+
+      - name: Dashboard compiles
+        run: python -m py_compile tools/*.py

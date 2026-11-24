@@ -15,3 +15,6 @@ package-lock.json
 
 # Prisma
 backend/prisma/migrations/
+
+# Firmware (PlatformIO/C++/Python, not part of the npm workspaces)
+firmware/
