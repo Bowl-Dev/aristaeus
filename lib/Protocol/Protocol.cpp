@@ -40,6 +40,13 @@ bool Protocol::parse(const char* json, JobRequest& request)
     if (command == "gate")
         return parseGate(doc, request);
 
+    if (command == "flush")
+    {
+        request.type = JobType::Flush;
+        request.actuator = doc["actuator"];
+        return true;
+    }
+
     return false;
 }
 
@@ -49,6 +56,10 @@ bool Protocol::parseDispense(JsonDocument& doc, JobRequest& request)
     request.actuator = doc["actuator"];
     request.targetWeight = doc["targetWeight"];
     request.speed = doc["speed"] | 1000;
+    request.holdFlush = doc["holdFlush"] | false;
+    // Optional command id from the dashboard (0 = none). Lets the firmware
+    // recognise a re-sent copy of a command it already accepted.
+    request.id = doc["id"] | static_cast<uint32_t>(0);
     return true;
 }
 

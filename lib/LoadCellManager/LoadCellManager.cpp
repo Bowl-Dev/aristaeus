@@ -143,7 +143,51 @@ bool LoadCellManager::requestTare(uint8_t channel)
         return false;
     }
 
-    scales[channel].tare();
+    // HX711::tare() averages 10 reads, and every read() waits FOREVER for the
+    // chip to signal "ready" - with a flaky wire or noisy supply that froze
+    // the whole main loop (and with it MQTT keepalives) for seconds. Take the
+    // same kind of average ourselves, but never wait more than
+    // TARE_MAX_MS in total, and only use samples the chip actually has ready.
+    constexpr uint32_t TARE_MAX_MS = 800;
+    constexpr uint8_t TARE_SAMPLES = 5;
+
+    uint32_t tareStart = millis();
+    int64_t sum = 0;
+    uint8_t samples = 0;
+
+    while (samples < TARE_SAMPLES && millis() - tareStart < TARE_MAX_MS)
+    {
+        if (scales[channel].is_ready())
+        {
+            sum += scales[channel].read();
+            samples++;
+        }
+        else
+        {
+            delay(1);
+        }
+    }
+
+    if (samples == 0)
+    {
+        Serial.print("Load cell ");
+        Serial.print(channel);
+        Serial.println(" gave no samples during tare, skipping");
+        context.loadCell[channel].connected = false;
+        return false;
+    }
+
+    scales[channel].set_offset(static_cast<long>(sum / samples));
+
+    uint32_t tareMs = millis() - tareStart;
+    if (tareMs > 300)
+    {
+        Serial.print("DIAG: tare of channel ");
+        Serial.print(channel);
+        Serial.print(" took ");
+        Serial.print(tareMs);
+        Serial.println(" ms");
+    }
 
     // tare() only updates the HX711 wrapper's internal zero-offset - the
     // cached context.loadCell[channel].weight (what MachineController

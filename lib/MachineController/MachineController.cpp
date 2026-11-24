@@ -118,6 +118,15 @@ bool MachineController::processJobRequest(const JobRequest& request)
             return false;
             }            
 
+            // Repeat of a command we already accepted (the dashboard re-sends
+            // until it sees confirmation): confirm again, don't queue twice.
+            if (request.id != 0 && request.id == lastDispenseId[request.actuator])
+            {
+                Serial.println("Duplicate dispense command ignored (already accepted)");
+                jobAccepted(request.actuator);
+                return true;
+            }
+
             if (!context.system.initialized)
             {
                 jobRejected(request.actuator, "System not initialized");
@@ -144,8 +153,11 @@ bool MachineController::processJobRequest(const JobRequest& request)
             if (!enqueueJob(request))
                 return false;
 
+            if (request.id != 0)
+                lastDispenseId[request.actuator] = request.id;
+
             jobAccepted(request.actuator);
-            return true;        
+            return true;
 
         case JobType::Tare:
 
@@ -228,6 +240,29 @@ bool MachineController::processJobRequest(const JobRequest& request)
 
             jobAccepted(request.actuator);
             emitEvent(request.actuator, MachineEventType::JobFinished);
+            return true;
+
+        case JobType::Flush:
+
+            if (request.actuator >= NUM_LOAD_CELLS)
+            {
+                Serial.println("Invalid actuator");
+                return false;
+            }
+
+            if (currentState.actuator[request.actuator].mode != MachineMode::WaitingToFlush)
+            {
+                jobRejected(request.actuator, "Nothing waiting to flush");
+                return false;
+            }
+
+            Serial.print("Manual flush: opening gate ");
+            Serial.println(request.actuator);
+
+            dispenseJob[request.actuator].holdFlush = false;
+            services.servo.openGate(request.actuator);
+            setMode(request.actuator, MachineMode::Flushing);
+            jobAccepted(request.actuator);
             return true;
 
         case JobType::Reset:
@@ -370,6 +405,10 @@ void MachineController::synchronizeFlush()
         if (currentState.actuator[i].mode != MachineMode::WaitingToFlush)
             continue;
 
+        // Held by the dashboard until the operator commands a flush.
+        if (dispenseJob[i].holdFlush)
+            continue;
+
         Serial.print("Synchronized flush: opening gate ");
         Serial.println(i);
 
@@ -383,6 +422,7 @@ void MachineController::initializeDispenseJob(uint8_t actuator, const JobRequest
     dispenseJob[actuator].actuator = request.actuator;
     dispenseJob[actuator].targetWeight = request.targetWeight;
     dispenseJob[actuator].speed = request.speed;
+    dispenseJob[actuator].holdFlush = request.holdFlush;
 }
 
 void MachineController::jobStarted(uint8_t actuator)

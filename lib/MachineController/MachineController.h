@@ -56,6 +56,13 @@ private:
     
     uint32_t nextJobId = 0;
 
+    // Id of the last dispense command accepted per actuator. The dashboard
+    // re-sends a dispense command until it sees proof it arrived (the
+    // network can lose it); a repeat carrying an id we already accepted is
+    // acknowledged again but NOT queued a second time, so a lost
+    // acknowledgement can never cause a double dispense.
+    uint32_t lastDispenseId[NUM_LOAD_CELLS] = {};
+
     void setMode(uint8_t actuator, MachineMode mode);
     bool canAcceptJob(const JobRequest& request) const;
     void startNextJob(uint8_t actuator);

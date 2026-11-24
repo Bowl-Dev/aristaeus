@@ -35,17 +35,17 @@ void Jobs::updateDispenseJob(DispenseJob& job, MachineServices& services, Machin
         {
             float weight = services.loadCell.getWeight(job.actuator);
 
-            if (weight >= job.targetWeight*0.85)
+            if (weight >= job.targetWeight*0.90)
             {
-                services.stepper.setSpeed(job.actuator, job.speed*0.2);
+                services.stepper.setSpeed(job.actuator, job.speed*0.4);
             }
 
-            if (weight >= job.targetWeight)
+            if (weight >= (job.targetWeight-3))
             {
                 services.stepper.stop(job.actuator);
                 services.stepper.disable(job.actuator);
 
-                if (SYNCHRONIZED_FLUSH)
+                if (SYNCHRONIZED_FLUSH || job.holdFlush)
                 {
                     // Motor's done, but the gate stays closed until every
                     // actuator that's actively dispensing has also reached

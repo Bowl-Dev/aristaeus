@@ -6,6 +6,13 @@ void WifiManager::begin()
 {
     WiFi.mode(WIFI_STA);
 
+    // Keep the radio awake: the default modem power-save naps between router
+    // beacons and, on a weak link, makes the unit miss packets (MQTT replies
+    // included) until the broker connection times out (PubSubClient -4).
+    WiFi.setSleep(false);
+    WiFi.setAutoReconnect(true);
+    WiFi.setTxPower(WIFI_POWER_19_5dBm);
+
     Serial.printf("Connecting to %s...\n", WIFI_SSID);
 
     WiFi.begin(WIFI_SSID,WIFI_PASSWORD);    

@@ -11,6 +11,7 @@ struct DispenseJob
     uint8_t actuator = 0;
     float targetWeight = 0.0f;
     uint32_t speed = 1000;
+    bool holdFlush = false;   // wait in WaitingToFlush for an explicit Flush command
 };
 
 namespace Jobs

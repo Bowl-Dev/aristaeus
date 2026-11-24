@@ -60,7 +60,8 @@ enum class JobType : uint8_t
     MoveServo,
     Reset,
     Resume,
-    Calibrate
+    Calibrate,
+    Flush       // opens the gate of an actuator parked in WaitingToFlush (holdFlush jobs)
 };
 
 struct JobRequest
@@ -82,4 +83,11 @@ struct JobRequest
     // dispense job (rejected while one is actively running on this
     // actuator).
     bool openGate = false;
+
+    // For Dispense: when true, after reaching the target weight the actuator
+    // parks in WaitingToFlush and does NOT flush on its own - not even via
+    // the automatic synchronized flush - until a Flush command arrives. Used
+    // by the dashboard to flush several dispensers (possibly on different
+    // ESP32s) at the exact same moment, on the operator's command.
+    bool holdFlush = false;
 };

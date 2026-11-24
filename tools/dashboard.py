@@ -60,6 +60,9 @@ actuator_locks_meta_lock = threading.Lock()   # guards creation of new entries a
 actuator_waiters = {}           # (device, actuator) -> queue.Queue(), guarded by state_lock
 
 
+OFFLINE_AFTER_SEC_SERVER = 5   # status gap (s) counted as a dropout; keep in sync with the JS OFFLINE_AFTER_SEC
+
+
 def now_str():
     return datetime.now().strftime("%H:%M:%S")
 
@@ -84,7 +87,36 @@ def on_message(client, userdata, msg):
 
     with state_lock:
         if msg.topic.endswith("/status"):
+            nowts = time.time()
             payload["_lastSeen"] = now_str()
+            payload["_lastSeenTs"] = nowts
+
+            # Dashboard-side diagnostics: how often does this device vanish,
+            # and does it come back with a fresh uptime (= it rebooted) or
+            # with the uptime still counting (= just a network dropout)?
+            prev = devices.get(device_id)
+            reboots = prev.get("_reboots", 0) if prev else 0
+            gaps = prev.get("_gaps", 0) if prev else 0
+            last_gap = prev.get("_lastGap", "") if prev else ""
+            if prev:
+                gap_s = nowts - prev.get("_lastSeenTs", nowts)
+                rebooted = payload.get("uptime", 0) < prev.get("uptime", 0)
+                if rebooted:
+                    reboots += 1
+                if gap_s > OFFLINE_AFTER_SEC_SERVER or rebooted:
+                    gaps += 1
+                    last_gap = (f"{now_str()}: silent {gap_s:.0f}s, "
+                                + ("REBOOTED" if rebooted else "no reboot (network/loop stall)"))
+            # Same device id reporting from different MAC addresses = two
+            # boards flashed with the same firmware env. They share one MQTT
+            # client id, so the broker keeps disconnecting one for the other.
+            mac_changes = prev.get("_macChanges", 0) if prev else 0
+            if prev and payload.get("mac") and prev.get("mac") and payload["mac"] != prev["mac"]:
+                mac_changes += 1
+            payload["_macChanges"] = mac_changes
+            payload["_reboots"] = reboots
+            payload["_gaps"] = gaps
+            payload["_lastGap"] = last_gap
             devices[device_id] = payload
         else:
             actuator = payload.get("actuator", 0)
@@ -200,16 +232,144 @@ def build_step_groups(steps):
     return groups
 
 
+# --------------------------------------------------------------------------
+# Auto-start on bowl placement. On these devices the bowl sits ON the load
+# cell, so "a bowl was placed" is just a jump in the measured weight. When a
+# recipe is waiting at a step on one of these devices, the dashboard watches
+# its load cell: once the weight rises by AUTO_START_MIN_DELTA_G and stays
+# there for AUTO_START_SETTLE_SEC, it tares (bowl = zero) and starts the
+# dispense - same as clicking "Dispense Ingredient", which still works too.
+# A bowl that was already sitting there when the step began is NOT treated
+# as "placed" (it could be a previous, already-filled bowl): remove it and
+# put it back, or just click.
+# esp32-03/04 (simultaneous flush groups) are not included - they will get a
+# proximity sensor later.
+# --------------------------------------------------------------------------
+AUTO_START_DEVICES = {"esp32-01", "esp32-02"}
+AUTO_START_MIN_DELTA_G = 10.0     # weight increase that counts as "something was placed"
+AUTO_START_SETTLE_SEC = 5.0       # it must stay in place this long before starting
+
+
+# When several queued recipes are all waiting at the same dispenser, one
+# bowl can only serve ONE of them. "newest" = the most recently queued
+# recipe (the last card in Queued Recipes) gets it; set to "oldest" to serve
+# the first one queued instead. The others keep waiting (and can still be
+# started manually with their Dispense button).
+AUTO_START_PICK = "oldest"
+
+_BUSY_RUN_STATUSES = ("queued", "running", "stalled", "needs_resume", "waiting_flush")
+
+
+def _step_members(r):
+    """(device, actuator) pairs of the group run `r` is currently on."""
+    members = []
+    for idx in r.get("current_group") or []:
+        steps = r.get("steps") or []
+        if 0 <= idx < len(steps) and steps[idx].get("device") is not None:
+            members.append((steps[idx]["device"], steps[idx]["actuator"]))
+    return members
+
+
+def check_bowl_autostart(run, step, st):
+    """One poll of the bowl detector for `step`. `st` is the detector state
+    ({"baseline": float|None, "since": float|None}), kept by the caller.
+    Returns True when the bowl has been in place long enough to start.
+
+    Several recipes can be queued at the same dispenser, so before looking
+    at the weight this makes sure the bowl on the tray can only ever start
+    ONE of them, and never while the dispenser is already busy:
+      * busy - another recipe is currently dispensing from / holding this
+        actuator (or the device isn't Ready). The rising weight then is
+        product landing in someone else's bowl, not a new bowl, so the
+        detector is held off and re-baselined afterwards.
+      * not selected - among the recipes waiting at this actuator, only
+        the one chosen by AUTO_START_PICK may auto-start.
+    """
+    device, actuator = step["device"], step["actuator"]
+    key = (device, actuator)
+
+    with state_lock:
+        busy = False
+        waiting_ids = []
+        for r in recipe_runs.values():
+            members = _step_members(r)
+            if key not in members:
+                continue
+            if r["id"] != run["id"] and r.get("status") in _BUSY_RUN_STATUSES:
+                busy = True
+            if r.get("status") == "waiting_next" and len(members) == 1:
+                waiting_ids.append(r["id"])
+
+        d_status = devices.get(device) or {}
+        if d_status.get(f"mode{actuator}") not in (None, "Ready"):
+            busy = True
+        if get_actuator_lock(device, actuator).locked():
+            busy = True
+
+        if busy:
+            st["baseline"] = None      # re-learn the baseline once it's free
+            st["since"] = None
+            run["auto_start"] = {"state": "busy"}
+            return False
+
+        chosen = (max(waiting_ids) if AUTO_START_PICK == "newest" else min(waiting_ids)) \
+            if waiting_ids else run["id"]
+        if chosen != run["id"]:
+            st["baseline"] = None
+            st["since"] = None
+            run["auto_start"] = {"state": "not_selected"}
+            return False
+
+        d = devices.get(device)
+        weight = None
+        online = False
+        if d is not None:
+            online = (time.time() - d.get("_lastSeenTs", 0)) <= OFFLINE_AFTER_SEC_SERVER
+            weight = d.get(f"loadCell{actuator}")
+
+        if not online or weight is None:
+            st["since"] = None
+            run["auto_start"] = {"state": "waiting_bowl"}
+            return False
+
+        # Baseline = lowest weight seen since this step began waiting, so a
+        # removed-then-replaced bowl still registers as a fresh placement.
+        if st["baseline"] is None or weight < st["baseline"]:
+            st["baseline"] = weight
+
+        if weight - st["baseline"] < AUTO_START_MIN_DELTA_G:
+            st["since"] = None
+            run["auto_start"] = {"state": "waiting_bowl"}
+            return False
+
+        now = time.monotonic()
+        if st["since"] is None:
+            st["since"] = now
+
+        remaining = AUTO_START_SETTLE_SEC - (now - st["since"])
+        if remaining > 0:
+            run["auto_start"] = {"state": "settling", "remaining": round(remaining, 1)}
+            return False
+
+        return True
+
+
 def describe_failure(step, result):
     if result == "Timeout":
         return f"Timed out waiting for {step['ingredient']} on {step['device']} actuator {step['actuator']}"
+    if result == "NoAck":
+        return (
+            f"{step['device']} actuator {step['actuator']} never confirmed the dispense command for "
+            f"{step['ingredient']} after {DISPENSE_MAX_SENDS} attempts (network problem?)"
+        )
     return (
         f"{step['device']} actuator {step['actuator']} reported '{result}' "
         f"while dispensing {step['ingredient']}"
     )
 
 
-def run_group_member(run, name, run_id, step, cancel_event, results, idx, total_steps, group_size):
+def run_group_member(run, name, run_id, step, cancel_event, results, idx, total_steps, group_size,
+                     hold_flush=False, held_queues=None):
     """Dispenses one member of a (possibly multi-member) group, in its own
     thread when group_size > 1 so every member's publish+wait happens
     concurrently - one member's full wait blocking the next from even
@@ -219,6 +379,7 @@ def run_group_member(run, name, run_id, step, cancel_event, results, idx, total_
     device, actuator = step["device"], step["actuator"]
 
     event_queue = register_waiter(device, actuator)
+    keep_waiter = False
     try:
         command = {
             "command": "dispense",
@@ -226,21 +387,52 @@ def run_group_member(run, name, run_id, step, cancel_event, results, idx, total_
             "targetWeight": step["grams"],
             "speed": step["speed"],
         }
+        if hold_flush:
+            # Stop at the target weight and wait for the operator's
+            # simultaneous-flush command instead of flushing on its own.
+            command["holdFlush"] = True
+
+        # New firmware (status reports proto >= 2) deduplicates repeated
+        # commands by id, so we can safely re-send until it's confirmed.
+        with state_lock:
+            supports_resend = (devices.get(device, {}).get("proto") or 0) >= 2
+        resend = None
+        cmd_id = None
+        if supports_resend:
+            cmd_id = next_command_id()
+            command["id"] = cmd_id
+            topic = f"machine/{device}/command"
+            payload = json.dumps(command)
+            resend = lambda: mqtt_client.publish(topic, payload)
+
         mqtt_client.publish(f"machine/{device}/command", json.dumps(command))
         parallel_note = f" (parallel x{group_size})" if group_size > 1 else ""
         print(f"[{now_str()}] Recipe '{name}' (run {run_id}) step {idx + 1}/{total_steps}{parallel_note}: "
               f"{step['grams']}g {step['ingredient']} on {device} actuator {actuator}")
 
-        result = wait_for_step_result(run, step, cancel_event, event_queue)
+        # require_started: a "finished" event that arrives before this job's
+        # own "started" is left over from the Tare sent just before it.
+        result = wait_for_step_result(run, step, cancel_event, event_queue,
+                                      until_ready_to_flush=hold_flush,
+                                      require_started=True,
+                                      resend=resend, cmd_id=cmd_id)
+        if result == "ReadyToFlush" and held_queues is not None:
+            # Keep this actuator's waiter registered: the flush phase still
+            # needs its JobFinished event once the operator triggers it.
+            held_queues[idx] = event_queue
+            keep_waiter = True
     finally:
-        unregister_waiter(device, actuator)
+        if not keep_waiter:
+            unregister_waiter(device, actuator)
 
     # Update this member's own step status the moment ITS result is known,
     # rather than waiting for every other group member to also finish - so
     # in the UI, a group member that finishes early correctly shows "Done"
     # right away even while a sibling is still dispensing.
     with state_lock:
-        if result == "JobFinished":
+        if result == "ReadyToFlush":
+            step["status"] = "ready_to_flush"
+        elif result == "JobFinished":
             step["status"] = "done"
         elif result == "Cancelled":
             step["status"] = "cancelled"
@@ -268,7 +460,33 @@ def finish_recipe_run(run_id):
                 recipe_run_controls.pop(rid, None)
 
 
-def wait_for_step_result(run, step, cancel_event, event_queue):
+# Dispense commands can be lost on a bad WiFi link. The dashboard re-sends a
+# dispense command every DISPENSE_RESEND_INTERVAL_SEC until it has proof the
+# ESP32 got it (a JobStarted event, or the device's status showing this
+# command's id), giving up after DISPENSE_MAX_SENDS attempts. Safe because
+# each command carries a unique id and the firmware ignores repeats of an id
+# it already accepted - so a lost *acknowledgement* can't dispense twice.
+# Only used with devices whose status reports "proto" >= 2 (new firmware);
+# older firmware doesn't deduplicate, so those get a single send as before.
+DISPENSE_RESEND_INTERVAL_SEC = 2.5
+DISPENSE_MAX_SENDS = 6
+
+_command_id_lock = threading.Lock()
+_command_id_counter = int(time.time()) & 0x7FFFFFFF
+
+
+def next_command_id():
+    """Unique, ever-increasing command id (fits the firmware's uint32,
+    stays above ids from earlier dashboard runs because it starts at the
+    current Unix time)."""
+    global _command_id_counter
+    with _command_id_lock:
+        _command_id_counter += 1
+        return _command_id_counter
+
+
+def wait_for_step_result(run, step, cancel_event, event_queue, until_ready_to_flush=False,
+                         require_started=False, resend=None, cmd_id=None):
     """Blocks until this step's job reaches a terminal outcome.
 
     A stall (Error event) is NOT treated as terminal here - the ESP32 is
@@ -284,14 +502,52 @@ def wait_for_step_result(run, step, cancel_event, event_queue):
     for the duration of this step, so no device/actuator filtering is
     needed here - everything that arrives on it is ours.
 
-    Returns "JobFinished", "JobRejected", "Timeout", or "Cancelled".
+    With until_ready_to_flush=True (held-flush dispenses), returns
+    "ReadyToFlush" as soon as the dispenser has reached its target weight and
+    is parked in WaitingToFlush - the job isn't finished yet, the gate is
+    still closed and waiting for the operator's flush command. That state is
+    only visible in the periodic status message, so it is only checked once
+    this job's JobStarted event has been seen (otherwise a stale status from
+    before the job began could be mistaken for it).
+
+    Returns "JobFinished", "ReadyToFlush", "JobRejected", "Timeout", or
+    "Cancelled".
     """
     deadline = time.monotonic() + RECIPE_JOB_TIMEOUT
     stalled = False
+    started = False
+
+    # Command-delivery tracking (see DISPENSE_RESEND_INTERVAL_SEC). `acked`
+    # becomes true on the first proof the ESP32 received our command.
+    acked = resend is None
+    sends = 1
+    last_send = time.monotonic()
 
     while True:
         if cancel_event.is_set():
             return "Cancelled"
+
+        if not acked:
+            with state_lock:
+                dev_status = devices.get(step["device"], {})
+                seen_id = (dev_status.get(f"job{step['actuator']}") or {}).get("id")
+            if seen_id == cmd_id:
+                acked = True
+            elif time.monotonic() - last_send >= DISPENSE_RESEND_INTERVAL_SEC:
+                if sends >= DISPENSE_MAX_SENDS:
+                    return "NoAck"
+                resend()
+                sends += 1
+                last_send = time.monotonic()
+                print(f"[{now_str()}] No confirmation yet from {step['device']} "
+                      f"actuator {step['actuator']} - re-sent dispense command "
+                      f"(attempt {sends}/{DISPENSE_MAX_SENDS})")
+
+        if until_ready_to_flush and started:
+            with state_lock:
+                mode = devices.get(step["device"], {}).get(f"mode{step['actuator']}")
+            if mode == "WaitingToFlush":
+                return "ReadyToFlush"
 
         if stalled:
             poll_timeout = 0.5
@@ -306,11 +562,33 @@ def wait_for_step_result(run, step, cancel_event, event_queue):
         except queue.Empty:
             continue
 
+        if event["event"] == "JobStarted":
+            started = True
+            acked = True
+            continue
+
         if event["event"] == "JobFinished":
+            # For held dispenses, a JobFinished that arrives before this
+            # job's own JobStarted is a leftover from the Tare command sent
+            # right before it - not the end of the dispense - so ignore it.
+            if (require_started or until_ready_to_flush) and not started:
+                continue
             return "JobFinished"
 
         if event["event"] == "JobRejected":
             return "JobRejected"
+
+        if event["event"] == "ErrorCleared":
+            # Operator resumed a stalled actuator: back to normal waiting.
+            stalled = False
+            deadline = time.monotonic() + RECIPE_JOB_TIMEOUT
+            with state_lock:
+                if step["status"] == "stalled":
+                    step["status"] = "running"
+                if not any(s.get("status") == "stalled" for s in run.get("steps", [])):
+                    run["status"] = "running"
+                    run["message"] = ""
+            continue
 
         if event["event"] == "Error":
             stalled = True
@@ -319,11 +597,90 @@ def wait_for_step_result(run, step, cancel_event, event_queue):
                 run["status"] = "stalled"
                 run["message"] = (
                     f"{step['device']} actuator {step['actuator']} stalled while dispensing "
-                    f"{step['ingredient']}. Fix it from the Send Command panel below (select this "
-                    f"dispenser, then Resume or Reset) - this recipe will continue automatically "
-                    f"once it finishes."
+                    f"{step['ingredient']}. Clear the jam, then press Resume - it picks up where it "
+                    f"stopped and the recipe continues automatically."
                 )
             continue
+
+
+def run_simultaneous_flush(run, run_id, steps, group, results, held_queues, cancel_event, flush_event):
+    """Second phase of a synchronized-flush group: every member has been
+    dispensed (or failed) and the ones that reached their target are parked
+    in WaitingToFlush with gates closed. Waits for the operator's "Flush"
+    click, then sends the flush command to every parked member back-to-back
+    so all gates open at the same moment, and waits for each to finish.
+
+    Updates `results` in place with each member's final outcome. If any
+    member failed to reach its target, or the run is cancelled while
+    waiting, the parked members are Reset (gate closed, back to Ready) so
+    they aren't left holding and blocking future dispenses."""
+
+    def abort_held(final_status):
+        for idx, q in list(held_queues.items()):
+            step = steps[idx]
+            mqtt_client.publish(
+                f"machine/{step['device']}/command",
+                json.dumps({"command": "reset", "actuator": step["actuator"]}),
+            )
+            unregister_waiter(step["device"], step["actuator"])
+            with state_lock:
+                step["status"] = final_status
+            held_queues.pop(idx, None)
+
+    all_ready = all(results.get(idx) == "ReadyToFlush" for idx in group)
+    if not all_ready:
+        # Someone failed/was cancelled - don't leave the others holding.
+        abort_held("cancelled")
+        return
+
+    with state_lock:
+        run["status"] = "waiting_flush"
+        run["message"] = ""
+
+    flush_event.clear()
+    while True:
+        if cancel_event.is_set():
+            abort_held("cancelled")
+            for idx in group:
+                results[idx] = "Cancelled"
+            return
+        if flush_event.wait(timeout=0.2):
+            flush_event.clear()
+            break
+
+    with state_lock:
+        run["status"] = "running"
+        run["message"] = ""
+        for idx in group:
+            steps[idx]["status"] = "running"
+
+    # Publish every flush command back-to-back, before waiting on anything,
+    # so the gates open as close to simultaneously as MQTT allows.
+    for idx in group:
+        step = steps[idx]
+        mqtt_client.publish(
+            f"machine/{step['device']}/command",
+            json.dumps({"command": "flush", "actuator": step["actuator"]}),
+        )
+    print(f"[{now_str()}] Recipe run {run_id}: simultaneous flush sent to "
+          + ", ".join(f"{steps[i]['device']}#{steps[i]['actuator']}" for i in group))
+
+    for idx in group:
+        step = steps[idx]
+        try:
+            result = wait_for_step_result(run, step, cancel_event, held_queues[idx])
+        finally:
+            unregister_waiter(step["device"], step["actuator"])
+        results[idx] = result
+        with state_lock:
+            if result == "JobFinished":
+                step["status"] = "done"
+            elif result == "Cancelled":
+                step["status"] = "cancelled"
+            elif result == "Timeout":
+                step["status"] = "timeout"
+            else:
+                step["status"] = "failed"
 
 
 def run_recipe_worker(run_id, name):
@@ -333,7 +690,7 @@ def run_recipe_worker(run_id, name):
     cancel_event = controls["cancel"]
     next_event = controls["next"]
 
-    recipe = recipe_db.load_recipe(name)
+    recipe =recipe_db.load_recipe(name)
     if recipe is None:
         with state_lock:
             run["status"] = "error"
@@ -406,18 +763,34 @@ def run_recipe_worker(run_id, name):
             run["status"] = "waiting_next"
 
         next_event.clear()
+        auto_eligible = len(group) == 1 and steps[first]["device"] in AUTO_START_DEVICES
+        bowl_state = {"baseline": None, "since": None}
         while True:
             if cancel_event.is_set():
                 with state_lock:
                     for remaining in steps[first:]:
                         remaining["status"] = "cancelled"
                     run["status"] = "cancelled"
+                    run["auto_start"] = None
                     run["message"] = "Cancelled by user"
                 finish_recipe_run(run_id)
                 return
             if next_event.wait(timeout=0.2):
                 next_event.clear()
                 break
+            if auto_eligible and check_bowl_autostart(run, steps[first], bowl_state):
+                # Bowl has been in place long enough: tare with it on the
+                # tray (the bowl becomes zero), give the tare's own events
+                # time to clear, then dispense - same as the click path.
+                step = steps[first]
+                mqtt_client.publish(f"machine/{step['device']}/command",
+                                    json.dumps({"command": "tare", "actuator": step["actuator"]}))
+                print(f"[{now_str()}] Recipe run {run_id}: bowl detected on {step['device']} "
+                      f"actuator {step['actuator']}, tared, auto-starting")
+                time.sleep(1.0)
+                break
+        with state_lock:
+            run["auto_start"] = None
 
         # Another recipe may currently be using one of this group's
         # actuators - wait for every member to be free before starting ANY
@@ -457,25 +830,80 @@ def run_recipe_worker(run_id, name):
             run["status"] = "running"
             run["message"] = ""
 
+        # Steps on the synchronized-flush devices (esp32-03/04) dispense to
+        # their target weight, then HOLD with the gate closed until the
+        # operator triggers one simultaneous flush for the whole group.
+        sync_group = steps[first]["device"] in PARALLEL_DEVICES
+
         results = {}
-        if len(group) == 1:
-            # Common case (every non-esp32-03/04 step) - no thread overhead
-            # needed for a single member.
-            idx = group[0]
-            run_group_member(run, name, run_id, steps[idx], cancel_event, results, idx, len(steps), 1)
-        else:
-            threads = [
-                threading.Thread(
-                    target=run_group_member,
-                    args=(run, name, run_id, steps[idx], cancel_event, results, idx, len(steps), len(group)),
-                    daemon=True,
-                )
-                for idx in group
-            ]
-            for t in threads:
-                t.start()
-            for t in threads:
-                t.join()
+        held_queues = {}
+        pending = list(group)   # members still to dispense (all, then only failed ones on retry)
+
+        while True:
+            if len(pending) == 1 and not sync_group:
+                # Common case (every non-esp32-03/04 step) - no thread
+                # overhead needed for a single member.
+                idx = pending[0]
+                run_group_member(run, name, run_id, steps[idx], cancel_event, results, idx, len(steps), 1)
+            else:
+                threads = [
+                    threading.Thread(
+                        target=run_group_member,
+                        args=(run, name, run_id, steps[idx], cancel_event, results, idx, len(steps), len(group),
+                              sync_group, held_queues),
+                        daemon=True,
+                    )
+                    for idx in pending
+                ]
+                for t in threads:
+                    t.start()
+                for t in threads:
+                    t.join()
+
+            failed = [idx for idx in pending if results[idx] in ("JobRejected", "Timeout", "NoAck")]
+            if not failed or any(results[idx] == "Cancelled" for idx in group):
+                break
+
+            # A dispenser failed outright (rejected / never answered). Don't
+            # abort the recipe: keep everything that already succeeded as it
+            # is (held members stay parked at target weight), show a Resume
+            # button, and on click dispense again ONLY the failed ones.
+            with state_lock:
+                run["status"] = "needs_resume"
+                run["message"] = "; ".join(describe_failure(steps[i], results[i]) for i in failed) + \
+                    ". Fix the problem, then press Resume to try those ingredients again."
+            resume_event = controls["resume"]
+            resume_event.clear()
+            while not resume_event.wait(timeout=0.2):
+                if cancel_event.is_set():
+                    break
+            if cancel_event.is_set():
+                for idx in failed:
+                    results[idx] = "Cancelled"
+                    with state_lock:
+                        steps[idx]["status"] = "cancelled"
+                break
+
+            # Retry: fresh tare for each (the tray may have changed while
+            # the operator fixed things), give the tare's own events time to
+            # pass before the new dispense registers its waiter.
+            for idx in failed:
+                s = steps[idx]
+                mqtt_client.publish(f"machine/{s['device']}/command",
+                                    json.dumps({"command": "tare", "actuator": s["actuator"]}))
+                with state_lock:
+                    s["status"] = "running"
+            time.sleep(1.0)
+            with state_lock:
+                run["status"] = "running"
+                run["message"] = ""
+            for idx in failed:
+                results.pop(idx, None)
+            pending = failed
+
+        if sync_group:
+            run_simultaneous_flush(run, run_id, steps, group, results, held_queues,
+                                   cancel_event, controls["flush"])
 
         for device, actuator in members:
             # Free every actuator in the group the instant it's done,
@@ -503,7 +931,7 @@ def run_recipe_worker(run_id, name):
                     run["message"] = "; ".join(
                         describe_failure(steps[idx], results[idx])
                         for idx in group
-                        if results[idx] not in ("JobFinished", "Cancelled")
+                        if results[idx] not in ("JobFinished", "Cancelled", "ReadyToFlush")
                     )
 
         if terminal:
@@ -544,6 +972,13 @@ PAGE = """<!DOCTYPE html>
   td.ingredient { font-weight: 700; text-transform: capitalize; }
   .cell-ok { color: #4caf50; }
   .cell-bad { color: #f44336; }
+  tr.mode-offline { background: #2a2a2a; color: #888; }
+  table.hide-actuator .col-actuator, table.hide-calibration .col-calibration { display: none; }
+  .col-toggles { margin-bottom: 8px; }
+  .col-toggles button { margin-right: 8px; }
+  td.row-actions { white-space: nowrap; }
+  td.row-actions button { font-size: 16px; padding: 4px 10px; margin-right: 4px; }
+  td.row-actions input { font-size: 22px; padding: 6px 8px; margin-right: 4px; box-sizing: border-box; }
   #events { max-height: 300px; overflow-y: auto; border: 1px solid #3a3b42; border-radius: 4px; }
   .event { padding: 6px 12px; font-size: 22px; border-bottom: 1px solid #2a2b30; font-family: Consolas, monospace; }
   .event-jobaccepted, .event-jobstarted { color: #64b5f6; }
@@ -642,24 +1077,41 @@ PAGE = """<!DOCTYPE html>
 <div id="queuedRecipesEmpty" style="display:none;">Nothing queued right now - hit Run on a recipe above to add it here. You can queue the same recipe more than once.</div>
 
 <h2>Dispensers</h2>
-<table>
+<div class="col-toggles">
+  <button id="btnToggleActuatorCol" type="button">Show Actuator column</button>
+  <button id="btnToggleCalibrationCol" type="button">Show Calibration column</button>
+</div>
+<table id="dispTable" class="hide-actuator hide-calibration">
   <thead>
     <tr>
       <th data-key="ingredient">Ingredient</th>
       <th data-key="device">Device</th>
-      <th data-key="actuator">Actuator</th>
+      <th data-key="actuator" class="col-actuator">Actuator</th>
       <th data-key="mode">Mode</th>
       <th data-key="progress">Progress</th>
       <th data-key="weight">Weight (g)</th>
-      <th data-key="calibration">Calibration</th>
+      <th data-key="calibration" class="col-calibration">Calibration</th>
       <th data-key="queued">Queued</th>
       <th data-key="wifi">WiFi</th>
       <th data-key="mqtt">MQTT</th>
       <th data-key="error">Last Error</th>
       <th data-key="lastSeen">Last Seen</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
+</table>
+
+<h2>Device Diagnostics</h2>
+<table id="diagTable">
+  <thead>
+    <tr>
+      <th>Device</th><th>Online</th><th>Uptime</th><th>Last reset reason</th>
+      <th>WiFi RSSI</th><th>Free heap</th><th>WiFi drops</th><th>MQTT drops</th><th>Longest loop stall</th>
+      <th>Reboots seen</th><th>Dropouts seen</th><th>Last dropout</th>
+    </tr>
+  </thead>
+  <tbody id="diagBody"></tbody>
 </table>
 
 <h2>Send Command</h2>
@@ -708,7 +1160,9 @@ let sortAsc = true;
 let editingRecipeName = null;   // null = creating a new recipe
 let dismissedRunIds = new Set();   // ids of finished run cards the user dismissed
 let ingredientRowSeq = 0;
-const ACTIVE_RUN_STATUSES = ["running", "queued", "waiting_next", "stalled"];
+const OFFLINE_AFTER_SEC = 5;
+const rowInputs = {};   // "device|actuator" -> {weight, speed} typed in the row, survives re-render
+const ACTIVE_RUN_STATUSES =["running", "queued", "waiting_next", "waiting_flush", "stalled", "needs_resume"];
 
 function dispenserRows() {
   const rows = [];
@@ -718,17 +1172,21 @@ function dispenserRows() {
       const weight = d["loadCell" + actuator];
       const calibration = d["calibration" + actuator];
       const queued = d["queuedJobs" + actuator];
+      // Status arrives every ~1s; if nothing for OFFLINE_AFTER_SEC the ESP32
+      // is off or unreachable, so its last payload (wifi/mqtt "true") is stale.
+      const online = (d._ageSec === undefined) || d._ageSec <= OFFLINE_AFTER_SEC;
       rows.push({
         ingredient: d["ingredient" + actuator] || "unknown",
         device: id,
         actuator: actuator,
-        mode: d["mode" + actuator] || "",
+        online: online,
+        mode: online ? (d["mode" + actuator] || "") : "offline",
         progress: job.active ? (job.progress + "%") : "-",
         weight: (weight !== undefined) ? Number(weight).toFixed(1) : "-",
         calibration: (calibration !== undefined) ? Number(calibration).toFixed(1) : "-",
         queued: (queued !== undefined) ? queued : "-",
-        wifi: d.wifi ? "up" : "down",
-        mqtt: d.mqtt ? "up" : "down",
+        wifi: (online && d.wifi) ? "up" : "down",
+        mqtt: (online && d.mqtt) ? "up" : "down",
         error: d["lastError" + actuator] || "",
         lastSeen: d._lastSeen || "",
       });
@@ -737,7 +1195,42 @@ function dispenserRows() {
   return rows;
 }
 
+function fmtUptime(ms) {
+  if (ms === undefined) return "-";
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m ${s % 60}s`;
+}
+
+function renderDiagnostics() {
+  const body = document.getElementById("diagBody");
+  if (!body) return;
+  body.innerHTML = "";
+  for (const id of Object.keys(lastDevices).sort()) {
+    const d = lastDevices[id];
+    const online = (d._ageSec === undefined) || d._ageSec <= OFFLINE_AFTER_SEC;
+    // Reset reasons that point to power/crash problems get highlighted.
+    const badReset = ["Brownout", "Panic", "TaskWDT", "IntWDT", "WDT"].includes(d.reset);
+    const weakWifi = d.rssi !== undefined && d.rssi < -75;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${id}${d._macChanges ? ` <span class="cell-bad" title="Two different boards are reporting as ${id} (MAC ${d.mac}). Reflash one with the correct environment.">DUPLICATE ID?</span>` : ""}</td>
+      <td class="${online ? "cell-ok" : "cell-bad"}">${online ? "yes" : "NO (" + Math.round(d._ageSec) + "s ago)"}</td>
+      <td>${fmtUptime(d.uptime)}</td>
+      <td class="${badReset ? "cell-bad" : ""}">${d.reset !== undefined ? d.reset : "(old firmware)"}</td>
+      <td class="${weakWifi ? "cell-bad" : ""}">${d.rssi !== undefined ? d.rssi + " dBm" : "-"}</td>
+      <td>${d.heap !== undefined ? d.heap : "-"}</td>
+      <td>${d.wifiDrops !== undefined ? d.wifiDrops : "-"}</td>
+      <td>${d.mqttDrops !== undefined ? d.mqttDrops : "-"}</td>
+      <td class="${d.maxLoopMs > 1000 ? "cell-bad" : ""}">${d.maxLoopMs !== undefined ? d.maxLoopMs + " ms" : "-"}</td>
+      <td class="${d._reboots ? "cell-bad" : ""}">${d._reboots || 0}</td>
+      <td class="${d._gaps ? "cell-bad" : ""}">${d._gaps || 0}</td>
+      <td>${d._lastGap || ""}</td>`;
+    body.appendChild(tr);
+  }
+}
+
 function renderTable() {
+  renderDiagnostics();
   const rows = dispenserRows();
 
   // Natural sort (numeric-aware) so esp32-2 sorts before esp32-10, and ties
@@ -751,6 +1244,8 @@ function renderTable() {
   });
 
   const tbody = document.getElementById("tbody");
+  // Don't rebuild the rows while the user is typing in a row's input.
+  if (tbody.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
   tbody.innerHTML = "";
   for (const r of rows) {
     const tr = document.createElement("tr");
@@ -758,17 +1253,55 @@ function renderTable() {
     tr.innerHTML = `
       <td class="ingredient">${r.ingredient}</td>
       <td>${r.device}</td>
-      <td>${r.actuator}</td>
+      <td class="col-actuator">${r.actuator}</td>
       <td>${r.mode}</td>
       <td>${r.progress}</td>
       <td>${r.weight}</td>
-      <td>${r.calibration}</td>
+      <td class="col-calibration">${r.calibration}</td>
       <td>${r.queued}</td>
       <td class="${r.wifi === "up" ? "cell-ok" : "cell-bad"}">${r.wifi}</td>
       <td class="${r.mqtt === "up" ? "cell-ok" : "cell-bad"}">${r.mqtt}</td>
       <td>${r.error}</td>
       <td>${r.lastSeen}</td>
+      <td class="row-actions"></td>
     `;
+    const actionsCell = tr.querySelector(".row-actions");
+    const rowKey = `${r.device}|${r.actuator}`;
+    const saved = rowInputs[rowKey] || (rowInputs[rowKey] = { weight: "50", speed: "1000" });
+    const mkInput = (field, title, width) => {
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.title = title;
+      inp.placeholder = title;
+      inp.min = field === "speed" ? "1" : "0";
+      inp.step = field === "speed" ? "50" : "1";
+      inp.style.width = width;
+      inp.value = saved[field];
+      inp.addEventListener("input", () => { saved[field] = inp.value; });
+      return inp;
+    };
+    const weightInp = mkInput("weight", "Target (g)", "110px");
+    const speedInp = mkInput("speed", "Speed", "130px");
+    const dispBtn = document.createElement("button");
+    dispBtn.type = "button";
+    dispBtn.textContent = "Dispense";
+    dispBtn.addEventListener("click", () => sendCommand("dispense",
+      { device: r.device, actuator: r.actuator },
+      { weight: parseFloat(weightInp.value), speed: parseInt(speedInp.value, 10) }));
+    actionsCell.append(weightInp, speedInp, dispBtn);
+    for (const [label, action, cls] of [
+      ["Tare", "tare", ""],
+      ["Reset", "reset", ""],
+      ["Open Gate", "openGate", "btn-run"],
+      ["Close Gate", "closeGate", "btn-danger"],
+    ]) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      if (cls) b.className = cls;
+      b.addEventListener("click", () => sendCommand(action, { device: r.device, actuator: r.actuator }));
+      actionsCell.appendChild(b);
+    }
     tbody.appendChild(tr);
   }
 }
@@ -842,8 +1375,8 @@ function setCommandStatus(msg, isError) {
   el.className = isError ? "bad" : "ok";
 }
 
-async function sendCommand(action) {
-  const target = selectedDispenser();
+async function sendCommand(action, explicitTarget, dispenseParams) {
+  const target = explicitTarget || selectedDispenser();
   if (!target) {
     setCommandStatus("No dispenser known yet", true);
     return;
@@ -866,8 +1399,12 @@ async function sendCommand(action) {
 
   const body = { device, action, actuator };
   if (action === "dispense") {
-    body.weight = parseFloat(document.getElementById("weightInput").value);
-    body.speed = parseInt(document.getElementById("speedInput").value, 10);
+    body.weight = dispenseParams ? dispenseParams.weight : parseFloat(document.getElementById("weightInput").value);
+    body.speed = dispenseParams ? dispenseParams.speed : parseInt(document.getElementById("speedInput").value, 10);
+    if (!(body.weight > 0) || !(body.speed > 0)) {
+      setCommandStatus("Enter a target weight and speed greater than 0", true);
+      return;
+    }
   }
 
   setCommandStatus("Sending...", false);
@@ -1220,6 +1757,35 @@ async function nextIngredient(runId) {
   }
 }
 
+async function resumeRecipe(runId) {
+  try {
+    const res = await fetch("/api/recipe/resume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ run_id: runId }),
+    });
+    const data = await res.json();
+    if (!data.ok) alert(`Could not resume: ${data.error || "unknown error"}`);
+  } catch (err) {
+    alert(`Request failed: ${err}`);
+  }
+}
+
+async function flushRecipe(runId) {
+  if (!confirm("Open the gates now and flush all ingredients together? Keep hands clear of the mechanism.")) return;
+  try {
+    const res = await fetch("/api/recipe/flush", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ run_id: runId }),
+    });
+    const data = await res.json();
+    if (!data.ok) alert(`Could not flush: ${data.error || "unknown error"}`);
+  } catch (err) {
+    alert(`Request failed: ${err}`);
+  }
+}
+
 function renderRecipes() {
   const list = document.getElementById("recipeList");
   const empty = document.getElementById("recipeEmpty");
@@ -1293,6 +1859,7 @@ function renderQueuedRecipes() {
         : `${s.grams}g ${s.ingredient}`;
       const statusText = {
         pending: "Waiting", running: "Dispensing...", done: "Done",
+        ready_to_flush: "Target reached - ready to flush",
         stalled: "Stalled - waiting for you to fix it",
         failed: "Failed", timeout: "Timed out", cancelled: "Cancelled",
         unresolved: "No dispenser found for this ingredient",
@@ -1309,10 +1876,12 @@ function renderQueuedRecipes() {
       messageHtml = `<div class="recipe-run-message bad">${run.message}</div>`;
     } else if (run.status === "cancelled") {
       messageHtml = `<div class="recipe-run-message bad">Cancelled.</div>`;
-    } else if (run.status === "stalled" || run.status === "queued") {
+    } else if (run.status === "stalled" || run.status === "queued" || run.status === "needs_resume") {
       messageHtml = `<div class="recipe-run-message warn">${run.message}</div>`;
     } else if (run.status === "running") {
       messageHtml = `<div class="recipe-run-message">Dispensing...</div>`;
+    } else if (run.status === "waiting_flush") {
+      messageHtml = `<div class="recipe-run-message ok">All ingredients are at target weight. Flush them together when ready.</div>`;
     } else if (run.status === "waiting_next") {
       // A bundled esp32-03/esp32-04 group has more than one index in
       // current_group - list every member so the operator knows one click
@@ -1326,7 +1895,17 @@ function renderQueuedRecipes() {
         const next = (run.steps || []).find((s) => s.status === "pending");
         nextLabel = next ? `${next.ingredient} (${next.grams}g)` : "the next ingredient";
       }
-      messageHtml = `<div class="recipe-run-message ok">Up next: ${nextLabel}.</div>`;
+      let autoNote = "";
+      if (run.auto_start && run.auto_start.state === "waiting_bowl") {
+        autoNote = " Place the bowl on the dispenser - it starts automatically 5 s after the bowl is detected (or click Dispense).";
+      } else if (run.auto_start && run.auto_start.state === "busy") {
+        autoNote = " This dispenser is busy with another recipe - auto-start resumes when it's free (or click Dispense).";
+      } else if (run.auto_start && run.auto_start.state === "not_selected") {
+        autoNote = " Another queued recipe is first in line for the bowl (or click Dispense to start this one now).";
+      } else if (run.auto_start && run.auto_start.state === "settling") {
+        autoNote = ` Bowl detected - starting in ${run.auto_start.remaining} s.`;
+      }
+      messageHtml = `<div class="recipe-run-message ok">Up next: ${nextLabel}.${autoNote}</div>`;
     }
 
     let buttonsHtml;
@@ -1334,7 +1913,11 @@ function renderQueuedRecipes() {
       const groupSize = (run.current_group && run.current_group.length) || 1;
       const dispenseLabel = groupSize > 1 ? "Dispense Ingredients" : "Dispense Ingredient";
       buttonsHtml = `<button class="btn-run btnNextIngredient">${dispenseLabel}</button> <button class="btn-danger btnCancelRecipe">Cancel</button>`;
-    } else if (run.status === "running" || run.status === "stalled" || run.status === "queued") {
+    } else if (run.status === "waiting_flush") {
+      buttonsHtml = `<button class="btn-run btnFlushRecipe">Flush Ingredients</button> <button class="btn-danger btnCancelRecipe">Cancel</button>`;
+    } else if (run.status === "stalled" || run.status === "needs_resume") {
+      buttonsHtml = `<button class="btn-run btnResumeRecipe">Resume</button> <button class="btn-danger btnCancelRecipe">Cancel</button>`;
+    } else if (run.status === "running" || run.status === "queued") {
       buttonsHtml = `<button class="btn-danger btnCancelRecipe">Cancel</button>`;
     } else {
       buttonsHtml = `<button class="btnDismissRecipeRun">Dismiss</button>`;
@@ -1346,6 +1929,10 @@ function renderQueuedRecipes() {
 
     const nextBtn = card.querySelector(".btnNextIngredient");
     if (nextBtn) nextBtn.addEventListener("click", () => nextIngredient(run.id));
+    const resumeBtn = card.querySelector(".btnResumeRecipe");
+    if (resumeBtn) resumeBtn.addEventListener("click", () => resumeRecipe(run.id));
+    const flushBtn = card.querySelector(".btnFlushRecipe");
+    if (flushBtn) flushBtn.addEventListener("click", () => flushRecipe(run.id));
     const cancelBtn = card.querySelector(".btnCancelRecipe");
     if (cancelBtn) cancelBtn.addEventListener("click", () => cancelRecipe(run.id));
     const dismissBtn = card.querySelector(".btnDismissRecipeRun");
@@ -1393,6 +1980,16 @@ document.getElementById("btnDispense").addEventListener("click", () => sendComma
 document.getElementById("btnTare").addEventListener("click", () => sendCommand("tare"));
 document.getElementById("btnResume").addEventListener("click", () => sendCommand("resume"));
 document.getElementById("btnReset").addEventListener("click", () => sendCommand("reset"));
+function wireColumnToggle(btnId, cls, name) {
+  const btn = document.getElementById(btnId);
+  btn.addEventListener("click", () => {
+    const table = document.getElementById("dispTable");
+    const hidden = table.classList.toggle(cls);
+    btn.textContent = (hidden ? "Show " : "Hide ") + name + " column";
+  });
+}
+wireColumnToggle("btnToggleActuatorCol", "hide-actuator", "Actuator");
+wireColumnToggle("btnToggleCalibrationCol", "hide-calibration", "Calibration");
 document.getElementById("btnOpenGate").addEventListener("click", () => sendCommand("openGate"));
 document.getElementById("btnCloseGate").addEventListener("click", () => sendCommand("closeGate"));
 document.getElementById("btnCalibrate").addEventListener("click", sendCalibrate);
@@ -1431,8 +2028,14 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/api/state":
             recipes = recipe_db.list_recipes()
             with state_lock:
+                nowts = time.time()
+                devices_out = {}
+                for did, d in devices.items():
+                    dd = dict(d)
+                    dd["_ageSec"] = nowts - d.get("_lastSeenTs", 0)
+                    devices_out[did] = dd
                 body = json.dumps({
-                    "devices": devices,
+                    "devices": devices_out,
                     "events": events,
                     "recipes": recipes,
                     "recipe_runs": list(recipe_runs.values()),
@@ -1448,6 +2051,8 @@ class Handler(BaseHTTPRequestHandler):
             "/api/recipes/delete": self._handle_recipe_delete,
             "/api/recipe/run": self._handle_recipe_run,
             "/api/recipe/next": self._handle_recipe_next,
+            "/api/recipe/flush": self._handle_recipe_flush,
+            "/api/recipe/resume": self._handle_recipe_resume,
             "/api/recipe/cancel": self._handle_recipe_cancel,
         }
         handler = routes.get(self.path)
@@ -1599,11 +2204,14 @@ class Handler(BaseHTTPRequestHandler):
                 "steps": [],
                 "current_step": 0,
                 "current_group": [],
+                "auto_start": None,   # bowl-detection progress while waiting (see check_bowl_autostart)
                 "message": "",
             }
             recipe_run_controls[run_id] = {
                 "cancel": threading.Event(),
                 "next": threading.Event(),
+                "flush": threading.Event(),
+                "resume": threading.Event(),
             }
 
         threading.Thread(target=run_recipe_worker, args=(run_id, name), daemon=True).start()
@@ -1646,11 +2254,51 @@ class Handler(BaseHTTPRequestHandler):
         print(f"[{now_str()}] Recipe run {run_id} 'next ingredient' requested via dashboard")
         self._send_json(200, {"ok": True})
 
+    def _handle_recipe_flush(self, body):
+        run_id = body.get("run_id")
+        with state_lock:
+            run = recipe_runs.get(run_id)
+            waiting = run is not None and run.get("status") == "waiting_flush"
+            controls = recipe_run_controls.get(run_id)
+
+        if not waiting or controls is None:
+            self._send_json(400, {"ok": False, "error": "That recipe run isn't waiting to flush"})
+            return
+
+        controls["flush"].set()
+        print(f"[{now_str()}] Recipe run {run_id} simultaneous flush requested via dashboard")
+        self._send_json(200, {"ok": True})
+
+    def _handle_recipe_resume(self, body):
+        run_id = body.get("run_id")
+        with state_lock:
+            run = recipe_runs.get(run_id)
+            status = run.get("status") if run else None
+            controls = recipe_run_controls.get(run_id)
+            stalled = []
+            if status == "stalled":
+                stalled = [(s["device"], s["actuator"]) for s in run["steps"] if s.get("status") == "stalled"]
+
+        if status == "stalled" and mqtt_client is not None and mqtt_client.is_connected():
+            # Jammed mid-dispense: the firmware continues from where it stopped.
+            for device, actuator in stalled:
+                mqtt_client.publish(f"machine/{device}/command",
+                                    json.dumps({"command": "resume", "actuator": actuator}))
+                print(f"[{now_str()}] Recipe run {run_id}: resumed {device} actuator {actuator}")
+            self._send_json(200, {"ok": True})
+        elif status == "needs_resume" and controls is not None:
+            # Failed dispenses: the worker re-dispenses only those.
+            controls["resume"].set()
+            print(f"[{now_str()}] Recipe run {run_id} retry of failed ingredients requested via dashboard")
+            self._send_json(200, {"ok": True})
+        else:
+            self._send_json(400, {"ok": False, "error": "That recipe run has nothing to resume"})
+
     def _handle_recipe_cancel(self, body):
         run_id = body.get("run_id")
         with state_lock:
             run = recipe_runs.get(run_id)
-            active = run is not None and run.get("status") in ("running", "queued", "waiting_next", "stalled")
+            active = run is not None and run.get("status") in ("running", "queued", "waiting_next", "waiting_flush", "stalled", "needs_resume")
             controls = recipe_run_controls.get(run_id)
 
         if not active:
