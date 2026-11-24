@@ -14,7 +14,7 @@ Usage:
 
 Then open http://localhost:8000 in a browser and leave it open.
 
-Requires: pip install paho-mqtt
+Requires: pip install -r requirements.txt
 """
 
 import argparse
@@ -33,7 +33,7 @@ import paho.mqtt.client as mqtt
 
 import recipe_db
 
-DEFAULT_BROKER = "192.168.2.9"   # matches MQTT_SERVER in lib/Core/Config.h
+DEFAULT_BROKER = "localhost"   # mosquitto runs on the same PC as the dashboard
 DEFAULT_MQTT_PORT = 1883
 DEFAULT_HTTP_PORT = 8000
 MAX_EVENTS = 200
@@ -392,20 +392,15 @@ def run_group_member(run, name, run_id, step, cancel_event, results, idx, total_
             # simultaneous-flush command instead of flushing on its own.
             command["holdFlush"] = True
 
-        # New firmware (status reports proto >= 2) deduplicates repeated
-        # commands by id, so we can safely re-send until it's confirmed.
-        with state_lock:
-            supports_resend = (devices.get(device, {}).get("proto") or 0) >= 2
-        resend = None
-        cmd_id = None
-        if supports_resend:
-            cmd_id = next_command_id()
-            command["id"] = cmd_id
-            topic = f"machine/{device}/command"
-            payload = json.dumps(command)
-            resend = lambda: mqtt_client.publish(topic, payload)
+        # The firmware deduplicates repeated commands by id, so we can safely
+        # re-send until it's confirmed.
+        cmd_id = next_command_id()
+        command["id"] = cmd_id
+        topic = f"machine/{device}/command"
+        payload = json.dumps(command)
+        resend = lambda: mqtt_client.publish(topic, payload)
 
-        mqtt_client.publish(f"machine/{device}/command", json.dumps(command))
+        resend()
         parallel_note = f" (parallel x{group_size})" if group_size > 1 else ""
         print(f"[{now_str()}] Recipe '{name}' (run {run_id}) step {idx + 1}/{total_steps}{parallel_note}: "
               f"{step['grams']}g {step['ingredient']} on {device} actuator {actuator}")
@@ -466,8 +461,6 @@ def finish_recipe_run(run_id):
 # command's id), giving up after DISPENSE_MAX_SENDS attempts. Safe because
 # each command carries a unique id and the firmware ignores repeats of an id
 # it already accepted - so a lost *acknowledgement* can't dispense twice.
-# Only used with devices whose status reports "proto" >= 2 (new firmware);
-# older firmware doesn't deduplicate, so those get a single send as before.
 DISPENSE_RESEND_INTERVAL_SEC = 2.5
 DISPENSE_MAX_SENDS = 6
 

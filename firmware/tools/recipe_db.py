@@ -1,8 +1,7 @@
 """
 recipe_db.py - Shared SQLite storage for MachineControllerOS recipes.
 
-Used by both recipes.py (command-line) and dashboard.py (web UI), so the
-two never disagree about schema or validation.
+Used by dashboard.py (web UI).
 
 A recipe is a name plus an ordered list of (ingredient, grams, speed)
 lines. Ingredients are just names ("rice", "chicken") - which physical
