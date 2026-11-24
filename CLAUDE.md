@@ -8,7 +8,9 @@ This document provides an overview of the Aristaeus project for AI assistants wo
 
 ## Project Overview
 
-Aristaeus is a bowl ordering system: users customize bowls through a web interface, orders are stored in a database, and the kitchen fulfills them from the admin order view. Robot (ESP32) fulfilment was removed on 2026-09-17 — no device ever connected — so the system is order capture, pricing, delivery estimation and kitchen operations.
+Aristaeus is a bowl ordering system: users customize bowls through a web interface, orders are stored in a database, and the kitchen fulfills them from the admin order view. Ingredient dispensing is being automated: `firmware/` holds the ESP32 dispenser robots and their operator dashboard (imported from MachineControllerOS on 2026-11-24 — see `firmware/CLAUDE.md`). They are not yet connected to orders; the planned link is a local bridge on the kitchen PC that pulls pending orders from the API.
+
+The earlier robot subsystem in this repo (removed 2026-09-17) never connected to a device and is unrelated to `firmware/`.
 
 ---
 
@@ -50,6 +52,7 @@ Aristaeus is a bowl ordering system: users customize bowls through a web interfa
 - **Shared Types:** `@aristaeus/shared` package
 - **Linting:** ESLint + Prettier with Husky pre-commit hooks
 - **Node.js:** Both backend and frontend CI use Node 20 (vite 8 + tailwind v4 oxide require Node >= 20)
+- **Firmware:** ESP32 + PlatformIO (espressif32 6.x / Arduino core 2.x), MQTT (mosquitto), Python dashboard — not an npm workspace
 
 ---
 
@@ -71,6 +74,12 @@ aristaeus/
 ├── CLAUDE.md                          # This file - AI assistant reference
 ├── docs/
 │   └── plans/                         # Design notes for planned work
+│
+├── firmware/                          # ESP32 dispenser robots (PlatformIO) — see firmware/CLAUDE.md
+│   ├── platformio.ini                 # One env per board (esp32_01..04) + native tests
+│   ├── lib/, src/                     # Firmware (C++)
+│   ├── test/                          # Host-side Unity tests (pio test -e native)
+│   └── tools/dashboard.py             # Operator dashboard + recipe runner (Python, kitchen PC)
 │
 ├── frontend/                          # @aristaeus/frontend workspace
 │   ├── package.json                   # Frontend-specific dependencies
@@ -154,6 +163,7 @@ aristaeus/
 └── .github/
     └── workflows/
         ├── lint.yml                   # Linting & formatting checks
+        ├── firmware.yml               # PlatformIO build of every board + native tests
         ├── deploy-frontend.yml        # GitHub Pages deployment
         └── deploy-backend.yml         # Backend deployment via Terraform
 ```
@@ -562,6 +572,7 @@ curl -X POST http://localhost:3000/api/orders -H "Content-Type: application/json
 | 2026-09-17 | 4.0     | Removed the robot subsystem and the v1 grid delivery fallback; folded the separate spec docs into this file      |
 | 2026-09-27 | 4.1     | Wompi in-app checkout (Checkout model, webhook, /order page), coupons + /admin/coupons, removed POST /api/orders |
 | 2026-10-15 | 4.2     | Wompi held back (orders go straight to pending); delivery fee = point estimate + disclaimer; coupon edit/delete  |
+| 2026-11-24 | 4.3     | Imported MachineControllerOS into `firmware/` (history kept, secrets scrubbed), cleanup, firmware CI + agent     |
 
 ---
 
@@ -620,6 +631,6 @@ When changing database operations (e.g., replacing `user.upsert` with `user.find
 
 ---
 
-**Last Updated:** 2026-10-15
+**Last Updated:** 2026-11-24
 **Project Status:** MVP Complete + Menu System + Delivery Estimation + Coupons
 **Current Phase:** Production

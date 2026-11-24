@@ -36,7 +36,8 @@ export default [
 			'backend/infra/',
 			'**/*.config.js',
 			'**/*.config.ts',
-			'backend/scripts/'
+			'backend/scripts/',
+			'firmware/'
 		]
 	}
 ];
