@@ -3,3 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+lib/Core/secrets.h
+__pycache__/
+*.db
+build.log

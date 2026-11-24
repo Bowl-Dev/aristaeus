@@ -25,8 +25,9 @@ struct ServoConfig
     uint8_t openAngle;
 };
 
-constexpr char WIFI_SSID[] = "REDACTED";
-constexpr char WIFI_PASSWORD[] = "REDACTED";
+// WIFI_SSID / WIFI_PASSWORD live in secrets.h (gitignored - this repo is
+// public). First build: cp lib/Core/secrets.example.h lib/Core/secrets.h
+#include "secrets.h"
 
 // The broker (mosquitto + dashboard.py) runs on Juan's PC, whose IP can
 // change whenever Windows renews its DHCP lease. Solved via mDNS instead of
