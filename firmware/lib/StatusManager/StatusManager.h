@@ -1,6 +1,5 @@
 #pragma once
 
-#include "IManager.h"
 #include "MachineContext.h"  //Hardware and connection updates
 #include "MachineController.h" //State and Job updates
 #include "ITelemetryPublisher.h" //Publishes messages between machines 
@@ -12,15 +11,13 @@
 // plain WiFi dropouts.
 const char* resetReasonToString();
 
-class StatusManager : public IManager
+class StatusManager
 {
 public:
 
     explicit StatusManager(MachineContext& context, MachineController& controller, ITelemetryPublisher& telemetry);
 
-    void begin() override;
-
-    void update() override;
+    void update();
 
 private:
 

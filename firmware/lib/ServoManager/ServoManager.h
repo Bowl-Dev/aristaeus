@@ -1,19 +1,15 @@
 #pragma once
 
-#include "IManager.h"
-#include "MachineContext.h"
 #include "Pins.h"
 #include <ESP32Servo.h>
 
-class ServoManager : public IManager
+class ServoManager
 {
 public:
 
-    explicit ServoManager(MachineContext& context);
+    void begin();
 
-    void begin() override;
-
-    void update() override;
+    void update();
 
     void openGate(uint8_t actuator);
 
@@ -22,8 +18,6 @@ public:
     bool isFlushing(uint8_t actuator) const;
 
 private:
-
-    MachineContext& context;
 
     Servo servos[NUM_LOAD_CELLS];
 

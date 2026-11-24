@@ -1,22 +1,19 @@
 #pragma once
 
-#include "IManager.h"
 #include "MachineContext.h"
 #include <HX711.h>
 #include <Preferences.h>
 #include "Pins.h"
 
-class LoadCellManager : public IManager
+class LoadCellManager
 {
 public:
 
     explicit LoadCellManager(MachineContext& context);
 
-    void begin() override;
-    void update() override;
+    void begin();
+    void update();
     float getWeight(uint8_t channel) const;
-    int32_t getRaw(uint8_t channel) const;
-    void setCountsPerGram(uint8_t channel, float countsPerGram);
     bool requestTare(uint8_t channel);
 
     // Computes counts-per-gram for this channel from whatever known weight

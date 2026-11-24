@@ -36,7 +36,5 @@ struct ActuatorState
 struct MachineState
 {
     uint32_t uptime = 0;
-    bool wifiConnected = false;
-    bool mqttConnected = false;
     ActuatorState actuator[NUM_LOAD_CELLS];
 };

@@ -1,37 +1,14 @@
 #pragma once
 
-#include "IManager.h"
-#include "MachineContext.h"
 #include "Config.h"
 
-struct StepperMotor
-{
-    StepperConfig config;
-
-    bool enabled = false;
-    bool running = false;
-
-    float speed = 0.0f;
-
-    bool direction = false;    
-
-    volatile bool pulseState = false;
-
-    volatile uint32_t pulseCounter = 0;
-};
-
-class StepperManager : public IManager
+class StepperManager
 {
 public:
 
-    StepperManager(
-        MachineContext& context,
-        const StepperConfig& motor1,
-        const StepperConfig& motor2);
+    StepperManager(const StepperConfig& motor1, const StepperConfig& motor2);
 
-    void begin() override;
-
-    void update() override;
+    void begin();
 
     void enable(uint8_t motor);
 
@@ -47,7 +24,6 @@ public:
 
 private:
 
-    MachineContext& context;
-
-    StepperMotor motors[2];
+    StepperConfig config[2];
+    bool enabled[2] = {};
 };

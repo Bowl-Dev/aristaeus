@@ -7,11 +7,6 @@ namespace
     constexpr ServoConfig SERVO_CONFIGS[NUM_LOAD_CELLS] = { SERVO1, SERVO2 };
 }
 
-ServoManager::ServoManager(MachineContext& ctx)
-    : context(ctx)
-{
-}
-
 void ServoManager::begin()
 {
     for (uint8_t i = 0; i < NUM_LOAD_CELLS; i++)
@@ -29,7 +24,6 @@ void ServoManager::begin()
         currentAngle[i] = SERVO_CONFIGS[i].closedAngle;
         targetAngle[i] = SERVO_CONFIGS[i].closedAngle;
         lastStepAt[i] = millis();
-        context.servo[i].position = SERVO_CONFIGS[i].closedAngle;
     }
 }
 
@@ -67,7 +61,6 @@ void ServoManager::update()
             currentAngle[i]--;
 
         servos[i].write(currentAngle[i]);
-        context.servo[i].position = currentAngle[i];
     }
 }
 

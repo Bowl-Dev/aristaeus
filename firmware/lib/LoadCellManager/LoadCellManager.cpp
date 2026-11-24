@@ -57,8 +57,6 @@ void LoadCellManager::update()
         if (scales[i].is_ready())
         {
             int32_t raw = scales[i].read();
-            context.loadCell[i].raw = raw;
-            
             float counts = static_cast<float>(raw) - scales[i].get_offset();
             context.loadCell[i].weight = counts / context.calibration[i].countsPerGram;
         }
@@ -70,22 +68,6 @@ float LoadCellManager::getWeight(uint8_t channel) const
     if (channel >= NUM_LOAD_CELLS)
         return 0.0f;
     return context.loadCell[channel].weight;
-}
-
-int32_t LoadCellManager::getRaw(uint8_t channel) const
-{
-    if (channel >= NUM_LOAD_CELLS)
-        return 0;
-    return context.loadCell[channel].raw;
-}
-
-void LoadCellManager::setCountsPerGram(uint8_t channel, float countsPerGram)
-{
-    if (channel >= NUM_LOAD_CELLS)
-        return;
-
-    context.calibration[channel].countsPerGram = countsPerGram;
-    saveCalibration(channel, countsPerGram);
 }
 
 bool LoadCellManager::calibrate(uint8_t channel, float knownWeightGrams)
@@ -138,8 +120,6 @@ bool LoadCellManager::requestTare(uint8_t channel)
         Serial.print("Load cell ");
         Serial.print(channel);
         Serial.println(" not responding, skipping tare");
-
-        context.loadCell[channel].connected = false;
         return false;
     }
 
@@ -173,7 +153,6 @@ bool LoadCellManager::requestTare(uint8_t channel)
         Serial.print("Load cell ");
         Serial.print(channel);
         Serial.println(" gave no samples during tare, skipping");
-        context.loadCell[channel].connected = false;
         return false;
     }
 
@@ -199,9 +178,5 @@ bool LoadCellManager::requestTare(uint8_t channel)
     // and think it already hit target instantly. Zero it here so there's
     // no window where a fresh tare leaves a stale non-zero reading behind.
     context.loadCell[channel].weight = 0.0f;
-    context.loadCell[channel].raw = scales[channel].get_offset();
-
-    context.loadCell[channel].connected = true;
-    context.loadCell[channel].tareComplete = true;
     return true;
 }

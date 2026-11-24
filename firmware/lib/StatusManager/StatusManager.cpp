@@ -56,10 +56,6 @@ StatusManager::StatusManager(MachineContext& ctx, MachineController& ctrl, ITele
 {
 }
 
-void StatusManager::begin()
-{
-}
-
 void StatusManager::update()
 {
     uint32_t now = millis();
@@ -90,45 +86,31 @@ void StatusManager::update()
     doc["mqttDrops"] = context.communication.mqttDrops;
     doc["maxLoopMs"] = context.communication.maxLoopMs;
 
-    doc["mode0"] = modeToString(state.actuator[0].mode);
-    doc["lastError0"] = state.actuator[0].lastError;
-    doc["queuedJobs0"] = state.actuator[0].queuedJobs;
-    doc["loadCell0"] = context.loadCell[0].weight;
-    doc["calibration0"] = context.calibration[0].countsPerGram;
-    doc["ingredient0"] = INGREDIENT_NAMES[0];
+    // Keys are suffixed per actuator (mode0, job0, ...) - dashboard.py reads them.
+    for (uint8_t i = 0; i < NUM_LOAD_CELLS; i++)
+    {
+        const ActuatorState& a = state.actuator[i];
+        String n(i);
 
-    JsonObject job0 = doc.createNestedObject("job0");
-    job0["id"] = state.actuator[0].activeJob.id;
-    job0["active"] = state.actuator[0].activeJob.active;
-    job0["targetWeight"] = state.actuator[0].activeJob.targetWeight;
-    job0["currentWeight"] = state.actuator[0].activeJob.currentWeight;
-    job0["progress"] = state.actuator[0].activeJob.progress;
+        doc["mode" + n] = modeToString(a.mode);
+        doc["lastError" + n] = a.lastError;
+        doc["queuedJobs" + n] = a.queuedJobs;
+        doc["loadCell" + n] = context.loadCell[i].weight;
+        doc["calibration" + n] = context.calibration[i].countsPerGram;
+        doc["ingredient" + n] = INGREDIENT_NAMES[i];
 
-    doc["mode1"] = modeToString(state.actuator[1].mode);
-    doc["lastError1"] = state.actuator[1].lastError;
-    doc["queuedJobs1"] = state.actuator[1].queuedJobs;
-    doc["loadCell1"] = context.loadCell[1].weight;
-    doc["calibration1"] = context.calibration[1].countsPerGram;
-    doc["ingredient1"] = INGREDIENT_NAMES[1];
-
-    JsonObject job1 = doc.createNestedObject("job1");
-    job1["id"] = state.actuator[1].activeJob.id;
-    job1["active"] = state.actuator[1].activeJob.active;
-    job1["targetWeight"] = state.actuator[1].activeJob.targetWeight;
-    job1["currentWeight"] = state.actuator[1].activeJob.currentWeight;
-    job1["progress"] = state.actuator[1].activeJob.progress;
+        JsonObject job = doc["job" + n].to<JsonObject>();
+        job["id"] = a.activeJob.id;
+        job["active"] = a.activeJob.active;
+        job["targetWeight"] = a.activeJob.targetWeight;
+        job["currentWeight"] = a.activeJob.currentWeight;
+        job["progress"] = a.activeJob.progress;
+    }
 
     // Must stay below the MQTT client buffer (1024, see MQTTManager::begin)
     // minus topic/header, or the message is silently dropped.
     char payload[900];
 
-    size_t len = serializeJson(doc, payload);
-
-    bool ok = telemetry.publishStatus(payload);
-
-    /*Serial.print("StatusManager publish: ");
-    Serial.print(ok ? "OK" : "FAILED");
-    Serial.print(" (");
-    Serial.print(len);
-    Serial.println(" bytes)");*/
+    serializeJson(doc, payload);
+    telemetry.publishStatus(payload);
 }

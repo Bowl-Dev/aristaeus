@@ -4,9 +4,8 @@
 #include "StepperManager.h"
 #include "LoadCellManager.h"
 #include "ServoManager.h"
-#include "WiFiManager.h"
+#include "WifiManager.h"
 #include "MQTTManager.h"
-#include "SafetyManager.h"
 #include "MachineController.h"
 #include "Protocol.h"
 #include "SerialEventListener.h"
@@ -18,19 +17,15 @@
 
 MachineContext context;
 
-StepperManager stepperManager(context, STEP1, STEP2);
+StepperManager stepperManager(STEP1, STEP2);
 LoadCellManager loadCellManager(context);
-ServoManager servos(context);
+ServoManager servos;
 WifiManager wifiManager;  
 Protocol protocol;
-SafetyManager safety(context);
 MachineController controller(
-    context,
     stepperManager,
     loadCellManager,
-    servos,
-    wifiManager,    
-    safety);
+    servos);
 
 MQTTManager mqttManager(controller, protocol);
 EventDispatcher eventDispatcher;

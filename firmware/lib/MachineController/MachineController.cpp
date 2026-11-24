@@ -3,37 +3,22 @@
 #include <Arduino.h>
 
 MachineController::MachineController(
-    MachineContext& ctx,
     StepperManager& step,
     LoadCellManager& load,
-    ServoManager& servo,
-    WifiManager& wifiMgr,    
-    SafetyManager& safetyMgr)
+    ServoManager& servo)
 
-    : context(ctx),
-      stepperManager(step),
+    : stepperManager(step),
       loadCellManager(load),
       servoManager(servo),
-      wifiManager(wifiMgr),      
-      safetyManager(safetyMgr),
-      services{
-            stepperManager,
-            loadCellManager,
-            servoManager,            
-            wifiManager,
-            safetyManager}
+      services{stepperManager, loadCellManager, servoManager}
 {
 }
 
 void MachineController::begin()
 {
-    wifiManager.begin();    
     stepperManager.begin();
     loadCellManager.begin();
     servoManager.begin();
-    safetyManager.begin();
-
-    context.system.initialized = true;
 
     for (uint8_t i = 0; i < NUM_LOAD_CELLS; i++)
     {
@@ -45,11 +30,8 @@ void MachineController::begin()
 
 void MachineController::update()
 {
-    wifiManager.update();
     loadCellManager.update();
-    stepperManager.update();
     servoManager.update();
-    safetyManager.update();
 
     for (uint8_t i = 0; i < NUM_LOAD_CELLS; i++)
     {
@@ -60,7 +42,6 @@ void MachineController::update()
     synchronizeFlush();
 
     currentState.uptime = millis();
-    context.system.uptime++;
 }
 
 bool MachineController::enqueueJob(const JobRequest& request)
@@ -99,19 +80,16 @@ void MachineController::setMode(uint8_t actuator, MachineMode mode)
 
 bool MachineController::processJobRequest(const JobRequest& request)
 {
-    if (!canAcceptJob(request))
+    if (request.actuator >= NUM_LOAD_CELLS)
+    {
+        Serial.println("Invalid actuator");
         return false;
+    }
 
     switch (request.type)
     {
         case JobType::Dispense:
 
-            if (request.actuator >= NUM_LOAD_CELLS)
-            {
-                Serial.println("Invalid actuator");
-                return false;
-            }
-            
             if (request.targetWeight <= 0.0f)
             {
             Serial.println("Invalid target weight");
@@ -125,18 +103,6 @@ bool MachineController::processJobRequest(const JobRequest& request)
                 Serial.println("Duplicate dispense command ignored (already accepted)");
                 jobAccepted(request.actuator);
                 return true;
-            }
-
-            if (!context.system.initialized)
-            {
-                jobRejected(request.actuator, "System not initialized");
-                return false;
-            }
-
-            if (context.system.emergencyStop)
-            {
-                jobRejected(request.actuator, "Machine in Emergency Stop");
-                return false;
             }
 
             if (currentState.actuator[request.actuator].mode == MachineMode::Error)
@@ -161,12 +127,6 @@ bool MachineController::processJobRequest(const JobRequest& request)
 
         case JobType::Tare:
 
-            if (request.actuator >= NUM_LOAD_CELLS)
-            {
-                Serial.println("Invalid actuator");
-                return false;
-            }
-
             if (currentState.actuator[request.actuator].mode == MachineMode::Dispensing || currentState.actuator[request.actuator].mode == MachineMode::Flushing)
             {
                 jobRejected(request.actuator, "Cannot tare while a job is running");
@@ -184,12 +144,6 @@ bool MachineController::processJobRequest(const JobRequest& request)
             return true;
 
         case JobType::Calibrate:
-
-            if (request.actuator >= NUM_LOAD_CELLS)
-            {
-                Serial.println("Invalid actuator");
-                return false;
-            }
 
             if (currentState.actuator[request.actuator].mode == MachineMode::Dispensing || currentState.actuator[request.actuator].mode == MachineMode::Flushing)
             {
@@ -215,12 +169,6 @@ bool MachineController::processJobRequest(const JobRequest& request)
 
         case JobType::MoveServo:
 
-            if (request.actuator >= NUM_LOAD_CELLS)
-            {
-                Serial.println("Invalid actuator");
-                return false;
-            }
-
             // Manual gate control for clearing a jam or cleaning - must not
             // fight an active dispense/flush cycle on this actuator, or (on
             // synchronized-flush units) desync the sibling actuator waiting
@@ -244,12 +192,6 @@ bool MachineController::processJobRequest(const JobRequest& request)
 
         case JobType::Flush:
 
-            if (request.actuator >= NUM_LOAD_CELLS)
-            {
-                Serial.println("Invalid actuator");
-                return false;
-            }
-
             if (currentState.actuator[request.actuator].mode != MachineMode::WaitingToFlush)
             {
                 jobRejected(request.actuator, "Nothing waiting to flush");
@@ -267,27 +209,10 @@ bool MachineController::processJobRequest(const JobRequest& request)
 
         case JobType::Reset:
 
-            if (request.actuator >= NUM_LOAD_CELLS)
-            {
-                Serial.println("Invalid actuator");
-                return false;
-            }
             resetMachine(request.actuator);
             return true;            
 
         case JobType::Resume:
-
-            if (request.actuator >= NUM_LOAD_CELLS)
-            {
-                Serial.println("Invalid actuator");
-                return false;
-            }
-
-            if (context.system.emergencyStop)
-            {
-                jobRejected(request.actuator, "Cannot resume during Emergency Stop");
-                return false;
-            }
 
             if (currentState.actuator[request.actuator].mode != MachineMode::Error)
             {
@@ -303,11 +228,6 @@ bool MachineController::processJobRequest(const JobRequest& request)
             Serial.println("Unknown JobType");
             return false;
     }
-}
-
-bool MachineController::canAcceptJob(const JobRequest&) const
-{
-    return true;
 }
 
 void MachineController::startNextJob(uint8_t actuator)

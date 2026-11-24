@@ -1,7 +1,6 @@
 #pragma once
 
 #include <WiFi.h>
-#include <IPAddress.h>
 
 class WifiManager
 {
@@ -12,8 +11,6 @@ public:
     void update();
 
     bool connected() const;
-
-    IPAddress localIP() const;
 
 private:
 

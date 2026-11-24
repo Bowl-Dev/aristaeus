@@ -10,7 +10,6 @@ enum class MachineEventType
     JobFinished,
     JobRejected,
 
-    EmergencyStop,
     Error,
     ErrorCleared
 };
@@ -21,3 +20,17 @@ struct MachineEvent
     uint8_t actuator = 0;
     uint32_t timestamp;
 };
+
+inline const char* eventToString(MachineEventType type)
+{
+    switch (type)
+    {
+        case MachineEventType::JobAccepted:  return "JobAccepted";
+        case MachineEventType::JobStarted:   return "JobStarted";
+        case MachineEventType::JobFinished:  return "JobFinished";
+        case MachineEventType::JobRejected:  return "JobRejected";
+        case MachineEventType::Error:        return "Error";
+        case MachineEventType::ErrorCleared: return "ErrorCleared";
+        default:                             return "Unknown";
+    }
+}

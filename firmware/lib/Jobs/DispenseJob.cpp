@@ -4,7 +4,7 @@
 #include "LoadCellManager.h"
 #include "ServoManager.h"
 #include "Config.h"
-#include <arduino.h>
+#include <Arduino.h>
 
 namespace Jobs
 {
@@ -21,9 +21,6 @@ void beginDispenseJob(DispenseJob& job, MachineServices& services, MachineMode& 
     services.stepper.start(job.actuator);
 
     mode = MachineMode::Dispensing;
-    
-    /*(void)services;   // suppress unused parameter warning
-    job.state = JobState::Starting;*/
 }
 }
 
@@ -80,46 +77,3 @@ void Jobs::updateDispenseJob(DispenseJob& job, MachineServices& services, Machin
             break;
     }
 }
-    
-    /*switch(job.state)
-    {
-        case JobState::Idle:
-            break;
-
-        case JobState::Starting:
-            Serial.println("DispenseJob: Starting");
-            Serial.print("Initial weight = ");
-            Serial.println(services.loadCell.getWeight(job.actuator));
-            services.stepper.enable(job.actuator);
-            services.stepper.setDirection(job.actuator, true);
-            services.stepper.setSpeed(job.actuator, job.speed);
-            services.stepper.start(job.actuator);
-            job.state = JobState::Running;
-            break;
-
-        case JobState::Running:
-           {
-            float weight = services.loadCell.getWeight(job.actuator);            
-
-            if(weight >= job.targetWeight)
-                {
-                    Serial.println("Target reached");
-                    job.state = JobState::Finishing;
-                }
-
-             break;
-           }
-        case JobState::Finishing:
-            Serial.println("DispenseJob: Finishing");
-            services.stepper.stop(job.actuator);
-            services.stepper.disable(job.actuator);
-            job.state = JobState::Finished;
-            break;
-
-        case JobState::Finished:            
-            break;
-
-        case JobState::Error:
-            break;
-    }
-}*/

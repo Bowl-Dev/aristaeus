@@ -1,6 +1,5 @@
 #include "WifiManager.h"
 #include "Config.h"
-#include "MachineContext.h"
 
 void WifiManager::begin()
 {
@@ -21,11 +20,6 @@ void WifiManager::begin()
 bool WifiManager::connected() const
 {
     return WiFi.status() == WL_CONNECTED;
-}
-
-IPAddress WifiManager::localIP() const
-{
-    return WiFi.localIP();
 }
 
 void WifiManager::update()

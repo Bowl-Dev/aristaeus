@@ -1,39 +1,6 @@
 #include "MQTTEventListener.h"
 #include <ArduinoJson.h>
 
-namespace
-{
-const char* eventToString(MachineEventType type)
-{
-    switch (type)
-    {
-        case MachineEventType::JobAccepted:
-            return "JobAccepted";
-
-        case MachineEventType::JobStarted:
-            return "JobStarted";
-
-        case MachineEventType::JobFinished:
-            return "JobFinished";
-
-        case MachineEventType::JobRejected:
-            return "JobRejected";
-
-        case MachineEventType::EmergencyStop:
-            return "EmergencyStop";
-
-        case MachineEventType::Error:
-            return "Error";
-
-        case MachineEventType::ErrorCleared:
-            return "ErrorCleared";
-
-        default:
-            return "Unknown";
-    }
-}
-}
-
 MQTTEventListener::MQTTEventListener(ITelemetryPublisher& telemetryPublisher)
 : telemetry(telemetryPublisher)
 {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "MachineContext.h"
 #include "MachineState.h"
 #include "MachineEvent.h"
 #include "MachineEventListener.h"
@@ -9,8 +8,6 @@
 #include "StepperManager.h"
 #include "LoadCellManager.h"
 #include "ServoManager.h"
-#include "WifiManager.h"
-#include "SafetyManager.h"
 #include "MachineServices.h"
 #include "JobQueue.h"
 #include "DispenseJob.h"
@@ -23,12 +20,9 @@ class MachineController
 public:
 
     MachineController(
-        MachineContext& context,
         StepperManager& steppers,
         LoadCellManager& loadCells,
-        ServoManager& servos,
-        WifiManager& wifi,        
-        SafetyManager& safety);
+        ServoManager& servos);
 
     void begin();
     void update();
@@ -39,13 +33,9 @@ public:
     
 private:
 
-    MachineContext& context;
-
     StepperManager& stepperManager;
     LoadCellManager& loadCellManager;
     ServoManager& servoManager;
-    WifiManager& wifiManager;    
-    SafetyManager& safetyManager;
     MachineServices services;
 
     JobQueue jobQueue[NUM_LOAD_CELLS];    
@@ -64,7 +54,6 @@ private:
     uint32_t lastDispenseId[NUM_LOAD_CELLS] = {};
 
     void setMode(uint8_t actuator, MachineMode mode);
-    bool canAcceptJob(const JobRequest& request) const;
     void startNextJob(uint8_t actuator);
     void updateCurrentJob(uint8_t actuator);
     void synchronizeFlush();
